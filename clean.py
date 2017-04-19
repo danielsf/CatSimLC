@@ -67,8 +67,8 @@ def get_ls(time_arr, f_arr, sigma_arr, freq_arr):
 
     if (not hasattr(get_ls, '_freq_cache') or
         not hasattr(get_ls, '_time_cache') or
-        not np.testing.array_equal(freq_arr, get_ls._freq_cache) or
-        not np.testing.array_equal(time_arr, get_ls._time_cache)):
+        not np.array_equal(freq_arr, get_ls._freq_cache) or
+        not np.array_equal(time_arr, get_ls._time_cache)):
 
         get_ls._time_cache = copy.deepcopy(time_arr)
         get_ls._freq_cache = copy.deepcopy(freq_arr)
@@ -79,7 +79,7 @@ def get_ls(time_arr, f_arr, sigma_arr, freq_arr):
                                       for omega in freq_arr])
 
     if (not hasattr(get_ls, '_sigma_cache') or
-        not np.testing.array_equal(sigma_arr, get_ls._sigma_cache)):
+        not np.array_equal(sigma_arr, get_ls._sigma_cache)):
 
         get_ls._sigma_cache = copy.deepcopy(sigma_arr)
         _w = (1.0/np.power(sigma_arr, 2)).sum()
