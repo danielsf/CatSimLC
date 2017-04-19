@@ -106,15 +106,19 @@ def get_ls(time_arr, f_arr, sigma_arr, freq_arr):
         _cshat = np.dot(get_ls._cos_tau*get_ls._sin_tau,
                         get_ls._wgt_cache)
 
-        _c_tau = np.dot(get_ls._cos_tau, get_ls._wgt_cache)
-        _s_tau = np.dot(get_ls._sin_tau, get_ls._wgt_cache)
+        get_ls._c_tau = np.dot(get_ls._cos_tau, get_ls._wgt_cache)
+        get_ls._s_tau = np.dot(get_ls._sin_tau, get_ls._wgt_cache)
 
-        get_ls._cc = _cchat - _c_tau*_c_tau
-        get_ls._ss = _sshat - _s_tau*_s_tau
+        get_ls._cc = _cchat - get_ls._c_tau*get_ls._c_tau
+        get_ls._ss = _sshat - get_ls._s_tau*get_ls._s_tau
+
+        get_ls._cs = _cshat - get_ls._c_tau*get_ls._s_tau
+        get_ls._d = get_ls._cc*get_ls._ss - get_ls._cs*get_ls._cs
+
         get_ls._tau = _tau
 
-    assert len(get_ls._cc) == len(freq_arr)
-    assert len(get_ls._ss) == len(freq_arr)
+        assert len(get_ls._cc) == len(freq_arr)
+        assert len(get_ls._ss) == len(freq_arr)
 
     t_start = time.time()
     y = (get_ls._wgt_cache*f_arr).sum()
@@ -122,6 +126,90 @@ def get_ls(time_arr, f_arr, sigma_arr, freq_arr):
     yc = np.dot(get_ls._cos_tau, get_ls._wgt_cache*(f_arr-y))
     ys = np.dot(get_ls._sin_tau, get_ls._wgt_cache*(f_arr-y))
 
+    aa = (yc*get_ls._ss-ys*get_ls._cs)/get_ls._d
+    bb = (ys*get_ls._cc-yc*get_ls._cs)/get_ls._d
+
+    cc = y-aa*get_ls._c_tau-bb*get_ls._s_tau
+
     pgram = ((yc*yc/get_ls._cc) + (ys*ys/get_ls._ss))/yy
     print('repetitive part took %e' % (time.time()-t_start))
-    return pgram, get_ls._tau
+    return pgram, get_ls._tau, aa, bb, cc
+
+
+def get_clean_spectrum(time_arr, f_arr, sigma_arr, freq_arr):
+    """
+    Clean a time series according to the algorithm presented in
+    Roberts et al. 1987 (AJ 93, 968) (though this works in real
+    space)
+
+    Will return parameters needed to reconstruct a clean version
+    of the light curve as
+
+    \sum_i a_i cos(omega_i (t-tau_i)) + b_i sin(omega_i (t-tau_i)) + c_i
+
+    Parameters
+    ----------
+    time_arr is a numpy array of when the light curve was sampled
+
+    f_arr is a numpy array of light curve flux/magnitude values
+
+    sigma_arr is a numpy array of uncertainties on f_arr
+
+    freq_arr is a numpy array of the angular frequencies to be
+    meaured
+
+    Returns
+    -------
+    aa a numpy array of a_i parameters from the model
+
+    bb a numpy array of b_i parameters from the model
+
+    cc a numpy array of c_i parameters from the model
+
+    omega a numpy array of omega_i parameters from the model
+
+    tau a numpy array of tau_i parameters from the model
+    """
+
+    iteration = 10
+    gain = 1.0
+
+    window = get_window_function(time_arr, freq_arr)
+
+    residual_arr = copy.deepcopy(f_arr)
+
+    pspec, tau, aa, bb, cc = get_ls(time_arr, residual_arr,
+                                    sigma_arr, freq_arr)
+
+    aa_list = []
+    bb_list = []
+    cc_list = []
+    tau_list = []
+    omega_list = []
+
+    for it in range(1, iteration+1):
+        max_dex = np.argmax(pspec)
+        freq_max = freq_arr[max_dex]
+        tau_max = tau[max_dex]
+        aa_max = aa[max_dex]*gain
+        bb_max = bb[max_dex]*gain
+        cc_max = cc[max_dex]*gain
+
+        aa_list.append(aa_max)
+        bb_list.append(bb_max)
+        cc_list.append(cc_max)
+        tau_list.append(tau_max)
+        omega_list.append(freq_max)
+
+        model = aa_max*np.cos(freq_max*(time_arr-tau_max))
+        model += bb_max*np.sin(freq_max*(time_arr-tau_max))
+        model += cc_max
+
+        residual_arr -= model
+        if it<iteration:
+            pspec, tau, aa, bb, cc = get_ls(time_arr, residual_arr,
+                                            sigma_arr, freq_arr)
+
+    return (np.array(aa_list), np.array(bb_list),
+            np.array(cc_list), np.array(omega_list),
+            np.array(tau_list))
