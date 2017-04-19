@@ -38,6 +38,7 @@ def get_window_function(time_arr, freq_arr):
 
     return np.array([real_part/npts, im_part/npts])
 
+
 def get_ls(time_arr, f_arr, sigma_arr, freq_arr):
     """
     Evaluate the generalized Lomb-Scargle periodogram for a
