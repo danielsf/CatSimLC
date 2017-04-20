@@ -67,37 +67,38 @@ def get_ls(time_arr, f_arr, sigma_arr, freq_arr):
 
     if (not hasattr(get_ls, '_freq_cache') or
         not hasattr(get_ls, '_time_cache') or
+        not hasattr(get_ls, '_sigma_cache') or
         not np.array_equal(freq_arr, get_ls._freq_cache) or
-        not np.array_equal(time_arr, get_ls._time_cache)):
+        not np.array_equal(time_arr, get_ls._time_cache) or
+        not np.array_equal(sigma_arr, get_ls._sigma_cache)):
 
         get_ls._time_cache = copy.deepcopy(time_arr)
         get_ls._freq_cache = copy.deepcopy(freq_arr)
-        get_ls._cos_cache = np.array([np.cos(omega*time_arr)
-                                      for omega in freq_arr])
-
-        get_ls._sin_cache = np.array([np.sin(omega*time_arr)
-                                      for omega in freq_arr])
-
-    if (not hasattr(get_ls, '_sigma_cache') or
-        not np.array_equal(sigma_arr, get_ls._sigma_cache)):
-
         get_ls._sigma_cache = copy.deepcopy(sigma_arr)
+
         _w = (1.0/np.power(sigma_arr, 2)).sum()
         get_ls._wgt_cache = 1.0/(_w*np.power(sigma_arr, 2))
-        _c = np.dot(get_ls._cos_cache, get_ls._wgt_cache)
-        _s = np.dot(get_ls._sin_cache, get_ls._wgt_cache)
+
+        _c = np.dot(np.array([np.cos(omega*time_arr)
+                              for omega in freq_arr]),
+                    get_ls._wgt_cache)
+
+
+        _s = np.dot(np.array([np.sin(omega*time_arr)
+                              for omega in freq_arr]),
+                    get_ls._wgt_cache)
 
         _omega_tau = np.arctan2(2*_c*_s, _c*_c-_s*_s)
         _tau = _omega_tau/(2.0*freq_arr)
+
+        del _s
+        del _c
 
         get_ls._cos_tau = np.array([np.cos(omega*(time_arr-tt))
                                     for omega, tt in zip(freq_arr, _tau)])
 
         get_ls._sin_tau = np.array([np.sin(omega*(time_arr-tt))
                                     for omega, tt in zip(freq_arr, _tau)])
-
-        get_ls._sin2 = get_ls._sin_tau*get_ls._sin_tau
-        get_ls._cos2 = get_ls._cos_tau*get_ls._cos_tau
 
         _cchat = np.dot(get_ls._cos_tau*get_ls._cos_tau,
                         get_ls._wgt_cache)
