@@ -20,42 +20,8 @@ def _bit_reverse(in_val, num_bits):
             out += 2**i_bit
     return out
 
-def _f_k_real(f_arr, k, f_arr_reversed=None):
 
-    n_bits = int(np.log(len(f_arr))/np.log(2.0))
-    n_f = len(f_arr)
-
-    if f_arr_reversed is None:
-        f_arr_reversed = np.zeros(len(f_arr))
-        for ii in range(len(f_arr)):
-            opp = _bit_reverse(ii, n_bits)
-            f_arr_reversed[opp] = f_arr[ii]
-
-    w_real = np.ones(len(f_arr))
-    w_im = np.zeros(len(f_arr))
-    n_exp = 2*len(f_arr)
-    for i_bit in range(n_bits):
-        n_exp = n_exp/2
-        base = 2**i_bit
-        term_re = np.cos(2.0*np.pi*k/n_exp)
-        term_im = np.sin(2.0*np.pi*k/n_exp)
-        for ii in range(len(f_arr)):
-            if ii & base != 0:
-                old_re = w_real[ii]
-                old_im = w_im[ii]
-                w_real[ii] = old_re*term_re - old_im*term_im
-                w_im[ii] = old_re*term_im + old_im*term_re
-
-    f_k_real = 0.0
-    f_k_im = 0.0
-    for ii in range(len(f_arr)):
-        f_k_real += f_arr[ii]*w_real[ii]
-        f_k_im += f_arr[ii]*w_im[ii]
-
-    return f_k_real, f_k_im, f_arr_reversed
-
-
-def fft_real(time_arr, f_arr_in):
+def fft_real(time_arr, f_arr):
     """
     Fast Fourier Transform a real function as described in section 12.2.1
     of Numerical Recipes, Third Edition
@@ -70,21 +36,37 @@ def fft_real(time_arr, f_arr_in):
     -------
     """
 
-    f_arr = copy.deepcopy(f_arr_in)
+    fft_re = np.zeros(len(f_arr))
+    fft_im = np.zeros(len(f_arr))
 
     if len(time_arr) & (len(time_arr)-1) != 0:
         raise RuntimeError("FFT input arrays must have a power of 2 "
                            "number of elements")
 
-    n_bits = int(np.log(len(time_arr))/np.log(2.0))+1
+    n_bits = int(np.log(len(time_arr))/np.log(2.0))
     delta = time_arr[1]-time_arr[0]
-    f_k_real = np.zeros(len(time_arr))
-    f_k_im = np.zeros(len(time_arr))
-    f_arr_reversed = None
-    for k in range(len(time_arr)):
-        (f_k_real[k],
-         f_k_im[k],
-         f_arr_reversed) = _f_k_real(f_arr, k,
-                                     f_arr_reversed=f_arr_reversed)
+    f_arr_reversed = np.zeros(len(f_arr))
+    for ii in range(len(f_arr)):
+        opp = _bit_reverse(ii, n_bits)
+        fft_re[opp] = f_arr[ii]
 
-    return f_k_real*delta, f_k_im*delta
+    n_pts = 1
+    for i_bit in range(n_bits):
+       n_pts *= 2
+       n_strides = len(f_arr)//n_pts
+       for k in range(n_pts//2):
+          w_re = np.cos(2.0*np.pi*k/n_pts)
+          w_im = np.sin(2.0*np.pi*k/n_pts)
+          for i_stride in range(n_strides):
+              i_even = i_stride*n_pts + k
+              i_odd = i_even + n_pts//2
+              temp_re_even = fft_re[i_even]
+              temp_im_even = fft_im[i_even]
+              temp_re_odd = fft_re[i_odd]*w_re - fft_im[i_odd]*w_im
+              temp_im_odd = fft_im[i_odd]*w_re + fft_re[i_odd]*w_im
+              fft_re[i_even] += temp_re_odd
+              fft_im[i_even] += temp_im_odd
+              fft_re[i_odd] = temp_re_even - temp_re_odd
+              fft_im[i_odd] = temp_im_even - temp_im_odd
+
+    return fft_re*delta, fft_im*delta
