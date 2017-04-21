@@ -20,7 +20,7 @@ def _bit_reverse(in_val, num_bits):
             out += 2**i_bit
     return out
 
-
+import time
 def fft_real(time_arr, f_arr):
     """
     Fast Fourier Transform a real function as described in section 12.2.1
@@ -36,6 +36,7 @@ def fft_real(time_arr, f_arr):
     -------
     """
 
+    t_start = time.time()
     fft_re = np.zeros(len(f_arr))
     fft_im = np.zeros(len(f_arr))
 
@@ -50,6 +51,8 @@ def fft_real(time_arr, f_arr):
         opp = _bit_reverse(ii, n_bits)
         fft_re[opp] = f_arr[ii]
 
+    print 'prep took ',time.time()-t_start
+    t_start = time.time()
     n_pts = 1
     for i_bit in range(n_bits):
        n_pts *= 2
@@ -69,4 +72,5 @@ def fft_real(time_arr, f_arr):
               fft_re[i_odd] = temp_re_even - temp_re_odd
               fft_im[i_odd] = temp_im_even - temp_im_odd
 
+    print 'work took ',time.time()-t_start
     return fft_re*delta, fft_im*delta
