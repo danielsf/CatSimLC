@@ -2,25 +2,12 @@ import numpy as np
 
 def brute_force_ft(time_arr, f_arr):
     delta = time_arr[1]-time_arr[0]
-    ft_re = []
-    ft_im = []
-    for k in range(len(f_arr)):
-        nu = k/(delta*len(f_arr))
-        #if k<=len(f_arr)/2:
-        #    nu = k/(delta*len(f_arr))
-        #else:
-        #    nu = (k-len(f_arr))/(delta*len(f_arr))
-        re = delta*(f_arr*np.cos(2.0*np.pi*nu*time_arr)).sum()
-        im = delta*(f_arr*np.sin(2.0*np.pi*nu*time_arr)).sum()
+    ft_re = delta*np.array([(f_arr*np.cos(2.0*np.pi*k*time_arr/(delta*len(f_arr)))).sum()
+                            for k in range(len(f_arr))])
+    ft_im = delta*np.array([(f_arr*np.sin(2.0*np.pi*k*time_arr/(delta*len(f_arr)))).sum()
+                            for k in range(len(f_arr))])
 
-        #re = 0.0
-        #im = 0.0
-        #for ii in range(len(f_arr)):
-        #    re += f_arr[ii]*np.cos(2.0*np.pi*nu*time_arr[ii])*delta
-        #    im += f_arr[ii]*np.sin(2.0*np.pi*nu*time_arr[ii])*delta
-        ft_re.append(re)
-        ft_im.append(im)
-    return np.array(ft_re), np.array(ft_im)
+    return ft_re, ft_im
 
 from fft import _bit_reverse
 import copy
@@ -114,6 +101,7 @@ print 'max residuals: ',np.abs(f_re-brute_re).max(),np.abs(f_im-brute_im).max()
 print 'median amplitudes: ',np.median(np.abs(brute_re)),np.median(np.abs(brute_im))
 #print np.abs(brute_re).min(),np.abs(brute_im).min()
 print 'time_fft  ',t_fft,'time_brute ',t_brute
+print 'len ',len(f_re)
 """
 print '\n'
 print 'four'
