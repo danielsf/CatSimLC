@@ -42,7 +42,7 @@ def fft_real(time_arr, f_arr):
 
     if len(time_arr) & (len(time_arr)-1) != 0:
         raise RuntimeError("FFT input arrays must have a power of 2 "
-                           "number of elements")
+                           "number of elements; you gave %d" % len(time_arr))
 
     n_bits = int(np.log(len(time_arr))/np.log(2.0))
     delta = time_arr[1]-time_arr[0]
