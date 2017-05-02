@@ -23,7 +23,7 @@ time_arr = rng.random_sample(5)*2.0*np.pi
 time_arr = np.sort(time_arr)
 fn_arr = f_of_t(time_arr)
 
-delta = (time_arr.max()-0.0)/1024.0
+delta = (time_arr.max()-0.0)/2048.0
 
 t_start = time.time()
 cos_fft_sum, sin_fft_sum, ttk, hhk = extirp_sums(time_arr, fn_arr, delta)
@@ -49,7 +49,7 @@ for nu, cos_f, cos_b, sin_f, sin_b in zip(freq_arr, cos_fft_sum, cos_brute,
 
     k = nu*delta*len(ttk)
     print nu, k, cos_f/cos_b, sin_f/sin_b
-    if k>40:
+    if k>70:
         exit()
 
 #print 'cos residuals ', np.abs(cos_compare-cos_brute).max()
