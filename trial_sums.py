@@ -20,7 +20,7 @@ def f_of_t(time_arr):
     return y
 
 import time
-from fft import extirp_sums
+from PressRybicki import extirp_sums
 
 rng = np.random.RandomState(45)
 time_arr = rng.random_sample(20)*56.9
