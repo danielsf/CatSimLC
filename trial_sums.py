@@ -27,7 +27,7 @@ time_arr = rng.random_sample(20)*56.9
 time_arr = np.sort(time_arr)
 fn_arr = f_of_t(time_arr)
 
-delta = (time_arr.max()-0.0)/(4*2048.0)
+delta = (time_arr.max()-0.0)/(16*2048.0)
 
 t_start = time.time()
 cos_fft_sum, sin_fft_sum, ttk, hhk = extirp_sums(time_arr, fn_arr, delta)
@@ -63,20 +63,40 @@ for nu, cos_f, cos_b, sin_f, sin_b in zip(freq_arr, cos_fft_sum, cos_brute,
     else:
         rat_arr.append(sin_f/sin_b)
 
+nu_arr = np.array(nu_arr)
+k_arr = np.array(k_arr)
+rat_arr = np.abs(np.array(rat_arr)-1.0)
 
 plt.figsize = (30,30)
-plt.subplot(2,1,1)
+plt.subplot(3,1,1)
 plt.plot(nu_arr,rat_arr)
 plt.xlabel('$\\nu$')
+plt.ylim(1.0e-3, 2.0)
 plt.yscale('log')
 plt.xscale('log')
-plt.subplot(2,1,2)
+plt.plot(np.array(plt.xlim()), [0.1,0.1], linestyle='--')
+plt.subplot(3,1,2)
 plt.plot(k_arr,rat_arr)
 plt.xlabel('k')
+plt.ylim(1.0e-3, 2.0)
 plt.yscale('log')
 plt.xscale('log')
+plt.plot(np.array(plt.xlim()), [0.1,0.1], linestyle='--')
+plt.subplot(3,1,3)
+plt.plot(1.0/nu_arr, rat_arr)
+plt.xlabel('$\\tau$')
+plt.ylim(1.0e-3, 2.0)
+plt.yscale('log')
+plt.xscale('log')
+plt.plot(np.array(plt.xlim()), [0.1,0.1], linestyle='--')
 plt.tight_layout()
 plt.savefig('sum_plot.png')
+
+print('delta %.8e\ntau %.8e' % (delta, 1.0/delta))
+
+dt = np.diff(time_arr)
+print('min dt %.8e' % time_arr.min())
+print('med dt %.8e' % np.median(time_arr))
 
 #print 'cos residuals ', np.abs(cos_compare-cos_brute).max()
 #print 'sin residuals ', np.abs(sin_compare-sin_brute).max()
