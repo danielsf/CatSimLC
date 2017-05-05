@@ -60,17 +60,16 @@ def fft_real(time_arr, f_arr):
        for k in range(n_pts//2):
           w_re = np.cos(2.0*np.pi*k/n_pts)
           w_im = np.sin(2.0*np.pi*k/n_pts)
-          for i_stride in range(n_strides):
-              i_even = i_stride*n_pts + k
-              i_odd = i_even + n_pts//2
-              temp_re_even = fft_re[i_even]
-              temp_im_even = fft_im[i_even]
-              temp_re_odd = fft_re[i_odd]*w_re - fft_im[i_odd]*w_im
-              temp_im_odd = fft_im[i_odd]*w_re + fft_re[i_odd]*w_im
-              fft_re[i_even] += temp_re_odd
-              fft_im[i_even] += temp_im_odd
-              fft_re[i_odd] = temp_re_even - temp_re_odd
-              fft_im[i_odd] = temp_im_even - temp_im_odd
+          even_dexes = np.arange(0, n_strides*n_pts, n_pts, dtype=int) + k
+          odd_dexes = even_dexes + n_pts//2
+          temp_re_even = fft_re[even_dexes]
+          temp_im_even = fft_im[even_dexes]
+          temp_re_odd = fft_re[odd_dexes]*w_re - fft_im[odd_dexes]*w_im
+          temp_im_odd = fft_im[odd_dexes]*w_re + fft_re[odd_dexes]*w_im
+          fft_re[even_dexes] += temp_re_odd
+          fft_im[even_dexes] += temp_im_odd
+          fft_re[odd_dexes] = temp_re_even - temp_re_odd
+          fft_im[odd_dexes] = temp_im_even - temp_im_odd
 
     print 'work took ',time.time()-t_start
     return fft_re*delta, fft_im*delta
