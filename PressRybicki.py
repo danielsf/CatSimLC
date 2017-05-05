@@ -178,9 +178,8 @@ def get_ls_PressRybicki(time_arr_in, f_arr_in, sigma_arr_in):
             local_hasher.update(time_arr_in)
             if local_hasher.hexdigest() != get_ls_PressRybicki.time_hash.hexdigest():
                 get_ls_PressRybicki.initialized = False
-            local_hasher.update(f_arr_in)
-            if local_hasher.hexdigest() != get_ls_PressRybicki.f_hash.hexdigest():
-                get_ls_PressRybicki.initialized = False
+
+            local_hasher = hashlib.sha1()
             local_hasher.update(sigma_arr_in)
             if local_hasher.hexdigest() != get_ls_PressRybicki.sigma_hash.hexdigest():
                 get_ls_PressRybicki.initialized = False
@@ -188,11 +187,13 @@ def get_ls_PressRybicki(time_arr_in, f_arr_in, sigma_arr_in):
     if (not hasattr(get_ls_PressRybicki, 'initialized') or
         not get_ls_PressRybicki.initialized):
 
+        print '\n\ninitializing periodogram\n\n'
+
         get_ls_PressRybicki.initialized = True
+
         get_ls_PressRybicki.time_hash = hashlib.sha1()
         get_ls_PressRybicki.time_hash.update(time_arr_in)
-        get_ls_PressRybicki.f_hash = hashlib.sha1()
-        get_ls_PressRybicki.f_hash.update(f_arr_in)
+
         get_ls_PressRybicki.sigma_hash = hashlib.sha1()
         get_ls_PressRybicki.sigma_hash.update(sigma_arr_in)
 
