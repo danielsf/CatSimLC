@@ -69,9 +69,10 @@ def fft_real(time_arr, f_arr):
     print 'prep took ',time.time()-t_start
     t_start = time.time()
     n_pts = 1
+    n_strides = len(f_arr)
     for i_bit in range(n_bits):
        n_pts *= 2
-       n_strides = len(f_arr)//n_pts
+       n_strides = n_strides//2
        for k in range(n_pts//2):
           w_re = np.cos(2.0*np.pi*k/n_pts)
           w_im = np.sin(2.0*np.pi*k/n_pts)
