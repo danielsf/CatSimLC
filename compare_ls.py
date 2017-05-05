@@ -47,7 +47,7 @@ aa_test, bb_test, cc_test) = get_ls_PressRybicki(time_arr, f_noisy_arr,
                                                  sigma_arr)
 
 t_PR = time.time()-t_start
-
+print 'doing brute'
 
 t_start = time.time()
 pp,tau,aa,bb,cc = get_ls(time_arr-time_arr.min(), f_noisy_arr, sigma_arr, 2.0*np.pi*freq_arr)
