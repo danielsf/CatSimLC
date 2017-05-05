@@ -15,9 +15,11 @@ def _bit_reverse(in_val, num_bits):
     """
     out = 0
     active_val = 2**(num_bits-1)
+    additive_val = 1
     for i_bit in range(num_bits):
         if in_val & active_val != 0:
-            out += 2**i_bit
+            out += additive_val
+        additive_val *= 2
         active_val = active_val//2
     return out
 
