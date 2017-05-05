@@ -39,16 +39,6 @@ f_noisy_arr = f_arr + noise_arr
 
 freq_arr = np.arange(0.001,4000.0,0.01)
 
-window = get_window_function(time_arr, freq_arr)
-pp,tau,aa,bb,cc = get_ls(time_arr, f_noisy_arr, sigma_arr, freq_arr)
-
-dex = np.argmax(pp)
-print pp[dex]
-print freq_arr[dex]
-print tau[dex]
-
-dex_list = np.argsort(pp)
-print 'next freq ',freq_arr[dex_list[-2]],pp[dex_list[-2]]
 
 from clean import get_clean_spectrum
 t_start = time.time()
@@ -65,6 +55,17 @@ for a, b, c, o, t in zip(aa, bb, cc, omega, tau):
     model += a*np.cos(o*(time_control_arr-t))
     model += b*np.sin(o*(time_control_arr-t))
 
+
+
+pp,tau,aa,bb,cc = get_ls(time_arr, f_noisy_arr, sigma_arr, freq_arr)
+
+dex = np.argmax(pp)
+print pp[dex]
+print freq_arr[dex]
+print tau[dex]
+
+dex_list = np.argsort(pp)
+print 'next freq ',freq_arr[dex_list[-2]],pp[dex_list[-2]]
 
 plt.figsize=(30,30)
 plt.subplot(2,1,1)
