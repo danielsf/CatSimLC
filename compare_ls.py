@@ -147,6 +147,34 @@ for ix, (title, control, test) in enumerate(zip(('cc', 'ss', 'd'),
 
 plt.tight_layout()
 plt.savefig('periodogram_components_2.png')
+plt.close()
+
+plt.figsize=(30,30)
+plt.subplot(3,1,1)
+plt.title('aa')
+plt.plot(1.0/freq_arr,np.abs(aa_test/aa-1.0))
+plt.plot(plt.xlim(),(0.01,0.01),linestyle='--')
+plt.xscale('log')
+plt.yscale('log')
+
+plt.subplot(3,1,2)
+plt.title('bb')
+plt.plot(1.0/freq_arr,np.abs(bb_test/bb-1.0))
+plt.plot(plt.xlim(),(0.01,0.01),linestyle='--')
+plt.xscale('log')
+plt.yscale('log')
+
+
+plt.subplot(3,1,3)
+plt.title('cc')
+plt.plot(1.0/freq_arr,np.abs(cc_test/cc-1.0))
+plt.plot(plt.xlim(),(0.01,0.01),linestyle='--')
+plt.xscale('log')
+plt.yscale('log')
+
+plt.tight_layout()
+plt.savefig('ls_coeffs.png')
+plt.close()
 
 print 'brute ',t_brute
 print 'PR ',t_PR
