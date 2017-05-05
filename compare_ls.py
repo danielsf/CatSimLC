@@ -19,7 +19,7 @@ def ff_lc(time):
 rng = np.random.RandomState(88)
 
 time_arr = np.array([],dtype=float)
-for mn, mx in zip(np.arange(0.0, 200.0, 10.0), np.arange(5.0, 195.0, 10.0)):
+for mn, mx in zip(np.arange(0.0, 90.0, 10.0), np.arange(5.0, 95.0, 10.0)):
     sub_sample = rng.random_sample(10)*5.0+mn
     time_arr = np.append(time_arr, sub_sample)
 
