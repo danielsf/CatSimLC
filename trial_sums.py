@@ -12,19 +12,35 @@ def brute_sums(time_arr, f_arr, freq_arr):
     return ch, sh
 
 
+"""
 def f_of_t(time_arr):
     y = 0.1*np.sin(0.98*time_arr)
     y += 0.35*np.cos(1.6*time_arr)
     y += 0.77*np.sin(2.6*time_arr)
     y += 0.45*np.cos(0.7*time_arr)
     return y
+"""
+
+def f_of_t(time):
+    f_arr = 0.4*np.cos(9.0*(time-91.3))
+    f_arr += 0.6*np.sin(25.0*(time+26.0))
+    f_arr += 0.4*np.cos(76.0*(time-15.0))
+    #f_arr = 2.0*np.cos(5.0*(time-15.6))
+    return f_arr
+
 
 import time
 from PressRybicki import extirp_sums
 
-rng = np.random.RandomState(45)
-time_arr = rng.random_sample(20)*56.9
+rng = np.random.RandomState(88)
+
+time_arr = np.array([],dtype=float)
+for mn, mx in zip(np.arange(0.0, 90.0, 10.0), np.arange(5.0, 95.0, 10.0)):
+    sub_sample = rng.random_sample(10)*5.0+mn
+    time_arr = np.append(time_arr, sub_sample)
+
 time_arr = np.sort(time_arr)
+
 fn_arr = f_of_t(time_arr)
 
 delta = (time_arr.max()-0.0)/(16*2048.0)
