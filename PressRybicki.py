@@ -84,7 +84,16 @@ def _initialize_PressRybicki(time_arr, sigma_arr):
     del tk
     del hk
 
-    omega_tau = np.arctan2(2*c*s, c*c-s*s)
+    c2_raw, s2_raw, tk, hk = extirp_sums(2.0*time_arr, wgt_fn, delta)
+    del tk
+    del hk
+    dexes = range(0,len(c2_raw), 2)
+    c2 = c2_raw[dexes]
+    del c2_raw
+    s2 = s2_raw[dexes]
+    del s2_raw
+
+    omega_tau = np.arctan2(s2-2*c*s, c2-c*c+s*s)
     tau = omega_tau/(4.0*np.pi*freq_arr)
 
     cos_omega_tau = np.cos(2.0*np.pi*freq_arr*tau)
@@ -95,14 +104,6 @@ def _initialize_PressRybicki(time_arr, sigma_arr):
     del c
     del s
 
-    c2_raw, s2_raw, tk, hk = extirp_sums(2.0*time_arr, wgt_fn, delta)
-    del tk
-    del hk
-    dexes = range(0,len(c2_raw), 2)
-    c2 = c2_raw[dexes]
-    del c2_raw
-    s2 = s2_raw[dexes]
-    del s2_raw
     cos_2omega_tau = np.cos(4.0*np.pi*freq_arr*tau)
     sin_2omega_tau = np.sin(4.0*np.pi*freq_arr*tau)
     w_sum = wgt_fn.sum()
