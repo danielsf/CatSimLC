@@ -77,11 +77,12 @@ def fft_real(time_arr, f_arr):
     for i_bit in range(n_bits):
        n_pts *= 2
        n_strides = n_strides//2
+       base_dexes = np.arange(0, n_strides*n_pts, n_pts, dtype=int)
        for k in range(n_pts//2):
           cache_dex = k*tot_pts//n_pts
           w_re = cos_cache[cache_dex]
           w_im = sin_cache[cache_dex]
-          even_dexes = np.arange(0, n_strides*n_pts, n_pts, dtype=int) + k
+          even_dexes = base_dexes + k
           odd_dexes = even_dexes + n_pts//2
           temp_re_even = fft_re[even_dexes]
           temp_im_even = fft_im[even_dexes]
