@@ -14,10 +14,11 @@ def _bit_reverse(in_val, num_bits):
     Return the bit-reversed equivalent of the integer ii
     """
     out = 0
+    active_val = 2**(num_bits-1)
     for i_bit in range(num_bits):
-        active_bit = num_bits-1-i_bit
-        if in_val & 2**active_bit != 0:
+        if in_val & active_val != 0:
             out += 2**i_bit
+        active_val = active_val//2
     return out
 
 import time
