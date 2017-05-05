@@ -165,3 +165,5 @@ print ('PR freqs: %.4f %.4f %.4f %.4f' %
          freq_arr[sorted_dexes[-2]]*2.0*np.pi,
          freq_arr[sorted_dexes[-3]]*2.0*np.pi,
          freq_arr[sorted_dexes[-4]]*2.0*np.pi))
+
+print ('smallest dt %.4e' % np.diff(time_arr).min())
