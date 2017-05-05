@@ -23,6 +23,19 @@ def _bit_reverse(in_val, num_bits):
         active_val = active_val//2
     return out
 
+
+def _bit_reverse_vector(in_val, num_bits):
+
+    out = np.zeros(len(in_val), dtype=int)
+    active_val = 2**(num_bits-1)
+    additive_val = 1
+    for i_bit in range(num_bits):
+        dexes = np.where(in_val & active_val != 0)
+        out[dexes] += additive_val
+        additive_val *= 2
+        active_val = active_val//2
+    return out
+
 import time
 def fft_real(time_arr, f_arr):
     """
@@ -49,9 +62,9 @@ def fft_real(time_arr, f_arr):
 
     n_bits = int(np.log(len(time_arr))/np.log(2.0))
     delta = time_arr[1]-time_arr[0]
-    for ii in range(len(f_arr)):
-        opp = _bit_reverse(ii, n_bits)
-        fft_re[opp] = f_arr[ii]
+    forward_dexes = np.arange(len(f_arr), dtype=int)
+    rev_dexes = _bit_reverse_vector(forward_dexes, n_bits)
+    fft_re[rev_dexes] = f_arr
 
     print 'prep took ',time.time()-t_start
     t_start = time.time()
