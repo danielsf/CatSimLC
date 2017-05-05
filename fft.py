@@ -75,23 +75,22 @@ def fft_real(time_arr, f_arr):
     cos_cache = np.cos(2.0*np.pi*cache_dexes/tot_pts)
     sin_cache = np.sin(2.0*np.pi*cache_dexes/tot_pts)
     for i_bit in range(n_bits):
-       n_pts *= 2
-       n_strides = n_strides//2
-       base_dexes = np.arange(0, n_strides*n_pts, n_pts, dtype=int)
-       for k in range(n_pts//2):
-          cache_dex = k*tot_pts//n_pts
-          w_re = cos_cache[cache_dex]
-          w_im = sin_cache[cache_dex]
-          even_dexes = base_dexes + k
-          odd_dexes = even_dexes + n_pts//2
-          temp_re_even = fft_re[even_dexes]
-          temp_im_even = fft_im[even_dexes]
-          temp_re_odd = fft_re[odd_dexes]*w_re - fft_im[odd_dexes]*w_im
-          temp_im_odd = fft_im[odd_dexes]*w_re + fft_re[odd_dexes]*w_im
-          fft_re[even_dexes] += temp_re_odd
-          fft_im[even_dexes] += temp_im_odd
-          fft_re[odd_dexes] = temp_re_even - temp_re_odd
-          fft_im[odd_dexes] = temp_im_even - temp_im_odd
+        n_pts *= 2
+        n_strides = n_strides//2
+        base_dexes = np.arange(0, n_strides*n_pts, n_pts)
+        even_dexes = np.array([base_dexes + k for k in range(n_pts//2)]).flatten()
+        odd_dexes = even_dexes + n_pts//2
+        cache_dexes = np.array([[k*tot_pts//n_pts]*len(base_dexes) for k in range(n_pts//2)]).flatten()
+        w_re = cos_cache[cache_dexes]
+        w_im = sin_cache[cache_dexes]
+        temp_re_even = fft_re[even_dexes]
+        temp_im_even = fft_im[even_dexes]
+        temp_re_odd = fft_re[odd_dexes]*w_re - fft_im[odd_dexes]*w_im
+        temp_im_odd = fft_im[odd_dexes]*w_re + fft_re[odd_dexes]*w_im
+        fft_re[even_dexes] += temp_re_odd
+        fft_im[even_dexes] += temp_im_odd
+        fft_re[odd_dexes] = temp_re_even - temp_re_odd
+        fft_im[odd_dexes] = temp_im_even - temp_im_odd
 
     print 'work took ',time.time()-t_start
     return fft_re*delta, fft_im*delta
