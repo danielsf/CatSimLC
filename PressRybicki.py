@@ -1,5 +1,6 @@
 import numpy as np
 import hashlib
+import copy
 from fft import fft_real
 
 
@@ -233,3 +234,90 @@ def get_ls_PressRybicki(time_arr_in, f_arr_in, sigma_arr_in):
     pgram = ((y_c*y_c/get_ls_PressRybicki.cc) + (y_s*y_s/get_ls_PressRybicki.ss))/yy
 
     return pgram, get_ls_PressRybicki.freq_arr, get_ls_PressRybicki.tau, aa, bb, cc
+
+
+def get_clean_spectrum_PressRybicki(time_arr, f_arr, sigma_arr):
+    """
+    Clean a time series according to the algorithm presented in
+    Roberts et al. 1987 (AJ 93, 968) (though this works in real
+    space)
+
+    Will return parameters needed to reconstruct a clean version
+    of the light curve as
+
+    \sum_i a_i cos(omega_i (t-tau_i)) + b_i sin(omega_i (t-tau_i)) + c_i
+
+    Parameters
+    ----------
+    time_arr is a numpy array of when the light curve was sampled
+
+    f_arr is a numpy array of light curve flux/magnitude values
+
+    sigma_arr is a numpy array of uncertainties on f_arr
+
+    Returns
+    -------
+    aa a numpy array of a_i parameters from the model
+
+    bb a numpy array of b_i parameters from the model
+
+    cc a numpy array of c_i parameters from the model
+
+    omega a numpy array of omega_i parameters from the model
+
+    tau a numpy array of tau_i parameters from the model
+    """
+
+    iteration = 10
+    gain = 1.0
+
+    residual_arr = copy.deepcopy(f_arr)
+
+    (pspec, freq_arr,
+     tau, aa, bb, cc) = get_ls_PressRybicki(time_arr, residual_arr, sigma_arr)
+
+    aa_list = []
+    bb_list = []
+    cc_list = []
+    tau_list = []
+    omega_list = []
+
+    for it in range(1, iteration+1):
+        valid = np.where(np.logical_and(np.logical_not(np.isnan(pspec)),
+                                        freq_arr<1000.0))
+        pspec = pspec[valid]
+        aa = aa[valid]
+        bb = bb[valid]
+        cc = cc[valid]
+        valid_freq = freq_arr[valid]
+        tau = tau[valid]
+        max_dex = np.argmax(pspec)
+
+        freq_max = valid_freq[max_dex]
+        tau_max = tau[max_dex]
+        aa_max = aa[max_dex]*gain
+        bb_max = bb[max_dex]*gain
+        cc_max = cc[max_dex]*gain
+
+        aa_list.append(aa_max)
+        bb_list.append(bb_max)
+        cc_list.append(cc_max)
+        tau_list.append(tau_max)
+        omega_list.append(freq_max*2.0*np.pi)
+
+        model = aa_max*np.cos(2.0*np.pi*freq_max*(time_arr-time_arr.min()-tau_max))
+        model += bb_max*np.sin(2.0*np.pi*freq_max*(time_arr-time_arr.min()-tau_max))
+        model += cc_max
+        print 'a ',aa_max
+        print 'b ',bb_max
+        print 'c ',cc_max
+        print 'omega ',freq_max*2.0*np.pi
+
+        residual_arr -= model
+        if it<iteration:
+            (pspec, freq_arr,
+             tau, aa, bb, cc) = get_ls_PressRybicki(time_arr, residual_arr, sigma_arr)
+
+    return (np.array(aa_list), np.array(bb_list),
+            np.array(cc_list), np.array(omega_list),
+            np.array(tau_list), freq_arr)
