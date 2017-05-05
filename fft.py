@@ -46,7 +46,6 @@ def fft_real(time_arr, f_arr):
 
     n_bits = int(np.log(len(time_arr))/np.log(2.0))
     delta = time_arr[1]-time_arr[0]
-    f_arr_reversed = np.zeros(len(f_arr))
     for ii in range(len(f_arr)):
         opp = _bit_reverse(ii, n_bits)
         fft_re[opp] = f_arr[ii]
