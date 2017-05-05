@@ -80,6 +80,8 @@ def _initialize_PressRybicki(time_arr, sigma_arr):
     wgt_fn = 1.0/(w*np.power(sigma_arr, 2))
 
     c, s, tk, hk = extirp_sums(time_arr, wgt_fn, delta)
+    del tk
+    del hk
 
     omega_tau = np.arctan2(2*c*s, c*c-s*s)
     tau = omega_tau/(4.0*np.pi*freq_arr)
@@ -89,10 +91,17 @@ def _initialize_PressRybicki(time_arr, sigma_arr):
     cos_tau = c*cos_omega_tau + s*sin_omega_tau
     sin_tau = s*cos_omega_tau - c*sin_omega_tau
 
+    del c
+    del s
+
     c2_raw, s2_raw, tk, hk = extirp_sums(2.0*time_arr, wgt_fn, delta)
+    del tk
+    del hk
     dexes = range(0,len(c2_raw), 2)
     c2 = c2_raw[dexes]
+    del c2_raw
     s2 = s2_raw[dexes]
+    del s2_raw
     cos_2omega_tau = np.cos(4.0*np.pi*freq_arr*tau)
     sin_2omega_tau = np.sin(4.0*np.pi*freq_arr*tau)
     w_sum = wgt_fn.sum()
@@ -100,6 +109,9 @@ def _initialize_PressRybicki(time_arr, sigma_arr):
     csq = 0.5*w_sum + 0.5*c2*cos_2omega_tau + 0.5*s2*sin_2omega_tau
     ssq = 0.5*w_sum - 0.5*c2*cos_2omega_tau - 0.5*s2*sin_2omega_tau
     csomega = 0.5*(s2*cos_2omega_tau - c2*sin_2omega_tau)  # cos(theta)*sin(theta) = 0.5*sin(2*theta)
+
+    del s2
+    del c2
 
     cs = csomega - cos_tau*sin_tau
     ss = ssq - sin_tau*sin_tau
@@ -201,12 +213,17 @@ def get_ls_PressRybicki(time_arr_in, f_arr_in, sigma_arr_in):
     yy = (get_ls_PressRybicki.w*np.power(f_arr-y_bar,2)).sum()
     y_fn = get_ls_PressRybicki.w*(f_arr-y_bar)
     y_c_raw, y_s_raw, tk, hk = extirp_sums(time_arr, y_fn, get_ls_PressRybicki.delta)
+    del tk
+    del hk
 
     y_c = (y_c_raw*get_ls_PressRybicki.cos_omega_tau +
            y_s_raw*get_ls_PressRybicki.sin_omega_tau)
 
     y_s = (y_s_raw*get_ls_PressRybicki.cos_omega_tau -
            y_c_raw*get_ls_PressRybicki.sin_omega_tau)
+
+    del y_s_raw
+    del y_c_raw
 
     aa = (y_c*get_ls_PressRybicki.ss - y_s*get_ls_PressRybicki.cs)/get_ls_PressRybicki.d
     bb = (y_s*get_ls_PressRybicki.cc - y_c*get_ls_PressRybicki.cs)/get_ls_PressRybicki.d
