@@ -28,27 +28,19 @@ def extirp_sums(tt_arr, ff_arr, delta):
     print('actual len(ttk) %d' % len(ttk))
     time_dexes = np.round((tt_arr-ttk.min())/delta).astype(int)
     hk = np.zeros(len(ttk))
-    dexes = np.zeros(5, dtype=int)
+    dexes = np.zeros(25, dtype=int)
+    half_dexes = len(dexes)//2
     for ij, (tt, ff) in enumerate(zip(tt_arr, ff_arr)):
         tj=time_dexes[ij]
-        if tj<=3:
-            dexes[0] = 0
-            dexes[1] = 1
-            dexes[2] = 2
-            dexes[3] = 3
-            dexes[4] = 4
-        elif tj>=len(ttk)-3:
-            dexes[0] = len(ttk)-1
-            dexes[1] = len(ttk)-2
-            dexes[2] = len(ttk)-3
-            dexes[3] = len(ttk)-4
-            dexes[4] = len(ttk)-5
+        if tj<=half_dexes+1:
+            for ix in range(len(dexes)):
+                dexes[ix] = ix
+        elif tj>=len(ttk)-(half_dexes+1):
+            for ix in range(len(dexes)):
+                dexes[ix] = len(ttk)-ix-1
         else:
-            dexes[0] = tj-2
-            dexes[1] = tj-1
-            dexes[2] = tj
-            dexes[3] = tj+1
-            dexes[4] = tj+2
+            for ix in range(len(dexes)):
+                dexes[ix] = tj - half_dexes + ix
 
         _do_extirpation(hk, ff, tt, ttk, dexes)
 
