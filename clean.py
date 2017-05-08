@@ -88,11 +88,21 @@ def get_ls(time_arr, f_arr, sigma_arr, freq_arr):
                               for omega in freq_arr]),
                     get_ls._wgt_cache)
 
-        _omega_tau = np.arctan2(2*_c*_s, _c*_c-_s*_s)
+        _s2 = np.dot(np.array([np.sin(2.0*omega*time_arr)
+                               for omega in freq_arr]),
+                     get_ls._wgt_cache)
+
+        _c2 = np.dot(np.array([np.cos(2.0*omega*time_arr)
+                               for omega in freq_arr]),
+                     get_ls._wgt_cache)
+
+        _omega_tau = np.arctan2(_s2-2.0*_c*_s, _c2-_c*_c+_s*_s)
         _tau = _omega_tau/(2.0*freq_arr)
 
         del _s
         del _c
+        del _s2
+        del _c2
 
         get_ls._cos_tau = np.array([np.cos(omega*(time_arr-tt))
                                     for omega, tt in zip(freq_arr, _tau)])
