@@ -417,7 +417,7 @@ def get_clean_spectrum_PressRybicki(time_arr, f_arr, sigma_arr, delta):
             (pspec, freq_arr,
              tau, aa, bb, cc) = get_ls_PressRybicki(time_arr, residual_arr, sigma_arr, delta)
 
-    print'cut off is ',get_ls_PressRybicki.cut_off_freq*2.0*np.pi
+    print'cut off is ',get_ls_PressRybicki.cut_off_freq*2.0*np.pi,get_ls_PressRybicki.cut_off_freq
 
     return (np.array(aa_list), np.array(bb_list),
             np.array(cc_list), np.array(omega_list),
