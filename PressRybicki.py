@@ -254,6 +254,30 @@ def get_ls_PressRybicki(time_arr_in, f_arr_in, sigma_arr_in):
     return pgram, get_ls_PressRybicki.freq_arr, get_ls_PressRybicki.tau, aa, bb, cc
 
 
+def _is_significant(aa, bb, cc, omega, tau,
+                    aa_test, bb_test, cc_test, omega_test, tau_test,
+                    time_arr, f_arr, sig_arr):
+
+    model = np.zeros(len(time_arr))
+    for a,b,c,o,t in zip(aa, bb, cc, omega, tau):
+        model += c
+        model += a*np.cos(o*(time_arr-t))
+        model += b*np.sin(o*(time_arr-t))
+
+    chi_0 = np.power((f_arr-model)/sig_arr,2).sum()
+    bic_0 = 3.0*len(aa)*np.log(len(time_arr)) + chi_0
+
+    model += cc_test
+    model += aa_test*np.cos(omega_test*(time_arr-time_arr.min()-tau_test))
+    model += bb_test*np.sin(omega_test*(time_arr-time_arr.min()-tau_test))
+
+    chi_1 = np.power((f_arr-model)/sig_arr,2).sum()
+    bic_1 = 3.0*(len(aa)+1)*np.log(len(time_arr)) + chi_1
+
+    if bic_1 < bic_0:
+        return True
+    return False
+
 def get_clean_spectrum_PressRybicki(time_arr, f_arr, sigma_arr):
     """
     Clean a time series according to the algorithm presented in
@@ -316,20 +340,30 @@ def get_clean_spectrum_PressRybicki(time_arr, f_arr, sigma_arr):
         aa_max = aa[max_dex]*gain
         bb_max = bb[max_dex]*gain
         cc_max = cc[max_dex]*gain
+        omega_max = freq_max*2.0*np.pi
 
-        aa_list.append(aa_max)
-        bb_list.append(bb_max)
-        cc_list.append(cc_max)
-        tau_list.append(tau_max)
-        omega_list.append(freq_max*2.0*np.pi)
-
-        model = aa_max*np.cos(2.0*np.pi*freq_max*(time_arr-time_arr.min()-tau_max))
-        model += bb_max*np.sin(2.0*np.pi*freq_max*(time_arr-time_arr.min()-tau_max))
-        model += cc_max
         print 'a ',aa_max
         print 'b ',bb_max
         print 'c ',cc_max
         print 'omega ',freq_max*2.0*np.pi
+
+        if _is_significant(aa_list, bb_list, cc_list, omega_list, tau_list,
+                           aa_max, bb_max, cc_max, omega_max, tau_max,
+                           time_arr, f_arr, sigma_arr):
+
+            aa_list.append(aa_max)
+            bb_list.append(bb_max)
+            cc_list.append(cc_max)
+            tau_list.append(tau_max)
+            omega_list.append(omega_max)
+
+        else:
+            print 'is not significant'
+            break
+
+        model = np.array([cc_max]*len(time_arr))
+        model += aa_max*np.cos(omega_max*(time_arr-time_arr.min()-tau_max))
+        model += bb_max*np.sin(omega_max*(time_arr-time_arr.min()-tau_max))
 
         residual_arr -= model
         if it<iteration:
