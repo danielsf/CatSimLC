@@ -4,6 +4,16 @@ import copy
 from fft import fft_real
 
 
+def _do_extirpation(hk, ff, tt, ttk, dexes):
+
+    for ix in range(len(dexes)):
+        other_dexes = dexes[np.where(dexes!=dexes[ix])]
+        term = np.product(tt-ttk[other_dexes])
+        term /= np.product(ttk[dexes[ix]]-ttk[other_dexes])
+        term *= ff
+        hk[dexes[ix]] += term
+
+
 def extirp_sums(tt_arr, ff_arr, delta):
     """
     Take an arbitrary function sampled irregularly and return the
@@ -18,18 +28,23 @@ def extirp_sums(tt_arr, ff_arr, delta):
     print('actual len(ttk) %d' % len(ttk))
     time_dexes = np.round((tt_arr-ttk.min())/delta).astype(int)
     hk = np.zeros(len(ttk))
+    dexes = np.zeros(3, dtype=int)
     for ij, (tt, ff) in enumerate(zip(tt_arr, ff_arr)):
         tj=time_dexes[ij]
         if tj==0:
-            dexes = [0, 1, 2]
+            dexes[0] = 0
+            dexes[1] = 1
+            dexes[2] = 2
         elif tj>=len(ttk)-1:
-            dexes = [len(ttk)-1, len(ttk)-2, len(ttk)-3]
+            dexes[0] = len(ttk)-1
+            dexes[1] = len(ttk)-2
+            dexes[2] = len(ttk)-3
         else:
-            dexes = [tj-1, tj, tj+1]
+            dexes[0] = tj-1
+            dexes[1] = tj
+            dexes[2] = tj+1
 
-        hk[dexes[0]] += ff*(tt-ttk[dexes[1]])*(tt-ttk[dexes[2]])/((ttk[dexes[0]]-ttk[dexes[1]])*(ttk[dexes[0]]-ttk[dexes[2]]))
-        hk[dexes[1]] += ff*(tt-ttk[dexes[0]])*(tt-ttk[dexes[2]])/((ttk[dexes[1]]-ttk[dexes[0]])*(ttk[dexes[1]]-ttk[dexes[2]]))
-        hk[dexes[2]] += ff*(tt-ttk[dexes[0]])*(tt-ttk[dexes[1]])/((ttk[dexes[2]]-ttk[dexes[0]])*(ttk[dexes[2]]-ttk[dexes[1]]))
+        _do_extirpation(hk, ff, tt, ttk, dexes)
 
     print 'max hk ',np.abs(hk).max(),ff_arr.max()
     ft_re, ft_im = fft_real(ttk, hk)
