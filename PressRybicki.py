@@ -16,31 +16,20 @@ def extirp_sums(tt_arr, ff_arr, delta):
                     delta)
 
     print('actual len(ttk) %d' % len(ttk))
-
     time_dexes = np.round((tt_arr-ttk.min())/delta).astype(int)
     hk = np.zeros(len(ttk))
-    dex_0 = copy.deepcopy(time_dexes) - 1
-    dex_1 = copy.deepcopy(time_dexes)
-    dex_2 = copy.deepcopy(time_dexes) + 1
+    for ij, (tt, ff) in enumerate(zip(tt_arr, ff_arr)):
+        tj=time_dexes[ij]
+        if tj==0:
+            dexes = [0, 1, 2]
+        elif tj>=len(ttk)-1:
+            dexes = [len(ttk)-1, len(ttk)-2, len(ttk)-3]
+        else:
+            dexes = [tj-1, tj, tj+1]
 
-    at_zero = np.where(time_dexes==0)
-    dex_0[at_zero] = 0
-    dex_1[at_zero] = 1
-    dex_2[at_zero] = 2
-
-    greater = np.where(time_dexes>=len(ttk)-1)
-    dex_0[greater] = len(ttk)-1
-    dex_1[greater] = len(ttk)-2
-    dex_2[greater] = len(ttk)-3
-
-    term_0 = ff_arr*(tt_arr-ttk[dex_1])*(tt_arr-ttk[dex_2])/((ttk[dex_0]-ttk[dex_1])*(ttk[dex_0]-ttk[dex_2]))
-    term_1 = ff_arr*(tt_arr-ttk[dex_0])*(tt_arr-ttk[dex_2])/((ttk[dex_1]-ttk[dex_0])*(ttk[dex_1]-ttk[dex_2]))
-    term_2 = ff_arr*(tt_arr-ttk[dex_0])*(tt_arr-ttk[dex_1])/((ttk[dex_2]-ttk[dex_0])*(ttk[dex_2]-ttk[dex_1]))
-
-    for i0, t0, i1, t1, i2, t2 in zip(dex_0, term_0, dex_1, term_1, dex_2, term_2):
-        hk[i0] += t0
-        hk[i1] += t1
-        hk[i2] += t2
+        hk[dexes[0]] += ff*(tt-ttk[dexes[1]])*(tt-ttk[dexes[2]])/((ttk[dexes[0]]-ttk[dexes[1]])*(ttk[dexes[0]]-ttk[dexes[2]]))
+        hk[dexes[1]] += ff*(tt-ttk[dexes[0]])*(tt-ttk[dexes[2]])/((ttk[dexes[1]]-ttk[dexes[0]])*(ttk[dexes[1]]-ttk[dexes[2]]))
+        hk[dexes[2]] += ff*(tt-ttk[dexes[0]])*(tt-ttk[dexes[1]])/((ttk[dexes[2]]-ttk[dexes[0]])*(ttk[dexes[2]]-ttk[dexes[1]]))
 
     print 'max hk ',np.abs(hk).max(),ff_arr.max()
     ft_re, ft_im = fft_real(ttk, hk)
