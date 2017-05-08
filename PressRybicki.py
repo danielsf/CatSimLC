@@ -264,11 +264,11 @@ def _is_significant(aa, bb, cc, omega, tau,
         model = np.zeros(len(time_arr))
         for a,b,c,o,t in zip(aa, bb, cc, omega, tau):
             model += c
-            model += a*np.cos(o*(time_arr-t))
-            model += b*np.sin(o*(time_arr-t))
+            model += a*np.cos(o*(time_arr-time_arr.min()-t))
+            model += b*np.sin(o*(time_arr-time_arr.min()-t))
 
         chi_0 = np.power((f_arr-model)/sig_arr,2).sum()
-        _is_significant.bic_0 = bic_0 = 3.0*len(aa)*np.log(len(time_arr)) + chi_0
+        _is_significant.bic_0 = 3.0*len(aa)*np.log(len(time_arr)) + chi_0
         _is_significant.model = model
 
     _is_significant.model += cc_test
