@@ -81,7 +81,7 @@ def _initialize_PressRybicki(time_arr, sigma_arr):
     an array of D from Zechmeister and Kurster eqn 6
     """
 
-    delta = 0.001/(2.0*np.pi)
+    delta = 0.002/(2.0*np.pi)
     n_t_init = time_arr.max()/delta
     n_t = 2
     while n_t < n_t_init:
