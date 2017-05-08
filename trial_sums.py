@@ -45,8 +45,13 @@ fn_arr = f_of_t(time_arr)
 
 delta = (time_arr.max()-0.0)/(16*2048.0)
 
+n_t = 2
+n_t_guess = time_arr.max()/delta
+while n_t<n_t_guess:
+    n_t *= 2
+
 t_start = time.time()
-cos_fft_sum, sin_fft_sum, ttk, hhk = extirp_sums(time_arr, fn_arr, delta)
+cos_fft_sum, sin_fft_sum, ttk, hhk = extirp_sums(time_arr, fn_arr, delta, n_t)
 t_extirp = time.time()-t_start
 
 #hhk_control = f_of_t(ttk)

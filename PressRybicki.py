@@ -14,7 +14,7 @@ def _do_extirpation(hk, ff, tt, ttk, dexes):
         hk[dexes[ix]] += term
 
 
-def extirp_sums(tt_arr, ff_arr, delta):
+def extirp_sums(tt_arr, ff_arr, delta, n_t):
     """
     Take an arbitrary function sampled irregularly and return the
     sums in equation (5) of Press and Rybicki 1988 (ApJ 338, 277)
@@ -22,7 +22,7 @@ def extirp_sums(tt_arr, ff_arr, delta):
     """
 
     ttk = np.arange(0.0,
-                    tt_arr.max(),
+                    n_t*delta,
                     delta)
 
     print('actual len(ttk) %d' % len(ttk))
@@ -67,6 +67,7 @@ def _initialize_PressRybicki(time_arr, sigma_arr):
 
     wgt = the array of weights (w_i from Zechmeister and Kurster 2009)
     delta = the delta_t in used to construct the frequency array
+    n_t = the number of steps in the frequency_array used for FFT
     freq_arr = the array of frequencies (not angular frequencies)
     tau = the array of time offsets tau from Zechmeister and Kurster 2009 eqn (19)
     cos_omega_tau = an array of cos(omega*tau)
@@ -80,11 +81,10 @@ def _initialize_PressRybicki(time_arr, sigma_arr):
     an array of D from Zechmeister and Kurster eqn 6
     """
 
-    delta_guess = 0.1*np.diff(time_arr).min()
-    delta = time_arr.max()/1024.0
-    n_t = 1024
-    while delta>delta_guess:
-        delta *= 0.5
+    delta = 0.001/(2.0*np.pi)
+    n_t_init = time_arr.max()/delta
+    n_t = 2
+    while n_t < n_t_init:
         n_t *= 2
     print('n_t %d\ndelta %e' % (int(n_t), delta))
 
@@ -93,11 +93,11 @@ def _initialize_PressRybicki(time_arr, sigma_arr):
     w = (1.0/np.power(sigma_arr, 2)).sum()
     wgt_fn = 1.0/(w*np.power(sigma_arr, 2))
 
-    c, s, tk, hk = extirp_sums(time_arr, wgt_fn, delta)
+    c, s, tk, hk = extirp_sums(time_arr, wgt_fn, delta, n_t)
     del tk
     del hk
 
-    c2_raw, s2_raw, tk, hk = extirp_sums(2.0*time_arr, wgt_fn, delta)
+    c2_raw, s2_raw, tk, hk = extirp_sums(2.0*time_arr, wgt_fn, delta, n_t*2)
     del tk
     del hk
     dexes = range(0,len(c2_raw), 2)
@@ -136,6 +136,7 @@ def _initialize_PressRybicki(time_arr, sigma_arr):
     # return:
     # wgt
     # delta
+    # n_t
     # freq_arr
     # tau
     # cos(omega*tau)
@@ -147,7 +148,7 @@ def _initialize_PressRybicki(time_arr, sigma_arr):
     # SS from Zechmeister and Kurster eqn 14
     # CS from Zechmeister and Kurster eqn 15
     # D from Zechmeister and Kurster eqn 6
-    return (wgt_fn, delta, freq_arr, tau,
+    return (wgt_fn, delta, n_t, freq_arr, tau,
             cos_omega_tau, sin_omega_tau,
             cos_tau, sin_tau, cc, ss, cs, d)
 
@@ -214,6 +215,7 @@ def get_ls_PressRybicki(time_arr_in, f_arr_in, sigma_arr_in):
 
         (get_ls_PressRybicki.w,
          get_ls_PressRybicki.delta,
+         get_ls_PressRybicki.n_t,
          get_ls_PressRybicki.freq_arr,
          get_ls_PressRybicki.tau,
          get_ls_PressRybicki.cos_omega_tau,
@@ -228,7 +230,9 @@ def get_ls_PressRybicki(time_arr_in, f_arr_in, sigma_arr_in):
     y_bar = (f_arr*get_ls_PressRybicki.w).sum()
     yy = (get_ls_PressRybicki.w*np.power(f_arr-y_bar,2)).sum()
     y_fn = get_ls_PressRybicki.w*(f_arr-y_bar)
-    y_c_raw, y_s_raw, tk, hk = extirp_sums(time_arr, y_fn, get_ls_PressRybicki.delta)
+    y_c_raw, y_s_raw, tk, hk = extirp_sums(time_arr, y_fn,
+                                           get_ls_PressRybicki.delta,
+                                           get_ls_PressRybicki.n_t)
     del tk
     del hk
 
