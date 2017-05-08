@@ -50,7 +50,7 @@ def extirp_sums(tt_arr, ff_arr, delta, n_t):
     return (ft_re/delta, ft_im/delta, ttk, hk)
 
 
-def _initialize_PressRybicki(time_arr, sigma_arr):
+def _initialize_PressRybicki(time_arr, sigma_arr, delta):
     """
     Initialize arrays for the Press and Rybicki periodogram
     that only depend on t and sigma
@@ -81,7 +81,6 @@ def _initialize_PressRybicki(time_arr, sigma_arr):
     an array of D from Zechmeister and Kurster eqn 6
     """
 
-    delta = 0.002/(2.0*np.pi)
     n_t_init = time_arr.max()/delta
     n_t = 2
     while n_t < n_t_init:
@@ -152,7 +151,7 @@ def _initialize_PressRybicki(time_arr, sigma_arr):
             cos_omega_tau, sin_omega_tau,
             cos_tau, sin_tau, cc, ss, cs, d)
 
-def get_ls_PressRybicki(time_arr_in, f_arr_in, sigma_arr_in):
+def get_ls_PressRybicki(time_arr_in, f_arr_in, sigma_arr_in, delta):
     """
     Evaluate the generalized Lomb-Scargle periodogram for a
     ligth curve, as in
@@ -171,6 +170,8 @@ def get_ls_PressRybicki(time_arr_in, f_arr_in, sigma_arr_in):
 
     freq_arr_in is a numpy array of the angular frequencies at which to
     evaluate the periodogram
+
+    delta is a float; maximum frequency considered will be 1/delta
 
     Returns
     -------
@@ -200,6 +201,9 @@ def get_ls_PressRybicki(time_arr_in, f_arr_in, sigma_arr_in):
             if local_hasher.hexdigest() != get_ls_PressRybicki.sigma_hash.hexdigest():
                 get_ls_PressRybicki.initialized = False
 
+            if delta != get_ls_PressRybicki.delta:
+                get_ls_PressRybicki.initialized = False
+
     if (not hasattr(get_ls_PressRybicki, 'initialized') or
         not get_ls_PressRybicki.initialized):
 
@@ -225,7 +229,7 @@ def get_ls_PressRybicki(time_arr_in, f_arr_in, sigma_arr_in):
          get_ls_PressRybicki.cc,
          get_ls_PressRybicki.ss,
          get_ls_PressRybicki.cs,
-         get_ls_PressRybicki.d) = _initialize_PressRybicki(time_arr, sigma_arr)
+         get_ls_PressRybicki.d) = _initialize_PressRybicki(time_arr, sigma_arr, delta)
 
     y_bar = (f_arr*get_ls_PressRybicki.w).sum()
     yy = (get_ls_PressRybicki.w*np.power(f_arr-y_bar,2)).sum()
@@ -285,7 +289,7 @@ def _is_significant(aa, bb, cc, omega, tau,
         return True
     return False
 
-def get_clean_spectrum_PressRybicki(time_arr, f_arr, sigma_arr):
+def get_clean_spectrum_PressRybicki(time_arr, f_arr, sigma_arr, delta):
     """
     Clean a time series according to the algorithm presented in
     Roberts et al. 1987 (AJ 93, 968) (though this works in real
@@ -303,6 +307,8 @@ def get_clean_spectrum_PressRybicki(time_arr, f_arr, sigma_arr):
     f_arr is a numpy array of light curve flux/magnitude values
 
     sigma_arr is a numpy array of uncertainties on f_arr
+
+    delta is a float; maximum frequency considered will be 1/delta
 
     Returns
     -------
@@ -325,7 +331,7 @@ def get_clean_spectrum_PressRybicki(time_arr, f_arr, sigma_arr):
     residual_arr = copy.deepcopy(f_arr)
 
     (pspec, freq_arr,
-     tau, aa, bb, cc) = get_ls_PressRybicki(time_arr, residual_arr, sigma_arr)
+     tau, aa, bb, cc) = get_ls_PressRybicki(time_arr, residual_arr, sigma_arr, delta)
 
     aa_list = []
     bb_list = []
@@ -377,7 +383,7 @@ def get_clean_spectrum_PressRybicki(time_arr, f_arr, sigma_arr):
         residual_arr -= model
         if it<iteration:
             (pspec, freq_arr,
-             tau, aa, bb, cc) = get_ls_PressRybicki(time_arr, residual_arr, sigma_arr)
+             tau, aa, bb, cc) = get_ls_PressRybicki(time_arr, residual_arr, sigma_arr, delta)
 
     return (np.array(aa_list), np.array(bb_list),
             np.array(cc_list), np.array(omega_list),
