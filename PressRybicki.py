@@ -69,6 +69,7 @@ def _initialize_PressRybicki(time_arr, sigma_arr, delta):
     delta = the delta_t in used to construct the frequency array
     n_t = the number of steps in the frequency_array used for FFT
     freq_arr = the array of frequencies (not angular frequencies)
+    cut_off_freq = frequency at which Press and Rybicki approximation breaks down
     tau = the array of time offsets tau from Zechmeister and Kurster 2009 eqn (19)
     cos_omega_tau = an array of cos(omega*tau)
     sin_omega_tau = an array of sin(omega*tau)
@@ -95,6 +96,35 @@ def _initialize_PressRybicki(time_arr, sigma_arr, delta):
     c, s, tk, hk = extirp_sums(time_arr, wgt_fn, delta, n_t)
     del tk
     del hk
+
+    cos_test = np.dot(np.array([np.cos(2.0*np.pi*nu*time_arr)
+                                for nu in freq_arr]),
+                      wgt_fn)
+
+    threshold = 0.01
+    offending_dex = np.where(np.logical_or(np.logical_and(np.abs(cos_test)<0.001,
+                                                          np.abs(c-cos_test)>threshold),
+                                           np.abs(c/cos_test-1.0)>threshold))
+
+    worst_cos = np.min(offending_dex[0])
+    del cos_test
+
+    sin_test = np.dot(np.array([np.sin(2.0*np.pi*nu*time_arr)
+                                for nu in freq_arr]),
+                      wgt_fn)
+
+
+    offending_dex = np.where(np.logical_or(np.logical_and(np.abs(sin_test)<0.001,
+                                                          np.abs(s-sin_test)>threshold),
+                                           np.abs(s/sin_test-1.0)>threshold))
+
+    worst_sin = np.min(offending_dex[0])
+    del sin_test
+
+    if worst_cos<worst_sin:
+        cut_off_freq = freq_arr[worst_cos]
+    else:
+        cut_off_freq = freq_arr[worst_sin]
 
     c2_raw, s2_raw, tk, hk = extirp_sums(2.0*time_arr, wgt_fn, delta, n_t*2)
     del tk
@@ -137,6 +167,7 @@ def _initialize_PressRybicki(time_arr, sigma_arr, delta):
     # delta
     # n_t
     # freq_arr
+    # cut_off_freq
     # tau
     # cos(omega*tau)
     # sin(omega*tau)
@@ -147,7 +178,7 @@ def _initialize_PressRybicki(time_arr, sigma_arr, delta):
     # SS from Zechmeister and Kurster eqn 14
     # CS from Zechmeister and Kurster eqn 15
     # D from Zechmeister and Kurster eqn 6
-    return (wgt_fn, delta, n_t, freq_arr, tau,
+    return (wgt_fn, delta, n_t, freq_arr, cut_off_freq, tau,
             cos_omega_tau, sin_omega_tau,
             cos_tau, sin_tau, cc, ss, cs, d)
 
@@ -221,6 +252,7 @@ def get_ls_PressRybicki(time_arr_in, f_arr_in, sigma_arr_in, delta):
          get_ls_PressRybicki.delta,
          get_ls_PressRybicki.n_t,
          get_ls_PressRybicki.freq_arr,
+         get_ls_PressRybicki.cut_off_freq,
          get_ls_PressRybicki.tau,
          get_ls_PressRybicki.cos_omega_tau,
          get_ls_PressRybicki.sin_omega_tau,
@@ -341,7 +373,7 @@ def get_clean_spectrum_PressRybicki(time_arr, f_arr, sigma_arr, delta):
 
     for it in range(1, iteration+1):
         valid = np.where(np.logical_and(np.logical_not(np.isnan(pspec)),
-                                        freq_arr<1000.0))
+                                        freq_arr<get_ls_PressRybicki.cut_off_freq))
         pspec = pspec[valid]
         aa = aa[valid]
         bb = bb[valid]
@@ -384,6 +416,8 @@ def get_clean_spectrum_PressRybicki(time_arr, f_arr, sigma_arr, delta):
         if it<iteration:
             (pspec, freq_arr,
              tau, aa, bb, cc) = get_ls_PressRybicki(time_arr, residual_arr, sigma_arr, delta)
+
+    print'cut off is ',get_ls_PressRybicki.cut_off_freq*2.0*np.pi
 
     return (np.array(aa_list), np.array(bb_list),
             np.array(cc_list), np.array(omega_list),
