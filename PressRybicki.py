@@ -258,23 +258,30 @@ def _is_significant(aa, bb, cc, omega, tau,
                     aa_test, bb_test, cc_test, omega_test, tau_test,
                     time_arr, f_arr, sig_arr):
 
-    model = np.zeros(len(time_arr))
-    for a,b,c,o,t in zip(aa, bb, cc, omega, tau):
-        model += c
-        model += a*np.cos(o*(time_arr-t))
-        model += b*np.sin(o*(time_arr-t))
+    if (not hasattr(_is_significant, 'model') or
+        _is_significant.model is None):
 
-    chi_0 = np.power((f_arr-model)/sig_arr,2).sum()
-    bic_0 = 3.0*len(aa)*np.log(len(time_arr)) + chi_0
+        model = np.zeros(len(time_arr))
+        for a,b,c,o,t in zip(aa, bb, cc, omega, tau):
+            model += c
+            model += a*np.cos(o*(time_arr-t))
+            model += b*np.sin(o*(time_arr-t))
 
-    model += cc_test
-    model += aa_test*np.cos(omega_test*(time_arr-time_arr.min()-tau_test))
-    model += bb_test*np.sin(omega_test*(time_arr-time_arr.min()-tau_test))
+        chi_0 = np.power((f_arr-model)/sig_arr,2).sum()
+        _is_significant.bic_0 = bic_0 = 3.0*len(aa)*np.log(len(time_arr)) + chi_0
+        _is_significant.model = model
 
-    chi_1 = np.power((f_arr-model)/sig_arr,2).sum()
+    _is_significant.model += cc_test
+    _is_significant.model += aa_test*np.cos(omega_test*(time_arr-time_arr.min()-tau_test))
+    _is_significant.model += bb_test*np.sin(omega_test*(time_arr-time_arr.min()-tau_test))
+
+    chi_1 = np.power((f_arr-_is_significant.model)/sig_arr,2).sum()
     bic_1 = 3.0*(len(aa)+1)*np.log(len(time_arr)) + chi_1
 
-    if bic_1 < bic_0:
+    print bic_1,_is_significant.bic_0
+
+    if bic_1 < _is_significant.bic_0:
+        _is_significant.bic_0 = bic_1
         return True
     return False
 
@@ -309,6 +316,8 @@ def get_clean_spectrum_PressRybicki(time_arr, f_arr, sigma_arr):
 
     tau a numpy array of tau_i parameters from the model
     """
+
+    _is_significant.model = None
 
     iteration = 10
     gain = 1.0
