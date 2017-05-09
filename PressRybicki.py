@@ -122,9 +122,9 @@ def _initialize_PressRybicki(time_arr, sigma_arr, delta):
     del sin_test
 
     if worst_cos<worst_sin:
-        cut_off_freq = freq_arr[worst_cos]
+        cut_off_freq = 0.5*freq_arr[worst_cos]
     else:
-        cut_off_freq = freq_arr[worst_sin]
+        cut_off_freq = 0.5*freq_arr[worst_sin]
 
     c2_raw, s2_raw, tk, hk = extirp_sums(2.0*time_arr, wgt_fn, delta, n_t*2)
     del tk
