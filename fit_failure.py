@@ -56,3 +56,6 @@ s_t = s_t[valid]
 
 small = np.where(np.abs(sin_truth)<0.001)
 print np.max(np.abs(s_t[small]-sin_truth[small]))
+
+print '\n'
+print 'mm ',mm,' bb ',bb
