@@ -223,6 +223,7 @@ def get_ls_PressRybicki(time_arr_in, f_arr_in, sigma_arr_in, delta):
     f_arr = f_arr_in[sorted_dex]
     sigma_arr = sigma_arr_in[sorted_dex]
 
+    """
     if hasattr(get_ls_PressRybicki, 'initialized'):
         if get_ls_PressRybicki.initialized:
             local_hasher = hashlib.sha1()
@@ -237,6 +238,7 @@ def get_ls_PressRybicki(time_arr_in, f_arr_in, sigma_arr_in, delta):
 
             if delta != get_ls_PressRybicki.delta:
                 get_ls_PressRybicki.initialized = False
+    """
 
     if (not hasattr(get_ls_PressRybicki, 'initialized') or
         not get_ls_PressRybicki.initialized):
@@ -245,11 +247,11 @@ def get_ls_PressRybicki(time_arr_in, f_arr_in, sigma_arr_in, delta):
 
         get_ls_PressRybicki.initialized = True
 
-        get_ls_PressRybicki.time_hash = hashlib.sha1()
-        get_ls_PressRybicki.time_hash.update(time_arr_in)
+        #get_ls_PressRybicki.time_hash = hashlib.sha1()
+        #get_ls_PressRybicki.time_hash.update(time_arr_in)
 
-        get_ls_PressRybicki.sigma_hash = hashlib.sha1()
-        get_ls_PressRybicki.sigma_hash.update(sigma_arr_in)
+        #get_ls_PressRybicki.sigma_hash = hashlib.sha1()
+        #get_ls_PressRybicki.sigma_hash.update(sigma_arr_in)
 
         (get_ls_PressRybicki.w,
          get_ls_PressRybicki.delta,
