@@ -97,6 +97,7 @@ def _initialize_PressRybicki(time_arr, sigma_arr, delta):
     del tk
     del hk
 
+    print 'testing validity of PR trick'
     cos_test = np.dot(np.array([np.cos(2.0*np.pi*nu*time_arr)
                                 for nu in freq_arr]),
                       wgt_fn)
@@ -125,6 +126,8 @@ def _initialize_PressRybicki(time_arr, sigma_arr, delta):
         cut_off_freq = 0.5*freq_arr[worst_cos]
     else:
         cut_off_freq = 0.5*freq_arr[worst_sin]
+
+    print 'done assessing validity'
 
     c2_raw, s2_raw, tk, hk = extirp_sums(2.0*time_arr, wgt_fn, delta, n_t*2)
     del tk
