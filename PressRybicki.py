@@ -4,16 +4,6 @@ import copy
 from fft import fft_real
 
 
-def _do_extirpolation(hk, ff, tt, ttk, dexes):
-
-    for ix in range(len(dexes)):
-        other_dexes = dexes[np.where(dexes!=dexes[ix])]
-        term = np.product(tt-ttk[other_dexes])
-        term /= np.product(ttk[dexes[ix]]-ttk[other_dexes])
-        term *= ff
-        hk[dexes[ix]] += term
-
-
 def extirp_sums(tt_arr, ff_arr, delta, n_t):
     """
     Take an arbitrary function sampled irregularly and return the
