@@ -46,9 +46,18 @@ def extirp_sums(tt_arr, ff_arr, delta, n_t):
         n_pos = len(positive_dexes[0])
         dex_arr[positive_dexes[0],:] -= 1
 
-    for ij, (tt, ff) in enumerate(zip(tt_arr, ff_arr)):
-
-        _do_extirpolation(hk, ff, tt, ttk, dex_arr[ij])
+    col_range = np.arange(dex_arr.shape[1], dtype=int)
+    for i_col in range(dex_arr.shape[1]):
+        meta_col_dexes = np.where(col_range != i_col)
+        col_dexes = dex_arr[:,meta_col_dexes[0]]
+        other_times = np.array([ttk[cc] for cc in col_dexes]).transpose()
+        num = np.product((tt_arr - other_times), axis=0)
+        denom = np.product((ttk[dex_arr[:,i_col]] - other_times), axis=0)
+        assert len(num) == len(tt_arr)
+        term = ff_arr*num/denom
+        target_dexes = dex_arr[:,i_col]
+        for tdx, tt in zip(target_dexes, term):
+            hk[tdx] += tt
 
     print 'max hk ',np.abs(hk).max(),ff_arr.max()
     ft_re, ft_im = fft_real(ttk, hk)
