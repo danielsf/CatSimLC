@@ -66,8 +66,6 @@ def fft_real(time_arr, f_arr):
     rev_dexes = _bit_reverse_vector(forward_dexes, n_bits)
     fft_re[rev_dexes] = f_arr
 
-    print 'prep took ',time.time()-t_start
-    t_start = time.time()
     n_pts = 1
     n_strides = len(f_arr)
     tot_pts = len(time_arr)
@@ -80,6 +78,9 @@ def fft_real(time_arr, f_arr):
 
         fft_real.cos_cache = np.cos(2.0*np.pi*cache_dexes/tot_pts)
         fft_real.sin_cache = np.sin(2.0*np.pi*cache_dexes/tot_pts)
+
+    print 'prep took ',time.time()-t_start
+    t_start = time.time()
 
     for i_bit in range(n_bits):
         n_pts *= 2
