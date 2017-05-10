@@ -66,29 +66,44 @@ def fft_real(time_arr, f_arr):
     rev_dexes = _bit_reverse_vector(forward_dexes, n_bits)
     fft_re[rev_dexes] = f_arr
 
-    n_pts = 1
-    n_strides = len(f_arr)
     tot_pts = len(time_arr)
-    cache_dexes = np.arange(tot_pts//2)
+    cache_calc_dexes = np.arange(tot_pts//2)
 
     if (not hasattr(fft_real, 'cos_cache') or
-        not np.array_equal(cache_dexes, fft_real.cache_dexes)):
+        not np.array_equal(cache_calc_dexes, fft_real.cache_calc_dexes) or
+        n_bits != fft_real.n_bits):
 
-        fft_real.cache_dexes = copy.deepcopy(cache_dexes)
+        print '\n\ninitializing fft_real\n\n'
 
-        fft_real.cos_cache = np.cos(2.0*np.pi*cache_dexes/tot_pts)
-        fft_real.sin_cache = np.sin(2.0*np.pi*cache_dexes/tot_pts)
+        n_pts = 1
+        n_strides = len(f_arr)
+
+        fft_real.cache_calc_dexes = copy.deepcopy(cache_calc_dexes)
+        fft_real.n_bits = n_bits
+
+        fft_real.cos_cache = np.cos(2.0*np.pi*cache_calc_dexes/tot_pts)
+        fft_real.sin_cache = np.sin(2.0*np.pi*cache_calc_dexes/tot_pts)
+
+        fft_real.even_dexes = []
+        fft_real.odd_dexes = []
+        fft_real.cache_dexes = []
+        for i_bit in range(n_bits):
+            n_pts *= 2
+            n_strides = n_strides//2
+            base_dexes = np.arange(0, n_strides*n_pts, n_pts)
+            even_dexes = np.array([base_dexes + k for k in range(n_pts//2)]).flatten()
+            fft_real.even_dexes.append(even_dexes)
+            fft_real.odd_dexes.append(even_dexes + n_pts//2)
+            fft_real.cache_dexes.append(np.array([[k*tot_pts//n_pts]*len(base_dexes)
+                                                  for k in range(n_pts//2)]).flatten())
 
     print 'prep took ',time.time()-t_start
     t_start = time.time()
 
     for i_bit in range(n_bits):
-        n_pts *= 2
-        n_strides = n_strides//2
-        base_dexes = np.arange(0, n_strides*n_pts, n_pts)
-        even_dexes = np.array([base_dexes + k for k in range(n_pts//2)]).flatten()
-        odd_dexes = even_dexes + n_pts//2
-        cache_dexes = np.array([[k*tot_pts//n_pts]*len(base_dexes) for k in range(n_pts//2)]).flatten()
+        cache_dexes = fft_real.cache_dexes[i_bit]
+        odd_dexes = fft_real.odd_dexes[i_bit]
+        even_dexes = fft_real.even_dexes[i_bit]
         w_re = fft_real.cos_cache[cache_dexes]
         w_im = fft_real.sin_cache[cache_dexes]
         temp_re_even = fft_re[even_dexes]
