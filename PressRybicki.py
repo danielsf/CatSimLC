@@ -38,9 +38,11 @@ def extirp_sums(tt_arr, ff_arr, delta, n_t):
         dex_arr[positive_dexes[0],:] -= 1
 
     col_range = np.arange(dex_arr.shape[1], dtype=int)
+    col_range_matrix = np.array([np.where(col_range != i_col)[0]
+                                 for i_col in range(n_extirp_terms)])
     for i_col in range(dex_arr.shape[1]):
-        meta_col_dexes = np.where(col_range != i_col)
-        col_dexes = dex_arr[:,meta_col_dexes[0]]
+        meta_col_dexes = col_range_matrix[i_col]
+        col_dexes = dex_arr[:,meta_col_dexes]
         other_times = np.array([ttk[cc] for cc in col_dexes]).transpose()
         num = np.product((tt_arr - other_times), axis=0)
         denom = np.product((ttk[dex_arr[:,i_col]] - other_times), axis=0)
