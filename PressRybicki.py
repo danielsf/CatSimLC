@@ -58,10 +58,9 @@ def extirp_sums(tt_arr, ff_arr, delta, n_t):
         col_dexes = dex_arr[:,col_range_matrix[i_col]]
         target_dexes = dex_arr[:,i_col]
         other_times = np.array([ttk[cc] for cc in col_dexes]).transpose()
-        num = np.product((tt_arr - other_times), axis=0)
-        denom = np.product((ttk[target_dexes] - other_times), axis=0)
-        assert len(num) == len(tt_arr)
-        term = ff_arr*num/denom
+        coeff = np.product((tt_arr - other_times)/(ttk[target_dexes] - other_times), axis=0)
+        assert len(coeff) == len(tt_arr)
+        term = ff_arr*coeff
         unq_targets, unq_dexes, ct = np.unique(target_dexes, return_counts=True,
                                                return_index=True)
         duplicates = np.where(ct>1)
