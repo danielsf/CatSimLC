@@ -39,7 +39,7 @@ def extirp_sums(tt_arr, ff_arr, delta, n_t):
     if (not hasattr(extirp_sums, '_ttk_cache') or
         not np.array_equal(ttk, extirp_sums._ttk_cache)):
 
-        extirp_sums._ttk_cache = ttk
+        extirp_sums._ttk_cache = copy.deepcopy(ttk)
 
         time_dexes = np.round((tt_arr-ttk.min())/delta).astype(int)
         dex_arr = np.array([tj + half_dex_range for tj in time_dexes])
