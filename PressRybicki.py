@@ -31,6 +31,8 @@ def extirp_sums(tt_arr, ff_arr, delta, n_t):
     dexes = np.zeros(25, dtype=int)
     dex_range = np.arange(len(dexes),dtype=int)
     half_dexes = len(dexes)//2
+    half_dex_range = np.arange(-half_dexes, half_dexes+1, 1, dtype=int)
+    assert len(half_dex_range) == 25
     for ij, (tt, ff) in enumerate(zip(tt_arr, ff_arr)):
         tj=time_dexes[ij]
         if tj<=half_dexes+1:
@@ -39,8 +41,7 @@ def extirp_sums(tt_arr, ff_arr, delta, n_t):
         elif tj>=len(ttk)-(half_dexes+1):
             dexes = len(ttk)-dex_range-1
         else:
-            for ix in range(len(dexes)):
-                dexes[ix] = tj - half_dexes + ix
+            dexes = tj + half_dex_range
 
         _do_extirpation(hk, ff, tt, ttk, dexes)
 
