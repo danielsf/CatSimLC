@@ -71,13 +71,15 @@ def fft_real(time_arr, f_arr):
 
     if (not hasattr(fft_real, 'cos_cache') or
         not np.array_equal(cache_calc_dexes, fft_real.cache_calc_dexes) or
-        n_bits != fft_real.n_bits):
+        n_bits != fft_real.n_bits or
+        tot_pts != fft_real.tot_pts):
 
         n_pts = 1
         n_strides = len(f_arr)
 
         fft_real.cache_calc_dexes = copy.deepcopy(cache_calc_dexes)
         fft_real.n_bits = n_bits
+        fft_real.tot_pts = tot_pts
 
         fft_real.cos_cache = np.cos(2.0*np.pi*cache_calc_dexes/tot_pts)
         fft_real.sin_cache = np.sin(2.0*np.pi*cache_calc_dexes/tot_pts)
