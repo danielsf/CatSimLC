@@ -35,7 +35,6 @@ def extirp_sums(tt_arr, ff_arr, delta, n_t):
         extirp_sums._ttk_cache = copy.deepcopy(ttk)
         extirp_sums._tt_cache = copy.deepcopy(tt_arr)
 
-
         n_extirp_terms = 25
 
         dexes = np.zeros(n_extirp_terms, dtype=int)
