@@ -4,7 +4,7 @@ import copy
 from fft import fft_real
 
 
-def _do_extirpation(hk, ff, tt, ttk, dexes):
+def _do_extirpolation(hk, ff, tt, ttk, dexes):
 
     for ix in range(len(dexes)):
         other_dexes = dexes[np.where(dexes!=dexes[ix])]
@@ -43,7 +43,7 @@ def extirp_sums(tt_arr, ff_arr, delta, n_t):
         else:
             dexes = tj + half_dex_range
 
-        _do_extirpation(hk, ff, tt, ttk, dexes)
+        _do_extirpolation(hk, ff, tt, ttk, dexes)
 
     print 'max hk ',np.abs(hk).max(),ff_arr.max()
     ft_re, ft_im = fft_real(ttk, hk)
