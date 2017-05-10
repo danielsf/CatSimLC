@@ -44,7 +44,7 @@ freq_arr = np.arange(0.001,4000.0,0.1)
 t_start = time.time()
 (pp_test, freq_arr, tau_test,
 aa_test, bb_test, cc_test) = get_ls_PressRybicki(time_arr, f_noisy_arr,
-                                                 sigma_arr)
+                                                 sigma_arr, 0.01)
 
 t_PR = time.time()-t_start
 print 'doing brute'
