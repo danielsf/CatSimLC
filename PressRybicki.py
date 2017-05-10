@@ -43,12 +43,12 @@ def extirp_sums(tt_arr, ff_arr, delta, n_t):
     for i_col in range(dex_arr.shape[1]):
         meta_col_dexes = col_range_matrix[i_col]
         col_dexes = dex_arr[:,meta_col_dexes]
+        target_dexes = dex_arr[:,i_col]
         other_times = np.array([ttk[cc] for cc in col_dexes]).transpose()
         num = np.product((tt_arr - other_times), axis=0)
-        denom = np.product((ttk[dex_arr[:,i_col]] - other_times), axis=0)
+        denom = np.product((ttk[target_dexes] - other_times), axis=0)
         assert len(num) == len(tt_arr)
         term = ff_arr*num/denom
-        target_dexes = dex_arr[:,i_col]
         unq_targets, unq_dexes, ct = np.unique(target_dexes, return_counts=True,
                                                return_index=True)
         duplicates = np.where(ct>1)
