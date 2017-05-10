@@ -140,15 +140,6 @@ def _initialize_PressRybicki(time_arr, sigma_arr, delta):
     w = (1.0/np.power(sigma_arr, 2)).sum()
     wgt_fn = 1.0/(w*np.power(sigma_arr, 2))
 
-    c, s, tk, hk = extirp_sums(time_arr, wgt_fn, delta, n_t)
-    del tk
-    del hk
-
-    print 'testing validity of PR trick'
-    cut_off_freq = np.exp(-1.3093286772)*np.power(delta, -0.97075831145)
-    cut_off_freq *=0.5
-    print 'done assessing validity'
-
     c2_raw, s2_raw, tk, hk = extirp_sums(2.0*time_arr, wgt_fn, delta, n_t*2)
     del tk
     del hk
@@ -157,6 +148,15 @@ def _initialize_PressRybicki(time_arr, sigma_arr, delta):
     del c2_raw
     s2 = s2_raw[dexes]
     del s2_raw
+
+    c, s, tk, hk = extirp_sums(time_arr, wgt_fn, delta, n_t)
+    del tk
+    del hk
+
+    print 'testing validity of PR trick'
+    cut_off_freq = np.exp(-1.3093286772)*np.power(delta, -0.97075831145)
+    cut_off_freq *=0.5
+    print 'done assessing validity'
 
     omega_tau = np.arctan2(s2-2*c*s, c2-c*c+s*s)
     tau = omega_tau/(4.0*np.pi*freq_arr)
