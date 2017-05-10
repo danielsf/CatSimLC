@@ -2,7 +2,11 @@ import numpy as np
 import hashlib
 import copy
 from fft import fft_real
+import time
 
+_t_prep =0.0
+_t_loop = 0.0
+_t_fft = 0.0
 
 def extirp_sums(tt_arr, ff_arr, delta, n_t):
     """
@@ -11,6 +15,12 @@ def extirp_sums(tt_arr, ff_arr, delta, n_t):
     using the FFT code in this module.
     """
 
+    global _t_prep
+    global _t_loop
+    global _t_fft
+
+
+    t_start = time.time()
     ttk = np.arange(0.0,
                     n_t*delta,
                     delta)
@@ -40,6 +50,10 @@ def extirp_sums(tt_arr, ff_arr, delta, n_t):
     col_range = np.arange(dex_arr.shape[1], dtype=int)
     col_range_matrix = np.array([np.where(col_range != i_col)[0]
                                  for i_col in range(n_extirp_terms)])
+
+    _t_prep += time.time() - t_start
+
+    t_start = time.time()
     for i_col in range(dex_arr.shape[1]):
         meta_col_dexes = col_range_matrix[i_col]
         col_dexes = dex_arr[:,meta_col_dexes]
@@ -57,9 +71,15 @@ def extirp_sums(tt_arr, ff_arr, delta, n_t):
             term[ix] = term[sum_dexes].sum()
 
         hk[unq_targets] += term[unq_dexes]
+    _t_loop += time.time()-t_start
 
     print 'max hk ',np.abs(hk).max(),ff_arr.max()
+    t_start = time.time()
     ft_re, ft_im = fft_real(ttk, hk)
+    _t_fft += time.time()-t_start
+
+    print 'in extirp: t_prep %.3e t_loop %.3e t_fft %.3e' % (_t_prep, _t_loop, _t_fft)
+
 
     return (ft_re/delta, ft_im/delta, ttk, hk)
 
