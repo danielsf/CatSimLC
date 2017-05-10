@@ -28,20 +28,21 @@ def extirp_sums(tt_arr, ff_arr, delta, n_t):
 
     print('actual len(ttk) %d' % len(ttk))
 
-    n_extirp_terms = 25
-
-    dexes = np.zeros(n_extirp_terms, dtype=int)
-    dex_range = np.arange(len(dexes),dtype=int)
-    half_dexes = len(dexes)//2
-    half_dex_range = np.arange(-half_dexes, half_dexes+1, 1, dtype=int)
-    assert len(half_dex_range) == n_extirp_terms
-
     if (not hasattr(extirp_sums, '_ttk_cache') or
         not np.array_equal(ttk, extirp_sums._ttk_cache) or
         not np.array_equal(tt_arr, extirp_sums._tt_cache)):
 
         extirp_sums._ttk_cache = copy.deepcopy(ttk)
         extirp_sums._tt_cache = copy.deepcopy(tt_arr)
+
+
+        n_extirp_terms = 25
+
+        dexes = np.zeros(n_extirp_terms, dtype=int)
+        dex_range = np.arange(len(dexes),dtype=int)
+        half_dexes = len(dexes)//2
+        half_dex_range = np.arange(-half_dexes, half_dexes+1, 1, dtype=int)
+        assert len(half_dex_range) == n_extirp_terms
 
         time_dexes = np.round((tt_arr-ttk.min())/delta).astype(int)
         dex_arr = np.array([tj + half_dex_range for tj in time_dexes])
