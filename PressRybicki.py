@@ -335,7 +335,7 @@ def get_clean_spectrum_PressRybicki(time_arr, f_arr, sigma_arr, delta):
 
     _is_significant.model = None
 
-    iteration = 30
+    iteration = 3
     gain = 1.0
 
     residual_arr = copy.deepcopy(f_arr)
