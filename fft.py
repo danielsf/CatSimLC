@@ -73,8 +73,6 @@ def fft_real(time_arr, f_arr):
         not np.array_equal(cache_calc_dexes, fft_real.cache_calc_dexes) or
         n_bits != fft_real.n_bits):
 
-        print '\n\ninitializing fft_real\n\n'
-
         n_pts = 1
         n_strides = len(f_arr)
 
