@@ -33,17 +33,22 @@ def extirp_sums(tt_arr, ff_arr, delta, n_t):
     half_dexes = len(dexes)//2
     half_dex_range = np.arange(-half_dexes, half_dexes+1, 1, dtype=int)
     assert len(half_dex_range) == 25
-    for ij, (tt, ff) in enumerate(zip(tt_arr, ff_arr)):
-        tj=time_dexes[ij]
-        if tj<=half_dexes+1:
-            for ix in range(len(dexes)):
-                dexes[ix] = ix
-        elif tj>=len(ttk)-(half_dexes+1):
-            dexes = len(ttk)-dex_range-1
-        else:
-            dexes = tj + half_dex_range
 
-        _do_extirpolation(hk, ff, tt, ttk, dexes)
+    dex_arr = np.array([tj + half_dex_range for tj in time_dexes])
+    n_neg = 1
+    while n_neg>0:
+        negative_dexes = np.where(dex_arr<0)
+        n_neg = len(negative_dexes[0])
+        dex_arr[negative_dexes[0],:] += 1
+    n_pos = 1
+    while n_pos>0:
+        positive_dexes = np.where(dex_arr>=len(ttk))
+        n_pos = len(positive_dexes[0])
+        dex_arr[positive_dexes[0],:] -= 1
+
+    for ij, (tt, ff) in enumerate(zip(tt_arr, ff_arr)):
+
+        _do_extirpolation(hk, ff, tt, ttk, dex_arr[ij])
 
     print 'max hk ',np.abs(hk).max(),ff_arr.max()
     ft_re, ft_im = fft_real(ttk, hk)
