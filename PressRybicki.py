@@ -55,8 +55,7 @@ def extirp_sums(tt_arr, ff_arr, delta, n_t):
 
     t_start = time.time()
     for i_col in range(dex_arr.shape[1]):
-        meta_col_dexes = col_range_matrix[i_col]
-        col_dexes = dex_arr[:,meta_col_dexes]
+        col_dexes = dex_arr[:,col_range_matrix[i_col]]
         target_dexes = dex_arr[:,i_col]
         other_times = np.array([ttk[cc] for cc in col_dexes]).transpose()
         num = np.product((tt_arr - other_times), axis=0)
