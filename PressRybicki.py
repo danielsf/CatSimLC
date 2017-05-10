@@ -46,8 +46,14 @@ def extirp_sums(tt_arr, ff_arr, delta, n_t):
         assert len(num) == len(tt_arr)
         term = ff_arr*num/denom
         target_dexes = dex_arr[:,i_col]
-        for tdx, tt in zip(target_dexes, term):
-            hk[tdx] += tt
+        unq_targets, unq_dexes, ct = np.unique(target_dexes, return_counts=True,
+                                               return_index=True)
+        duplicates = np.where(ct>1)
+        for dd, ix in zip(unq_targets[duplicates], unq_dexes[duplicates]):
+            sum_dexes = np.where(target_dexes==dd)
+            term[ix] = term[sum_dexes].sum()
+
+        hk[unq_targets] += term[unq_dexes]
 
     print 'max hk ',np.abs(hk).max(),ff_arr.max()
     ft_re, ft_im = fft_real(ttk, hk)
