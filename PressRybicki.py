@@ -37,9 +37,11 @@ def extirp_sums(tt_arr, ff_arr, delta, n_t):
     assert len(half_dex_range) == n_extirp_terms
 
     if (not hasattr(extirp_sums, '_ttk_cache') or
-        not np.array_equal(ttk, extirp_sums._ttk_cache)):
+        not np.array_equal(ttk, extirp_sums._ttk_cache) or
+        not np.array_equal(tt_arr, extirp_sums._tt_cache)):
 
         extirp_sums._ttk_cache = copy.deepcopy(ttk)
+        extirp_sums._tt_cache = copy.deepcopy(tt_arr)
 
         time_dexes = np.round((tt_arr-ttk.min())/delta).astype(int)
         dex_arr = np.array([tj + half_dex_range for tj in time_dexes])
@@ -61,21 +63,28 @@ def extirp_sums(tt_arr, ff_arr, delta, n_t):
         col_range_matrix = np.array([np.where(col_range != i_col)[0]
                                      for i_col in range(n_extirp_terms)])
 
-        extirp_sums.other_times_list = []
+        other_times_list = []
         for i_col in range(dex_arr.shape[1]):
             col_dexes = dex_arr[:,col_range_matrix[i_col]]
-            extirp_sums.other_times_list.append(np.array([ttk[cc] for cc in col_dexes]).transpose())
+            other_times_list.append(np.array([ttk[cc] for cc in col_dexes]).transpose())
+
+
+        extirp_sums.coeff_cache = []
+
+        for i_col in range(extirp_sums.dex_arr.shape[1]):
+            target_dexes = extirp_sums.dex_arr[:,i_col]
+            other_times = other_times_list[i_col]
+            num = np.product((tt_arr - other_times), axis=0)
+            denom = np.product((ttk[target_dexes] - other_times), axis=0)
+            extirp_sums.coeff_cache.append(num/denom)
 
     _t_prep += time.time() - t_start
 
     t_start = time.time()
+
     for i_col in range(extirp_sums.dex_arr.shape[1]):
         target_dexes = extirp_sums.dex_arr[:,i_col]
-        other_times = extirp_sums.other_times_list[i_col]
-        num = np.product((tt_arr - other_times), axis=0)
-        denom = np.product((ttk[target_dexes] - other_times), axis=0)
-        assert len(num) == len(tt_arr)
-        term = ff_arr*num/denom
+        term = ff_arr*extirp_sums.coeff_cache[i_col]
         unq_targets, unq_dexes, ct = np.unique(target_dexes, return_counts=True,
                                                return_index=True)
         duplicates = np.where(ct>1)
