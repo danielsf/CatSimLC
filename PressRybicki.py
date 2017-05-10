@@ -24,37 +24,42 @@ def extirp_sums(tt_arr, ff_arr, delta, n_t):
     ttk = np.arange(0.0,
                     n_t*delta,
                     delta)
+    hk = np.zeros(len(ttk))
 
     print('actual len(ttk) %d' % len(ttk))
-    time_dexes = np.round((tt_arr-ttk.min())/delta).astype(int)
-    hk = np.zeros(len(ttk))
+
     n_extirp_terms = 25
+
     dexes = np.zeros(n_extirp_terms, dtype=int)
     dex_range = np.arange(len(dexes),dtype=int)
     half_dexes = len(dexes)//2
     half_dex_range = np.arange(-half_dexes, half_dexes+1, 1, dtype=int)
     assert len(half_dex_range) == n_extirp_terms
 
-    dex_arr = np.array([tj + half_dex_range for tj in time_dexes])
-    n_neg = 1
-    while n_neg>0:
-        negative_dexes = np.where(dex_arr<0)
-        n_neg = len(negative_dexes[0])
-        dex_arr[negative_dexes[0],:] += 1
-    n_pos = 1
-    while n_pos>0:
-        positive_dexes = np.where(dex_arr>=len(ttk))
-        n_pos = len(positive_dexes[0])
-        dex_arr[positive_dexes[0],:] -= 1
-
-    col_range = np.arange(dex_arr.shape[1], dtype=int)
-    col_range_matrix = np.array([np.where(col_range != i_col)[0]
-                                 for i_col in range(n_extirp_terms)])
-
-    if (not hasattr(extirp_sums, 'other_times_list') or
+    if (not hasattr(extirp_sums, '_ttk_cache') or
         not np.array_equal(ttk, extirp_sums._ttk_cache)):
 
         extirp_sums._ttk_cache = ttk
+
+        time_dexes = np.round((tt_arr-ttk.min())/delta).astype(int)
+        dex_arr = np.array([tj + half_dex_range for tj in time_dexes])
+
+        n_neg = 1
+        while n_neg>0:
+            negative_dexes = np.where(dex_arr<0)
+            n_neg = len(negative_dexes[0])
+            dex_arr[negative_dexes[0],:] += 1
+        n_pos = 1
+        while n_pos>0:
+            positive_dexes = np.where(dex_arr>=len(ttk))
+            n_pos = len(positive_dexes[0])
+            dex_arr[positive_dexes[0],:] -= 1
+
+        extirp_sums.dex_arr = dex_arr
+
+        col_range = np.arange(dex_arr.shape[1], dtype=int)
+        col_range_matrix = np.array([np.where(col_range != i_col)[0]
+                                     for i_col in range(n_extirp_terms)])
 
         extirp_sums.other_times_list = []
         for i_col in range(dex_arr.shape[1]):
@@ -64,8 +69,8 @@ def extirp_sums(tt_arr, ff_arr, delta, n_t):
     _t_prep += time.time() - t_start
 
     t_start = time.time()
-    for i_col in range(dex_arr.shape[1]):
-        target_dexes = dex_arr[:,i_col]
+    for i_col in range(extirp_sums.dex_arr.shape[1]):
+        target_dexes = extirp_sums.dex_arr[:,i_col]
         other_times = extirp_sums.other_times_list[i_col]
         num = np.product((tt_arr - other_times), axis=0)
         denom = np.product((ttk[target_dexes] - other_times), axis=0)
