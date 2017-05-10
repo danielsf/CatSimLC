@@ -72,8 +72,15 @@ def fft_real(time_arr, f_arr):
     n_strides = len(f_arr)
     tot_pts = len(time_arr)
     cache_dexes = np.arange(tot_pts//2)
-    cos_cache = np.cos(2.0*np.pi*cache_dexes/tot_pts)
-    sin_cache = np.sin(2.0*np.pi*cache_dexes/tot_pts)
+
+    if (not hasattr(fft_real, 'cos_cache') or
+        not np.array_equal(cache_dexes, fft_real.cache_dexes)):
+
+        fft_real.cache_dexes = copy.deepcopy(cache_dexes)
+
+        fft_real.cos_cache = np.cos(2.0*np.pi*cache_dexes/tot_pts)
+        fft_real.sin_cache = np.sin(2.0*np.pi*cache_dexes/tot_pts)
+
     for i_bit in range(n_bits):
         n_pts *= 2
         n_strides = n_strides//2
@@ -81,8 +88,8 @@ def fft_real(time_arr, f_arr):
         even_dexes = np.array([base_dexes + k for k in range(n_pts//2)]).flatten()
         odd_dexes = even_dexes + n_pts//2
         cache_dexes = np.array([[k*tot_pts//n_pts]*len(base_dexes) for k in range(n_pts//2)]).flatten()
-        w_re = cos_cache[cache_dexes]
-        w_im = sin_cache[cache_dexes]
+        w_re = fft_real.cos_cache[cache_dexes]
+        w_im = fft_real.sin_cache[cache_dexes]
         temp_re_even = fft_re[even_dexes]
         temp_im_even = fft_im[even_dexes]
         temp_re_odd = fft_re[odd_dexes]*w_re - fft_im[odd_dexes]*w_im
