@@ -355,7 +355,8 @@ def _is_significant(aa, bb, cc, omega, tau,
         return True
     return False
 
-def get_clean_spectrum_PressRybicki(time_arr, f_arr, sigma_arr, delta):
+def get_clean_spectrum_PressRybicki(time_arr, f_arr, sigma_arr, delta,
+                                    max_components=10):
     """
     Clean a time series according to the algorithm presented in
     Roberts et al. 1987 (AJ 93, 968) (though this works in real
@@ -376,6 +377,9 @@ def get_clean_spectrum_PressRybicki(time_arr, f_arr, sigma_arr, delta):
 
     delta is a float; maximum frequency considered will be 1/delta
 
+    max_components is an integer indicating the maximum number of
+    components to find
+
     Returns
     -------
     aa a numpy array of a_i parameters from the model
@@ -391,7 +395,6 @@ def get_clean_spectrum_PressRybicki(time_arr, f_arr, sigma_arr, delta):
 
     _is_significant.model = None
 
-    iteration = 10
     gain = 1.0
 
     residual_arr = copy.deepcopy(f_arr)
@@ -405,7 +408,7 @@ def get_clean_spectrum_PressRybicki(time_arr, f_arr, sigma_arr, delta):
     tau_list = []
     omega_list = []
 
-    for it in range(1, iteration+1):
+    for it in range(1, max_components+1):
         valid = np.where(np.logical_and(np.logical_not(np.isnan(pspec)),
                                         freq_arr<get_ls_PressRybicki.cut_off_freq))
         pspec = pspec[valid]
@@ -447,7 +450,7 @@ def get_clean_spectrum_PressRybicki(time_arr, f_arr, sigma_arr, delta):
         model += bb_max*np.sin(omega_max*(time_arr-time_arr.min()-tau_max))
 
         residual_arr -= model
-        if it<iteration:
+        if it<max_components:
             (pspec, freq_arr,
              tau, aa, bb, cc) = get_ls_PressRybicki(time_arr, residual_arr, sigma_arr, delta)
 
