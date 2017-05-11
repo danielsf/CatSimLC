@@ -338,7 +338,7 @@ def _is_significant(aa, bb, cc, omega, tau,
             model += b*np.sin(o*(time_arr-time_arr.min()-t))
 
         chi_0 = np.power((f_arr-model)/sig_arr,2).sum()
-        _is_significant.bic_0 = (2.0*len(aa)+1.0)*np.log(len(time_arr)) + chi_0
+        _is_significant.bic_0 = (4.0*len(aa)+1.0)*np.log(len(time_arr)) + chi_0
         _is_significant.model = model
 
     _is_significant.model += cc_test
@@ -346,7 +346,7 @@ def _is_significant(aa, bb, cc, omega, tau,
     _is_significant.model += bb_test*np.sin(omega_test*(time_arr-time_arr.min()-tau_test))
 
     chi_1 = np.power((f_arr-_is_significant.model)/sig_arr,2).sum()
-    bic_1 = (2.0*(len(aa)+1)+1.0)*np.log(len(time_arr)) + chi_1
+    bic_1 = (4.0*(len(aa)+1)+1.0)*np.log(len(time_arr)) + chi_1
 
     print bic_1,_is_significant.bic_0
 
