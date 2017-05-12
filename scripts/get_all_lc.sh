@@ -2,6 +2,8 @@
 # curves from stsci.  It will put the resulting FITS files in
 # directories named lc_N where N refers to the observing
 # quarter and ranges from 0 to 17.
+#
+# The resulting data will take up about 800 GB of storage space
 
 for ii in {0..17};
 do
