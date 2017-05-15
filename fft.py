@@ -8,6 +8,7 @@ by Press, Teukolsky, Vetterling, and Flannery
 
 import numpy as np
 import copy
+import time
 
 def _bit_reverse(in_val, num_bits):
     """
@@ -36,7 +37,6 @@ def _bit_reverse_vector(in_val, num_bits):
         active_val = active_val//2
     return out
 
-import time
 def fft_real(time_arr, f_arr):
     """
     Fast Fourier Transform a real function as described in section 12.2.1
