@@ -1,5 +1,4 @@
 import numpy as np
-import hashlib
 import copy
 import time
 from fft import FFTransformer
@@ -251,22 +250,11 @@ def get_ls_PressRybicki(time_arr_in, f_arr_in, sigma_arr_in, delta):
     f_arr = f_arr_in[sorted_dex]
     sigma_arr = sigma_arr_in[sorted_dex]
 
-    """
     if hasattr(get_ls_PressRybicki, 'initialized'):
-        if get_ls_PressRybicki.initialized:
-            local_hasher = hashlib.sha1()
-            local_hasher.update(time_arr_in)
-            if local_hasher.hexdigest() != get_ls_PressRybicki.time_hash.hexdigest():
-                get_ls_PressRybicki.initialized = False
-
-            local_hasher = hashlib.sha1()
-            local_hasher.update(sigma_arr_in)
-            if local_hasher.hexdigest() != get_ls_PressRybicki.sigma_hash.hexdigest():
-                get_ls_PressRybicki.initialized = False
-
-            if delta != get_ls_PressRybicki.delta:
-                get_ls_PressRybicki.initialized = False
-    """
+        if not np.array_equal(sigma_arr_in, get_ls_PressRybicki.sig_cache):
+            get_ls_PressRybicki.initialized = False
+        if not np.array_equal(time_arr_in, get_ls_PressRybicki.time_cache):
+            get_ls_PressRybicki.initialized = False
 
     if not hasattr(get_ls_PressRybicki, 'ffter'):
         get_ls_PressRybicki.ffter = FFTransformer()
@@ -276,12 +264,8 @@ def get_ls_PressRybicki(time_arr_in, f_arr_in, sigma_arr_in, delta):
         not get_ls_PressRybicki.initialized):
 
         get_ls_PressRybicki.initialized = True
-
-        #get_ls_PressRybicki.time_hash = hashlib.sha1()
-        #get_ls_PressRybicki.time_hash.update(time_arr_in)
-
-        #get_ls_PressRybicki.sigma_hash = hashlib.sha1()
-        #get_ls_PressRybicki.sigma_hash.update(sigma_arr_in)
+        get_ls_PressRybicki.sig_cache = copy.deepcopy(sigma_arr_in)
+        get_ls_PressRybicki.time_cache = copy.deepcopy(time_arr_in)
 
         (get_ls_PressRybicki.w,
          get_ls_PressRybicki.delta,
