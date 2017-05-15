@@ -57,6 +57,8 @@ for file_name in lc_file_list:
     tau_dict[file_name] = tau
     omega_dict[file_name] = omega
 
+    print('done with %d after %e' % (len(aa_dict), time.time()-t_start))
+
 with open(args.out_file, 'w') as output_file:
     output_file.write('# A, B, C, tau, omega (f = A*cos(omega*(t-tau)) + B*sin(omega*(t-tau)) + C)\n')
     for file_name in lc_file_list:
