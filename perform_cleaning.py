@@ -68,10 +68,10 @@ with open(args.out_file, 'w') as output_file:
         cc = cc_dict[file_name]
         tau = tau_dict[file_name]
         omega = omega_dict[file_name]
-        for ix in args.components:
+        for ix in range(args.components):
             output_file.write('%.6e %.6e %.6e %.6e %.6e '
                               % (aa[ix], bb[ix], cc[ix],
                                  tau[ix], omega[ix]))
         output_file.write('\n')
 
-print('generating clean light curves took %e' % time.time()-t_start)
+print('generating clean light curves took %e' % (time.time()-t_start))
