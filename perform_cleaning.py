@@ -35,10 +35,13 @@ cc_dict = {}
 omega_dict = {}
 tau_dict = {}
 omega_dict = {}
+span_dict = {}
+nt_dict = {}
 
 flush_every = 1000
 
 with open(args.out_file, 'w') as output_file:
+    output_file.write('# lc_filename, number of components, timespan, n time steps\n')
     output_file.write('# A, B, C, tau, omega (f = A*cos(omega*(t-tau)) + B*sin(omega*(t-tau)) + C)\n')
 
 t_start = time.time()
@@ -61,6 +64,8 @@ for file_name in lc_file_list:
     cc_dict[file_name] = cc
     tau_dict[file_name] = tau
     omega_dict[file_name] = omega
+    span_dict[file_name] = data['time'].max()-data['time'].min()
+    nt_dict[file_name] = len(data['time'])
 
     print('done with %d after %e' % (len(aa_dict), time.time()-t_start))
 
@@ -74,7 +79,10 @@ for file_name in lc_file_list:
                 tau = tau_dict[file_name]
                 omega = omega_dict[file_name]
 
-                output_file.write('%s %d ' % (file_name, len(aa)))
+                output_file.write('%s %d %.3e %d ' %
+                                  (file_name, len(aa),
+                                   span_dict[file_name],
+                                   nt_dict[file_name]))
 
                 for ix in range(len(aa)):
                     output_file.write('%.6e %.6e %.6e %.6e %.6e '
@@ -87,5 +95,7 @@ for file_name in lc_file_list:
         cc_dict = {}
         tau_dict = {}
         omega_dict = {}
+        span_dict = {}
+        nt_dict = {}
 
 print('generating clean light curves took %e' % (time.time()-t_start))
