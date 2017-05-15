@@ -104,7 +104,7 @@ class FFTransformer(object):
                 self.cache_dexes.append(np.array([[k*tot_pts//n_pts]*len(base_dexes)
                                                    for k in range(n_pts//2)]).flatten())
 
-        print 'prep took ',time.time()-t_start
+        #print 'prep took ',time.time()-t_start
         t_start = time.time()
 
         for i_bit in range(n_bits):
@@ -122,5 +122,5 @@ class FFTransformer(object):
             fft_re[odd_dexes] = temp_re_even - temp_re_odd
             fft_im[odd_dexes] = temp_im_even - temp_im_odd
 
-        print 'work took ',time.time()-t_start
+        #print 'work took ',time.time()-t_start
         return fft_re*delta, fft_im*delta
