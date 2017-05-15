@@ -1,18 +1,19 @@
 import numpy as np
-import hashlib
 import copy
-from fft import fft_real
 import time
+from fft import FFTransformer
 
 _t_prep =0.0
 _t_loop = 0.0
 _t_fft = 0.0
 
-def extirp_sums(tt_arr, ff_arr, delta, n_t):
+def extirp_sums(tt_arr, ff_arr, delta, n_t, ffter):
     """
     Take an arbitrary function sampled irregularly and return the
     sums in equation (5) of Press and Rybicki 1988 (ApJ 338, 277)
     using the FFT code in this module.
+
+    ffter is an instantiation of FFTransformer
     """
 
     global _t_prep
@@ -25,8 +26,6 @@ def extirp_sums(tt_arr, ff_arr, delta, n_t):
                     n_t*delta,
                     delta)
     hk = np.zeros(len(ttk))
-
-    print('actual len(ttk) %d' % len(ttk))
 
     if (not hasattr(extirp_sums, '_ttk_cache') or
         not np.array_equal(ttk, extirp_sums._ttk_cache) or
@@ -95,18 +94,14 @@ def extirp_sums(tt_arr, ff_arr, delta, n_t):
         hk[unq_targets] += term[unq_dexes]
     _t_loop += time.time()-t_start
 
-    print 'max hk ',np.abs(hk).max(),ff_arr.max()
     t_start = time.time()
-    ft_re, ft_im = fft_real(ttk, hk)
+    ft_re, ft_im = ffter.fft_real(ttk, hk)
     _t_fft += time.time()-t_start
-
-    print 'in extirp: t_prep %.3e t_loop %.3e t_fft %.3e' % (_t_prep, _t_loop, _t_fft)
-
 
     return (ft_re/delta, ft_im/delta, ttk, hk)
 
 
-def _initialize_PressRybicki(time_arr, sigma_arr, delta):
+def _initialize_PressRybicki(time_arr, sigma_arr, delta, ffter, ffter2):
     """
     Initialize arrays for the Press and Rybicki periodogram
     that only depend on t and sigma
@@ -117,6 +112,10 @@ def _initialize_PressRybicki(time_arr, sigma_arr, delta):
 
     sigma_arr is a numpy array of the uncertainties of the
     measurement
+
+    ffter and ffter2 are instantiations of FFTransformer.  One is
+    for extirpolating sums over omega*t; one is for extirpolating
+    sums over 2*omega*t
 
     Returns
     -------
@@ -149,7 +148,8 @@ def _initialize_PressRybicki(time_arr, sigma_arr, delta):
     w = (1.0/np.power(sigma_arr, 2)).sum()
     wgt_fn = 1.0/(w*np.power(sigma_arr, 2))
 
-    c2_raw, s2_raw, tk, hk = extirp_sums(2.0*time_arr, wgt_fn, delta, n_t*2)
+    c2_raw, s2_raw, tk, hk = extirp_sums(2.0*time_arr, wgt_fn,
+                                         delta, n_t*2, ffter2)
     del tk
     del hk
     dexes = range(0,len(c2_raw), 2)
@@ -158,14 +158,12 @@ def _initialize_PressRybicki(time_arr, sigma_arr, delta):
     s2 = s2_raw[dexes]
     del s2_raw
 
-    c, s, tk, hk = extirp_sums(time_arr, wgt_fn, delta, n_t)
+    c, s, tk, hk = extirp_sums(time_arr, wgt_fn, delta, n_t, ffter)
     del tk
     del hk
 
-    print 'testing validity of PR trick'
     cut_off_freq = np.exp(-1.3093286772)*np.power(delta, -0.97075831145)
     cut_off_freq *=0.5
-    print 'done assessing validity'
 
     omega_tau = np.arctan2(s2-2*c*s, c2-c*c+s*s)
     tau = omega_tau/(4.0*np.pi*freq_arr)
@@ -252,35 +250,22 @@ def get_ls_PressRybicki(time_arr_in, f_arr_in, sigma_arr_in, delta):
     f_arr = f_arr_in[sorted_dex]
     sigma_arr = sigma_arr_in[sorted_dex]
 
-    """
     if hasattr(get_ls_PressRybicki, 'initialized'):
-        if get_ls_PressRybicki.initialized:
-            local_hasher = hashlib.sha1()
-            local_hasher.update(time_arr_in)
-            if local_hasher.hexdigest() != get_ls_PressRybicki.time_hash.hexdigest():
-                get_ls_PressRybicki.initialized = False
+        if not np.array_equal(sigma_arr_in, get_ls_PressRybicki.sig_cache):
+            get_ls_PressRybicki.initialized = False
+        if not np.array_equal(time_arr_in, get_ls_PressRybicki.time_cache):
+            get_ls_PressRybicki.initialized = False
 
-            local_hasher = hashlib.sha1()
-            local_hasher.update(sigma_arr_in)
-            if local_hasher.hexdigest() != get_ls_PressRybicki.sigma_hash.hexdigest():
-                get_ls_PressRybicki.initialized = False
-
-            if delta != get_ls_PressRybicki.delta:
-                get_ls_PressRybicki.initialized = False
-    """
+    if not hasattr(get_ls_PressRybicki, 'ffter'):
+        get_ls_PressRybicki.ffter = FFTransformer()
+        get_ls_PressRybicki.ffter2 = FFTransformer()
 
     if (not hasattr(get_ls_PressRybicki, 'initialized') or
         not get_ls_PressRybicki.initialized):
 
-        print '\n\ninitializing periodogram\n\n'
-
         get_ls_PressRybicki.initialized = True
-
-        #get_ls_PressRybicki.time_hash = hashlib.sha1()
-        #get_ls_PressRybicki.time_hash.update(time_arr_in)
-
-        #get_ls_PressRybicki.sigma_hash = hashlib.sha1()
-        #get_ls_PressRybicki.sigma_hash.update(sigma_arr_in)
+        get_ls_PressRybicki.sig_cache = copy.deepcopy(sigma_arr_in)
+        get_ls_PressRybicki.time_cache = copy.deepcopy(time_arr_in)
 
         (get_ls_PressRybicki.w,
          get_ls_PressRybicki.delta,
@@ -295,14 +280,17 @@ def get_ls_PressRybicki(time_arr_in, f_arr_in, sigma_arr_in, delta):
          get_ls_PressRybicki.cc,
          get_ls_PressRybicki.ss,
          get_ls_PressRybicki.cs,
-         get_ls_PressRybicki.d) = _initialize_PressRybicki(time_arr, sigma_arr, delta)
+         get_ls_PressRybicki.d) = _initialize_PressRybicki(time_arr, sigma_arr, delta,
+                                                           get_ls_PressRybicki.ffter,
+                                                           get_ls_PressRybicki.ffter2)
 
     y_bar = (f_arr*get_ls_PressRybicki.w).sum()
     yy = (get_ls_PressRybicki.w*np.power(f_arr-y_bar,2)).sum()
     y_fn = get_ls_PressRybicki.w*(f_arr-y_bar)
     y_c_raw, y_s_raw, tk, hk = extirp_sums(time_arr, y_fn,
                                            get_ls_PressRybicki.delta,
-                                           get_ls_PressRybicki.n_t)
+                                           get_ls_PressRybicki.n_t,
+                                           get_ls_PressRybicki.ffter)
     del tk
     del hk
 
@@ -347,8 +335,6 @@ def _is_significant(aa, bb, cc, omega, tau,
 
     chi_1 = np.power((f_arr-_is_significant.model)/sig_arr,2).sum()
     bic_1 = (4.0*(len(aa)+1)+1.0)*np.log(len(time_arr)) + chi_1
-
-    print bic_1,_is_significant.bic_0
 
     if bic_1 < _is_significant.bic_0:
         _is_significant.bic_0 = bic_1
@@ -426,11 +412,6 @@ def get_clean_spectrum_PressRybicki(time_arr, f_arr, sigma_arr, delta,
         cc_max = cc[max_dex]*gain
         omega_max = freq_max*2.0*np.pi
 
-        print 'a ',aa_max
-        print 'b ',bb_max
-        print 'c ',cc_max
-        print 'omega ',freq_max*2.0*np.pi
-
         if _is_significant(aa_list, bb_list, cc_list, omega_list, tau_list,
                            aa_max, bb_max, cc_max, omega_max, tau_max,
                            time_arr, f_arr, sigma_arr):
@@ -442,7 +423,6 @@ def get_clean_spectrum_PressRybicki(time_arr, f_arr, sigma_arr, delta,
             omega_list.append(omega_max)
 
         else:
-            print 'is not significant'
             break
 
         model = np.array([cc_max]*len(time_arr))
@@ -453,8 +433,6 @@ def get_clean_spectrum_PressRybicki(time_arr, f_arr, sigma_arr, delta,
         if it<max_components:
             (pspec, freq_arr,
              tau, aa, bb, cc) = get_ls_PressRybicki(time_arr, residual_arr, sigma_arr, delta)
-
-    print'cut off is ',get_ls_PressRybicki.cut_off_freq*2.0*np.pi,get_ls_PressRybicki.cut_off_freq
 
     return (np.array(aa_list), np.array(bb_list),
             np.array(cc_list), np.array(omega_list),

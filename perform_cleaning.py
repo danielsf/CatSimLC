@@ -57,19 +57,24 @@ for file_name in lc_file_list:
     tau_dict[file_name] = tau
     omega_dict[file_name] = omega
 
+    print('done with %d after %e' % (len(aa_dict), time.time()-t_start))
+
 with open(args.out_file, 'w') as output_file:
     output_file.write('# A, B, C, tau, omega (f = A*cos(omega*(t-tau)) + B*sin(omega*(t-tau)) + C)\n')
     for file_name in lc_file_list:
-        output_file.write('%s ' % file_name)
+
         aa = aa_dict[file_name]
         bb = bb_dict[file_name]
         cc = cc_dict[file_name]
         tau = tau_dict[file_name]
         omega = omega_dict[file_name]
-        for ix in args.components:
+
+        output_file.write('%s %d ' % (file_name, len(aa)))
+
+        for ix in range(len(aa)):
             output_file.write('%.6e %.6e %.6e %.6e %.6e '
                               % (aa[ix], bb[ix], cc[ix],
                                  tau[ix], omega[ix]))
         output_file.write('\n')
 
-print('generating clean light curves took %e' % time.time()-t_start)
+print('generating clean light curves took %e' % (time.time()-t_start))

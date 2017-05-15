@@ -31,6 +31,9 @@ def f_of_t(time):
 
 import time
 from PressRybicki import extirp_sums
+from fft import FFTransformer
+
+ffter= FFTransformer()
 
 rng = np.random.RandomState(88)
 
@@ -51,7 +54,8 @@ while n_t<n_t_guess:
     n_t *= 2
 
 t_start = time.time()
-cos_fft_sum, sin_fft_sum, ttk, hhk = extirp_sums(time_arr, fn_arr, delta, n_t)
+cos_fft_sum, sin_fft_sum, ttk, hhk = extirp_sums(time_arr, fn_arr,
+                                                 delta, n_t, ffter)
 t_extirp = time.time()-t_start
 
 #hhk_control = f_of_t(ttk)
