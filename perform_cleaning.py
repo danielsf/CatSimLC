@@ -36,6 +36,11 @@ omega_dict = {}
 tau_dict = {}
 omega_dict = {}
 
+flush_every = 1000
+
+with open(args.out_file, 'w') as output_file:
+    output_file.write('# A, B, C, tau, omega (f = A*cos(omega*(t-tau)) + B*sin(omega*(t-tau)) + C)\n')
+
 t_start = time.time()
 for file_name in lc_file_list:
     full_name = os.path.join(args.lc_dir, file_name)
@@ -59,22 +64,28 @@ for file_name in lc_file_list:
 
     print('done with %d after %e' % (len(aa_dict), time.time()-t_start))
 
-with open(args.out_file, 'w') as output_file:
-    output_file.write('# A, B, C, tau, omega (f = A*cos(omega*(t-tau)) + B*sin(omega*(t-tau)) + C)\n')
-    for file_name in lc_file_list:
+    if len(aa_dict) >= flush_every or file_name == lc_file_list[-1]:
+        with open(args.out_file, 'a') as output_file:
+            for file_name in aa_dict.keys():
 
-        aa = aa_dict[file_name]
-        bb = bb_dict[file_name]
-        cc = cc_dict[file_name]
-        tau = tau_dict[file_name]
-        omega = omega_dict[file_name]
+                aa = aa_dict[file_name]
+                bb = bb_dict[file_name]
+                cc = cc_dict[file_name]
+                tau = tau_dict[file_name]
+                omega = omega_dict[file_name]
 
-        output_file.write('%s %d ' % (file_name, len(aa)))
+                output_file.write('%s %d ' % (file_name, len(aa)))
 
-        for ix in range(len(aa)):
-            output_file.write('%.6e %.6e %.6e %.6e %.6e '
-                              % (aa[ix], bb[ix], cc[ix],
-                                 tau[ix], omega[ix]))
-        output_file.write('\n')
+                for ix in range(len(aa)):
+                    output_file.write('%.6e %.6e %.6e %.6e %.6e '
+                                      % (aa[ix], bb[ix], cc[ix],
+                                         tau[ix], omega[ix]))
+                output_file.write('\n')
+
+        aa_dict = {}
+        bb_dict = {}
+        cc_dict = {}
+        tau_dict = {}
+        omega_dict = {}
 
 print('generating clean light curves took %e' % (time.time()-t_start))
