@@ -1,18 +1,20 @@
 import numpy as np
 import hashlib
 import copy
-from fft import fft_real
 import time
+from fft import FFTransformer
 
 _t_prep =0.0
 _t_loop = 0.0
 _t_fft = 0.0
 
-def extirp_sums(tt_arr, ff_arr, delta, n_t):
+def extirp_sums(tt_arr, ff_arr, delta, n_t, ffter):
     """
     Take an arbitrary function sampled irregularly and return the
     sums in equation (5) of Press and Rybicki 1988 (ApJ 338, 277)
     using the FFT code in this module.
+
+    ffter is an instantiation of FFTransformer
     """
 
     global _t_prep
@@ -97,7 +99,7 @@ def extirp_sums(tt_arr, ff_arr, delta, n_t):
 
     print 'max hk ',np.abs(hk).max(),ff_arr.max()
     t_start = time.time()
-    ft_re, ft_im = fft_real(ttk, hk)
+    ft_re, ft_im = ffter.fft_real(ttk, hk)
     _t_fft += time.time()-t_start
 
     print 'in extirp: t_prep %.3e t_loop %.3e t_fft %.3e' % (_t_prep, _t_loop, _t_fft)
@@ -106,7 +108,7 @@ def extirp_sums(tt_arr, ff_arr, delta, n_t):
     return (ft_re/delta, ft_im/delta, ttk, hk)
 
 
-def _initialize_PressRybicki(time_arr, sigma_arr, delta):
+def _initialize_PressRybicki(time_arr, sigma_arr, delta, ffter, ffter2):
     """
     Initialize arrays for the Press and Rybicki periodogram
     that only depend on t and sigma
@@ -117,6 +119,10 @@ def _initialize_PressRybicki(time_arr, sigma_arr, delta):
 
     sigma_arr is a numpy array of the uncertainties of the
     measurement
+
+    ffter and ffter2 are instantiations of FFTransformer.  One is
+    for extirpolating sums over omega*t; one is for extirpolating
+    sums over 2*omega*t
 
     Returns
     -------
@@ -149,7 +155,8 @@ def _initialize_PressRybicki(time_arr, sigma_arr, delta):
     w = (1.0/np.power(sigma_arr, 2)).sum()
     wgt_fn = 1.0/(w*np.power(sigma_arr, 2))
 
-    c2_raw, s2_raw, tk, hk = extirp_sums(2.0*time_arr, wgt_fn, delta, n_t*2)
+    c2_raw, s2_raw, tk, hk = extirp_sums(2.0*time_arr, wgt_fn,
+                                         delta, n_t*2, ffter2)
     del tk
     del hk
     dexes = range(0,len(c2_raw), 2)
@@ -158,7 +165,7 @@ def _initialize_PressRybicki(time_arr, sigma_arr, delta):
     s2 = s2_raw[dexes]
     del s2_raw
 
-    c, s, tk, hk = extirp_sums(time_arr, wgt_fn, delta, n_t)
+    c, s, tk, hk = extirp_sums(time_arr, wgt_fn, delta, n_t, ffter)
     del tk
     del hk
 
@@ -269,6 +276,10 @@ def get_ls_PressRybicki(time_arr_in, f_arr_in, sigma_arr_in, delta):
                 get_ls_PressRybicki.initialized = False
     """
 
+    if not hasattr(get_ls_PressRybicki, 'ffter'):
+        get_ls_PressRybicki.ffter = FFTransformer()
+        get_ls_PressRybicki.ffter2 = FFTransformer()
+
     if (not hasattr(get_ls_PressRybicki, 'initialized') or
         not get_ls_PressRybicki.initialized):
 
@@ -295,14 +306,17 @@ def get_ls_PressRybicki(time_arr_in, f_arr_in, sigma_arr_in, delta):
          get_ls_PressRybicki.cc,
          get_ls_PressRybicki.ss,
          get_ls_PressRybicki.cs,
-         get_ls_PressRybicki.d) = _initialize_PressRybicki(time_arr, sigma_arr, delta)
+         get_ls_PressRybicki.d) = _initialize_PressRybicki(time_arr, sigma_arr, delta,
+                                                           get_ls_PressRybicki.ffter,
+                                                           get_ls_PressRybicki.ffter2)
 
     y_bar = (f_arr*get_ls_PressRybicki.w).sum()
     yy = (get_ls_PressRybicki.w*np.power(f_arr-y_bar,2)).sum()
     y_fn = get_ls_PressRybicki.w*(f_arr-y_bar)
     y_c_raw, y_s_raw, tk, hk = extirp_sums(time_arr, y_fn,
                                            get_ls_PressRybicki.delta,
-                                           get_ls_PressRybicki.n_t)
+                                           get_ls_PressRybicki.n_t,
+                                           get_ls_PressRybicki.ffter)
     del tk
     del hk
 

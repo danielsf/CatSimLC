@@ -84,11 +84,13 @@ dt = 0.037
 time_arr = np.arange(0.0, 32*1024*dt, dt)
 y_arr = f_of_t(time_arr)
 
-from fft import fft_real
+from fft import FFTransformer
 import time
 
+ffter = FFTransformer()
+
 t_start = time.time()
-f_re, f_im = fft_real(time_arr, y_arr)
+f_re, f_im = ffter.fft_real(time_arr, y_arr)
 t_fft = time.time()-t_start
 
 t_start = time.time()
