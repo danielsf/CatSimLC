@@ -71,3 +71,5 @@ with open(args.out_file, 'w') as output_file:
                               % (aa[ix], bb[ix], cc[ix],
                                  tau[ix], omega[ix]))
         output_file.write('\n')
+
+print('generating clean light curves took %e' % time.time()-t_start)
