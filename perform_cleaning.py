@@ -67,7 +67,7 @@ for file_name in lc_file_list:
     span_dict[file_name] = data['time'].max()-data['time'].min()
     nt_dict[file_name] = len(data['time'])
 
-    print('done with %d after %e' % (len(aa_dict), time.time()-t_start))
+    #print('done with %d after %e' % (len(aa_dict), time.time()-t_start))
 
     if len(aa_dict) >= flush_every or file_name == lc_file_list[-1]:
         with open(args.out_file, 'a') as output_file:
