@@ -28,8 +28,6 @@ def extirp_sums(tt_arr, ff_arr, delta, n_t, ffter):
                     delta)
     hk = np.zeros(len(ttk))
 
-    print('actual len(ttk) %d' % len(ttk))
-
     if (not hasattr(extirp_sums, '_ttk_cache') or
         not np.array_equal(ttk, extirp_sums._ttk_cache) or
         not np.array_equal(tt_arr, extirp_sums._tt_cache)):
@@ -97,13 +95,9 @@ def extirp_sums(tt_arr, ff_arr, delta, n_t, ffter):
         hk[unq_targets] += term[unq_dexes]
     _t_loop += time.time()-t_start
 
-    print 'max hk ',np.abs(hk).max(),ff_arr.max()
     t_start = time.time()
     ft_re, ft_im = ffter.fft_real(ttk, hk)
     _t_fft += time.time()-t_start
-
-    print 'in extirp: t_prep %.3e t_loop %.3e t_fft %.3e' % (_t_prep, _t_loop, _t_fft)
-
 
     return (ft_re/delta, ft_im/delta, ttk, hk)
 
@@ -169,10 +163,8 @@ def _initialize_PressRybicki(time_arr, sigma_arr, delta, ffter, ffter2):
     del tk
     del hk
 
-    print 'testing validity of PR trick'
     cut_off_freq = np.exp(-1.3093286772)*np.power(delta, -0.97075831145)
     cut_off_freq *=0.5
-    print 'done assessing validity'
 
     omega_tau = np.arctan2(s2-2*c*s, c2-c*c+s*s)
     tau = omega_tau/(4.0*np.pi*freq_arr)
@@ -283,8 +275,6 @@ def get_ls_PressRybicki(time_arr_in, f_arr_in, sigma_arr_in, delta):
     if (not hasattr(get_ls_PressRybicki, 'initialized') or
         not get_ls_PressRybicki.initialized):
 
-        print '\n\ninitializing periodogram\n\n'
-
         get_ls_PressRybicki.initialized = True
 
         #get_ls_PressRybicki.time_hash = hashlib.sha1()
@@ -362,8 +352,6 @@ def _is_significant(aa, bb, cc, omega, tau,
     chi_1 = np.power((f_arr-_is_significant.model)/sig_arr,2).sum()
     bic_1 = (4.0*(len(aa)+1)+1.0)*np.log(len(time_arr)) + chi_1
 
-    print bic_1,_is_significant.bic_0
-
     if bic_1 < _is_significant.bic_0:
         _is_significant.bic_0 = bic_1
         return True
@@ -440,11 +428,6 @@ def get_clean_spectrum_PressRybicki(time_arr, f_arr, sigma_arr, delta,
         cc_max = cc[max_dex]*gain
         omega_max = freq_max*2.0*np.pi
 
-        print 'a ',aa_max
-        print 'b ',bb_max
-        print 'c ',cc_max
-        print 'omega ',freq_max*2.0*np.pi
-
         if _is_significant(aa_list, bb_list, cc_list, omega_list, tau_list,
                            aa_max, bb_max, cc_max, omega_max, tau_max,
                            time_arr, f_arr, sigma_arr):
@@ -456,7 +439,6 @@ def get_clean_spectrum_PressRybicki(time_arr, f_arr, sigma_arr, delta,
             omega_list.append(omega_max)
 
         else:
-            print 'is not significant'
             break
 
         model = np.array([cc_max]*len(time_arr))
@@ -467,8 +449,6 @@ def get_clean_spectrum_PressRybicki(time_arr, f_arr, sigma_arr, delta,
         if it<max_components:
             (pspec, freq_arr,
              tau, aa, bb, cc) = get_ls_PressRybicki(time_arr, residual_arr, sigma_arr, delta)
-
-    print'cut off is ',get_ls_PressRybicki.cut_off_freq*2.0*np.pi,get_ls_PressRybicki.cut_off_freq
 
     return (np.array(aa_list), np.array(bb_list),
             np.array(cc_list), np.array(omega_list),
