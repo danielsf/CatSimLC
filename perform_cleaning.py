@@ -13,6 +13,7 @@ parser.add_argument('--lc_list', type=str, default=None)
 parser.add_argument('--out_file', type=str, default=None)
 parser.add_argument('--lc_dir', type=str, default=None)
 parser.add_argument('--components', type=int, default=5)
+parser.add_argument('--flush_every', type=int, default=1000)
 
 args = parser.parse_args()
 if args.lc_list is None:
@@ -38,7 +39,6 @@ omega_dict = {}
 span_dict = {}
 nt_dict = {}
 
-flush_every = 1000
 
 with open(args.out_file, 'w') as output_file:
     output_file.write('# lc_filename, number of components, timespan, n time steps\n')
@@ -69,7 +69,7 @@ for file_name in lc_file_list:
 
     #print('done with %d after %e' % (len(aa_dict), time.time()-t_start))
 
-    if len(aa_dict) >= flush_every or file_name == lc_file_list[-1]:
+    if len(aa_dict) >= args.flush_every or file_name == lc_file_list[-1]:
         with open(args.out_file, 'a') as output_file:
             for file_name in aa_dict.keys():
 
