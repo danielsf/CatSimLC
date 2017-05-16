@@ -50,8 +50,8 @@ for file_name in lc_file_list:
     lc_ct += 1
     full_name = os.path.join(args.lc_dir, file_name)
     data = np.genfromtxt(full_name, dtype=dtype)
-    sorted_dex = np.argsort(data['time'])
-    dt = np.diff(data['time'][sorted_dex])
+    unq_time = np.sort(np.unique(data['time']))
+    dt = np.diff(unq_time)
     dt_min = dt.min()
     (aa, bb, cc,
      omega, tau,
