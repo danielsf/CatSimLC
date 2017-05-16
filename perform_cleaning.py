@@ -45,7 +45,9 @@ with open(args.out_file, 'w') as output_file:
     output_file.write('# A, B, C, tau, omega (f = A*cos(omega*(t-tau)) + B*sin(omega*(t-tau)) + C)\n')
 
 t_start = time.time()
+lc_ct = 0
 for file_name in lc_file_list:
+    lc_ct += 1
     full_name = os.path.join(args.lc_dir, file_name)
     data = np.genfromtxt(full_name, dtype=dtype)
     sorted_dex = np.argsort(data['time'])
@@ -67,7 +69,10 @@ for file_name in lc_file_list:
     span_dict[file_name] = data['time'].max()-data['time'].min()
     nt_dict[file_name] = len(data['time'])
 
-    #print('done with %d after %e' % (len(aa_dict), time.time()-t_start))
+    duration = time.time()-t_start
+    print('done with %d out of %d after %e; should take %e' %
+          (lc_ct, len(lc_file_list), duration,
+           (duration/lc_ct)*len(lc_file_list)))
 
     if len(aa_dict) >= args.flush_every or file_name == lc_file_list[-1]:
         with open(args.out_file, 'a') as output_file:
