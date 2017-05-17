@@ -13,6 +13,7 @@ parser.add_argument('--lc_list', type=str, default=None)
 parser.add_argument('--out_file', type=str, default=None)
 parser.add_argument('--lc_dir', type=str, default=None)
 parser.add_argument('--components', type=int, default=5)
+parser.add_argument('--flush_every', type=int, default=1000)
 
 args = parser.parse_args()
 if args.lc_list is None:
@@ -38,18 +39,19 @@ omega_dict = {}
 span_dict = {}
 nt_dict = {}
 
-flush_every = 1000
 
 with open(args.out_file, 'w') as output_file:
     output_file.write('# lc_filename, number of components, timespan, n time steps\n')
     output_file.write('# A, B, C, tau, omega (f = A*cos(omega*(t-tau)) + B*sin(omega*(t-tau)) + C)\n')
 
 t_start = time.time()
+lc_ct = 0
 for file_name in lc_file_list:
+    lc_ct += 1
     full_name = os.path.join(args.lc_dir, file_name)
     data = np.genfromtxt(full_name, dtype=dtype)
-    sorted_dex = np.argsort(data['time'])
-    dt = np.diff(data['time'][sorted_dex])
+    unq_time = np.sort(np.unique(data['time']))
+    dt = np.diff(unq_time)
     dt_min = dt.min()
     (aa, bb, cc,
      omega, tau,
@@ -67,9 +69,12 @@ for file_name in lc_file_list:
     span_dict[file_name] = data['time'].max()-data['time'].min()
     nt_dict[file_name] = len(data['time'])
 
-    #print('done with %d after %e' % (len(aa_dict), time.time()-t_start))
+    duration = time.time()-t_start
+    print('done with %d out of %d after %e; should take %e' %
+          (lc_ct, len(lc_file_list), duration,
+           (duration/lc_ct)*len(lc_file_list)))
 
-    if len(aa_dict) >= flush_every or file_name == lc_file_list[-1]:
+    if len(aa_dict) >= args.flush_every or file_name == lc_file_list[-1]:
         with open(args.out_file, 'a') as output_file:
             for file_name in aa_dict.keys():
 
