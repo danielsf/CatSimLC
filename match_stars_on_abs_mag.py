@@ -328,34 +328,29 @@ dtype = np.dtype([('w', float), ('s', float)])
 bp_wavelen_max = 2500.0
 bp_wavelen_min = 300.0
 
-for file_name, bp_name in zip((os.path.join(twomass_dir,'2MASS_J.dat'),
-                               os.path.join(twomass_dir,'2MASS_H.dat'),
-                               os.path.join(twomass_dir,'2MASS_Ks.dat'),
-                               'data/kepler_throughput.txt'),
-                              ('j', 'h', 'k', 'kep')):
+file_name = 'data/kepler_throughput.txt'
+bp_name = 'kep'
 
-    data = np.genfromtxt(file_name, dtype=dtype)
-    w_pad = np.arange(bp_wavelen_min, data['w'][0], 1.0)
-    s_pad = np.zeros(len(w_pad))
+data = np.genfromtxt(file_name, dtype=dtype)
+w_pad = np.arange(bp_wavelen_min, data['w'][0], 1.0)
+s_pad = np.zeros(len(w_pad))
 
-    sb = np.append(s_pad, data['s'])
-    wavelen = np.append(w_pad, data['w'])
+sb = np.append(s_pad, data['s'])
+wavelen = np.append(w_pad, data['w'])
 
-    w_pad = np.arange(wavelen[-1], bp_wavelen_max, 1.0)
-    s_pad = np.zeros(len(w_pad))
+w_pad = np.arange(wavelen[-1], bp_wavelen_max, 1.0)
+s_pad = np.zeros(len(w_pad))
 
-    sb = np.append(sb, s_pad)
-    wavelen = np.append(wavelen, w_pad)
+sb = np.append(sb, s_pad)
+wavelen = np.append(wavelen, w_pad)
 
-    bp_wavelen = np.arange(bp_wavelen_min, bp_wavelen_max, 1.0)
-    bp_sb = np.interp(bp_wavelen, wavelen, sb)
+bp_wavelen = np.arange(bp_wavelen_min, bp_wavelen_max, 1.0)
+bp_sb = np.interp(bp_wavelen, wavelen, sb)
 
-    bp = Bandpass(wavelen=bp_wavelen, sb=bp_sb)
+bp = Bandpass(wavelen=bp_wavelen, sb=bp_sb)
 
-    bp_list.append(bp)
-    bp_name_list.append(bp_name)
-
-
+bp_list.append(bp)
+bp_name_list.append(bp_name)
 
 bp_dict = BandpassDict(bp_list, bp_name_list)
 
@@ -381,7 +376,7 @@ out_name = 'test_star_fits.txt'
 import time
 
 with open(out_name, 'w') as output_file:
-    output_file.write('# teff, logg, absmag, J-H, H-K\n')
+    output_file.write('# teff, logg, absmag\n')
 
 
 from lsst.sims.utils import radiansFromArcsec
@@ -403,11 +398,7 @@ for chunk in star_iter:
                                   galacticAvList=av)
 
 
-    mag_list = bp_dict.magListForSedList(sed_list)
-    mag_list = mag_list.transpose()
-    color_list = np.array([mag_list[0]-mag_list[1], mag_list[1]-mag_list[2]])
-
-    #color_dist, color_dex = kep_kdtree.query(color_list)
+    mag_list = bp_dict.magListForSedList(sed_list).transpose()
 
     teff = []
     logg = []
@@ -420,7 +411,7 @@ for chunk in star_iter:
 
     catsim_dist = _au_to_parsec/radiansFromArcsec(0.001*chunk['parallax'])
 
-    catsim_abs_mag = mag_list[3]-5.0*np.log10(catsim_dist/10.0)
+    catsim_abs_mag = mag_list[0]-5.0*np.log10(catsim_dist/10.0)
 
     pts = np.array([teff/dtemp, logg/dg, catsim_abs_mag/dmag]).transpose()
     param_dist, param_dex = kep_param_kdtree.query(pts)
@@ -430,12 +421,10 @@ for chunk in star_iter:
     with open(out_name, 'a') as output_file:
         for ix, (name, dx) in enumerate(zip(chunk['sedfilename'], param_dex)):
             name = name.strip().replace('.txt','').replace('.gz','')
-            output_file.write('%e %e %e %e %e %e %e %e %e %e\n' %
+            output_file.write('%e %e %e %e %e %e\n' %
                               (kep_data['teff'][dx],teff_dict[name],
                                kep_data['logg'][dx], logg_dict[name],
-                               abs_mag[dx], catsim_abs_mag[ix],
-                               kep_j_h[dx], color_list[0][ix],
-                               kep_h_k[dx], color_list[1][ix]))
+                               abs_mag[dx], catsim_abs_mag[ix]))
 
 
     print 'did %d in %e ' % (ct, time.time()-t_start)
