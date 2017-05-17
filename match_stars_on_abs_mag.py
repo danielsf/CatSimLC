@@ -381,7 +381,7 @@ out_name = 'test_star_fits.txt'
 import time
 
 with open(out_name, 'w') as output_file:
-    output_file.write('# teff, logg, absmag\n')
+    output_file.write('# teff, logg, absmag, J-H, H-K\n')
 
 
 from lsst.sims.utils import radiansFromArcsec
@@ -405,7 +405,7 @@ for chunk in star_iter:
 
     mag_list = bp_dict.magListForSedList(sed_list)
     mag_list = mag_list.transpose()
-    color_list = np.array([mag_list[3]-mag_list[1], mag_list[3]-mag_list[2]])
+    color_list = np.array([mag_list[0]-mag_list[1], mag_list[1]-mag_list[2]])
 
     #color_dist, color_dex = kep_kdtree.query(color_list)
 
@@ -430,10 +430,12 @@ for chunk in star_iter:
     with open(out_name, 'a') as output_file:
         for ix, (name, dx) in enumerate(zip(chunk['sedfilename'], param_dex)):
             name = name.strip().replace('.txt','').replace('.gz','')
-            output_file.write('%e %e %e %e %e %e\n' %
+            output_file.write('%e %e %e %e %e %e %e %e %e %e\n' %
                               (kep_data['teff'][dx],teff_dict[name],
                                kep_data['logg'][dx], logg_dict[name],
-                               abs_mag[dx], catsim_abs_mag[ix]))
+                               abs_mag[dx], catsim_abs_mag[ix],
+                               kep_j_h[dx], color_list[0][ix],
+                               kep_h_k[dx], color_list[1][ix]))
 
 
     print 'did %d in %e ' % (ct, time.time()-t_start)
