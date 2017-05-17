@@ -218,7 +218,15 @@ kep_dtype = np.dtype([('kepid', int),
                       ('av_err1', float),
                       ('av_err2', float)])
 
-kep_data = np.genfromtxt('data/kepler_stellar17.csv', dtype=kep_dtype,
+catalog_name = 'data/kepler_stellar17.csv'
+
+if not os.path.exists(catalog_name):
+   raise RuntimeError('Need to download Kepler catalog data using\n'
+                      'wget -nH --cut-dirs=3 https://archive.stsci.edu/pub/kepler/catalogs/kepler_stellar17.csv.gz\n'
+                      'and place it in the data/ directory')
+
+
+kep_data = np.genfromtxt(catalog_name, dtype=kep_dtype,
                          delimiter='|', skip_header=1)
 
 valid_teff = np.where(np.logical_and(np.logical_not(np.isnan(kep_data['teff'])),
