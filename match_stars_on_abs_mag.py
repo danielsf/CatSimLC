@@ -365,13 +365,13 @@ db = DBObject(database='LSSTCATSIM', host='fatboy.phys.washington.edu',
               port=1433, driver='mssql+pymssql')
 
 table_name = 'stars_obafgk_part_0870'
-query = 'SELECT TOP 3000 sedfilename, flux_scale, ebv, parallax FROM %s' % table_name
+query = 'SELECT TOP 30000 sedfilename, flux_scale, ebv, parallax FROM %s' % table_name
 
 query_dtype = np.dtype([('sedfilename', str, 200), ('scale', float),
                         ('ebv', float), ('parallax', float)])
 
 star_iter = db.get_arbitrary_chunk_iterator(query, dtype=query_dtype,
-                                            chunk_size=1000)
+                                            chunk_size=10000)
 
 
 sed_list = None
