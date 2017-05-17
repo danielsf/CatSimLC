@@ -381,6 +381,7 @@ with open(out_name, 'w') as output_file:
 
 from lsst.sims.utils import radiansFromArcsec
 
+t_lookup = 0.0
 t_start = time.time()
 ct=0
 _au_to_parsec = 1.0/206265.0
@@ -402,10 +403,12 @@ for chunk in star_iter:
 
     teff = []
     logg = []
+    t_start_lookup=time.time()
     for name in chunk['sedfilename']:
         name = name.strip().replace('.txt', '').replace('.gz','')
         teff.append(teff_dict[name])
         logg.append(logg_dict[name])
+    t_lookup += time.time()-t_start_lookup
     teff = np.array(teff)
     logg = np.array(logg)
 
@@ -429,6 +432,7 @@ for chunk in star_iter:
 
     print 'did %d in %e ' % (ct, time.time()-t_start)
 
+print 't_lookup ',t_lookup
 print 'data points ',len(kep_data)
 print 'dtemp ',dtemp
 print 'dg ',dg
