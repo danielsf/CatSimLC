@@ -437,3 +437,4 @@ print 'data points ',len(kep_data)
 print 'dtemp ',dtemp
 print 'dg ',dg
 print 'dmag ',dmag
+print 'that took ',time.time()-t_start
