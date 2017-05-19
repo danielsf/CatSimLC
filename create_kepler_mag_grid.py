@@ -64,7 +64,7 @@ sed_list = None
 
 converter = Sed()
 
-out_name = 'lsst_color_to_kepler_grid.txt'
+out_name = 'data/lsst_color_to_kepler_grid.txt'
 
 with open(out_name, 'w') as output_file:
     output_file.write('# ebv u-g g-r r-i i-z z-y kep_flux/griz_flux\n')
