@@ -1,6 +1,7 @@
 from __future__ import with_statement
 import numpy as np
 import os
+import time
 
 def get_kurucz_phys(sed_name):
     """
@@ -342,15 +343,15 @@ query_dtype = np.dtype([('sedfilename', str, 256), ('ebv', float), ('parallax', 
                          ('g', float), ('r', float),
                          ('i', float), ('z', float)])
 
+t_start = time.time()
 star_iter = db.get_arbitrary_chunk_iterator(query, dtype=query_dtype,
                                             chunk_size=100000)
 
-
+print 'query took ',time.time()-t_start
 sed_list = None
 
 out_name = 'test_star_fits.txt'
 
-import time
 
 with open(out_name, 'w') as output_file:
     output_file.write('# teff, logg, absmag\n')
