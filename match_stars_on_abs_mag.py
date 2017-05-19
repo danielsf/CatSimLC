@@ -304,7 +304,7 @@ kep_params = np.array([kep_data['teff']/dtemp, kep_data['logg']/dg, abs_mag/dmag
 import sys
 
 sys.setrecursionlimit(10000)
-kep_param_kdtree = KDTree(kep_params)
+kep_param_kdtree = KDTree(kep_params, leafsize=20)
 
 print 'built tree'
 
