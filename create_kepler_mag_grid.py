@@ -75,7 +75,7 @@ for dir_name in ('kurucz', 'mlt', 'wDs'):
     list_of_files = os.listdir(os.path.join(star_dir, dir_name))
     list_of_files = np.array(list_of_files)
     magnorm_list = 15.0*np.ones(len(list_of_files))
-    for ebv in np.arange(0.1, 7.0, 0.1):
+    for ebv in np.arange(0.0, 7.0, 0.1):
         print '    ebv ',ebv,dir_name
         av_list = 3.1*np.ones(len(list_of_files))*ebv
         if sed_list is None:
