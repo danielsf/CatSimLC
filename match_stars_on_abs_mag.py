@@ -300,59 +300,26 @@ print 'n_kep ',len(kep_data)
 
 kep_params = np.array([kep_data['teff']/dtemp, kep_data['logg']/dg, abs_mag/dmag]).transpose()
 
-print kep_params
-
 import sys
 
 sys.setrecursionlimit(10000)
 kep_param_kdtree = KDTree(kep_params)
 
+grid_dtype = np.dtype([('ebv', float),
+                       ('ug', float), ('gr', float), ('ri', float),
+                       ('iz', float), ('zy', float), ('kep_flux', float)])
 
-from lsst.sims.photUtils import cache_LSST_seds
+grid_data = np.genfromtxt('data/lsst_color_to_kepler_grid.txt',
+                          dtype=grid_dtype)
 
-sed_wavelen_min = 290.0
-sed_wavelen_max = 2600.0
+lsst_color_kdtree = KDTree(np.array([grid_data['ug'],
+                                    grid_data['gr'], grid_data['ri'],
+                                    grid_data['iz'], grid_data['zy']]).transpose(),
+                           leafsize=100)
 
-cache_LSST_seds(wavelen_min=sed_wavelen_min, wavelen_max=sed_wavelen_max)
 
-from lsst.sims.photUtils import SedList, BandpassDict, Bandpass
+print kep_params
 
-throughput_dir = getPackageDir('throughputs')
-twomass_dir = os.path.join(throughput_dir, '2MASS')
-
-bp_list = []
-bp_name_list = []
-
-dtype = np.dtype([('w', float), ('s', float)])
-
-bp_wavelen_max = 2500.0
-bp_wavelen_min = 300.0
-
-file_name = 'data/kepler_throughput.txt'
-bp_name = 'kep'
-
-data = np.genfromtxt(file_name, dtype=dtype)
-w_pad = np.arange(bp_wavelen_min, data['w'][0], 1.0)
-s_pad = np.zeros(len(w_pad))
-
-sb = np.append(s_pad, data['s'])
-wavelen = np.append(w_pad, data['w'])
-
-w_pad = np.arange(wavelen[-1], bp_wavelen_max, 1.0)
-s_pad = np.zeros(len(w_pad))
-
-sb = np.append(sb, s_pad)
-wavelen = np.append(wavelen, w_pad)
-
-bp_wavelen = np.arange(bp_wavelen_min, bp_wavelen_max, 1.0)
-bp_sb = np.interp(bp_wavelen, wavelen, sb)
-
-bp = Bandpass(wavelen=bp_wavelen, sb=bp_sb)
-
-bp_list.append(bp)
-bp_name_list.append(bp_name)
-
-bp_dict = BandpassDict(bp_list, bp_name_list)
 
 from lsst.sims.catalogs.db import DBObject
 
@@ -360,10 +327,11 @@ db = DBObject(database='LSSTCATSIM', host='fatboy.phys.washington.edu',
               port=1433, driver='mssql+pymssql')
 
 table_name = 'stars_obafgk_part_0870'
-query = 'SELECT TOP 30000 sedfilename, flux_scale, ebv, parallax FROM %s' % table_name
+query = 'SELECT TOP 30000 sedfilename, ebv, parallax, umag, gmag, rmag, imag, zmag, ymag FROM %s' % table_name
 
-query_dtype = np.dtype([('sedfilename', str, 200), ('scale', float),
-                        ('ebv', float), ('parallax', float)])
+query_dtype = np.dtype([('sedfilename', str, 256), ('ebv', float), ('parallax', float),
+                         ('u', float), ('g', float), ('r', float),
+                         ('i', float), ('z', float), ('y', float)])
 
 star_iter = db.get_arbitrary_chunk_iterator(query, dtype=query_dtype,
                                             chunk_size=10000)
@@ -380,41 +348,47 @@ with open(out_name, 'w') as output_file:
 
 
 from lsst.sims.utils import radiansFromArcsec
+from lsst.sims.photUtils import Sed
+
+dummy_sed = Sed()
 
 t_lookup = 0.0
 t_start = time.time()
+t_query = 0.0
 ct=0
 _au_to_parsec = 1.0/206265.0
 for chunk in star_iter:
     ct += len(chunk)
-    av = 3.1*chunk['ebv']
-    magNorm = -2.5*np.log(chunk['scale'])/np.log(10.0) - 18.402732642
+    
+    pts = np.array([chunk['u']-chunk['g'], chunk['g']-chunk['r'],
+                    chunk['r']-chunk['i'], chunk['i']-chunk['z'],
+                    chunk['z']-chunk['y']]).transpose()
 
-    if sed_list is None:
-        sed_list = SedList(chunk['sedfilename'], magNorm,
-                           galacticAvList=av, wavelenMatch=bp_dict.wavelenMatch)
-    else:
-        sed_list.flush()
-        sed_list.loadSedsFromList(chunk['sedfilename'], magNorm,
-                                  galacticAvList=av)
+    t_start_query = time.time()
+    kep_dist, kep_dex = lsst_color_kdtree.query(pts)
+    t_query += time.time()-t_start_query
 
-
-    mag_list = bp_dict.magListForSedList(sed_list).transpose()
-
-    teff = []
-    logg = []
-    t_start_lookup=time.time()
-    for name in chunk['sedfilename']:
-        name = name.strip().replace('.txt', '').replace('.gz','')
-        teff.append(teff_dict[name])
-        logg.append(logg_dict[name])
-    t_lookup += time.time()-t_start_lookup
-    teff = np.array(teff)
-    logg = np.array(logg)
+    gflux = dummy_sed.fluxFromMag(chunk['g'])
+    rflux = dummy_sed.fluxFromMag(chunk['r'])
+    iflux = dummy_sed.fluxFromMag(chunk['i'])
+    zflux = dummy_sed.fluxFromMag(chunk['z'])
+    kep_flux = grid_data['kep_flux'][kep_dex]*(gflux+rflux+iflux+zflux)
+    kep_mag = dummy_sed.magFromFlux(kep_flux)
 
     catsim_dist = _au_to_parsec/radiansFromArcsec(0.001*chunk['parallax'])
 
-    catsim_abs_mag = mag_list[0]-5.0*np.log10(catsim_dist/10.0)
+    catsim_abs_mag = kep_mag-5.0*np.log10(catsim_dist/10.0)
+
+    teff = []
+    logg = []
+    t_start_lookup = time.time()
+    for name in chunk['sedfilename']:
+       name = name.strip().replace('.txt','').replace('.gz','')
+       teff.append(teff_dict[name])
+       logg.append(logg_dict[name])
+    t_lookup += time.time()-t_start_lookup
+    teff = np.array(teff)
+    logg = np.array(logg)
 
     pts = np.array([teff/dtemp, logg/dg, catsim_abs_mag/dmag]).transpose()
     param_dist, param_dex = kep_param_kdtree.query(pts)
@@ -438,3 +412,4 @@ print 'dtemp ',dtemp
 print 'dg ',dg
 print 'dmag ',dmag
 print 'that took ',time.time()-t_start
+print 'query took ',t_query
