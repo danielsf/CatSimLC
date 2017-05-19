@@ -360,6 +360,8 @@ with open(out_name, 'w') as output_file:
 from lsst.sims.utils import radiansFromArcsec
 from lsst.sims.photUtils import Sed
 
+rng = np.random.RandomState(99)
+
 dummy_sed = Sed()
 
 t_lookup = 0.0
@@ -368,6 +370,7 @@ t_query = 0.0
 t_param = 0.0
 ct=0
 _au_to_parsec = 1.0/206265.0
+
 for chunk in star_iter:
     ct += len(chunk)
 
@@ -404,7 +407,11 @@ for chunk in star_iter:
 
     t_start_param = time.time()
     pts = np.array([teff/dtemp, logg/dg, catsim_abs_mag/dmag]).transpose()
-    param_dist, param_dex = kep_param_kdtree.query(pts)
+    param_dist, param_dex_raw = kep_param_kdtree.query(pts, k=10, eps=0.1)
+    draws = rng.randint(0,10,size=len(chunk))
+    param_dex = []
+    for ix in range(len(chunk)):
+        param_dex.append(param_dex_raw[ix][draws[ix]])
     t_param += time.time()-t_start_param
 
     print '    mean dist ',np.mean(param_dist),' median dist ',np.median(param_dist),len(np.unique(param_dex))
