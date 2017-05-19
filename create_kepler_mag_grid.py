@@ -100,6 +100,6 @@ for dir_name in ('kurucz', 'mlt', 'wDs'):
 
         with open(out_name, 'a') as output_file:
             for ix in range(len(flux_rat)):
-                output_file.write('%e %e %e %e %e %e %e\n'
-                                  % (ebv, u_g[ix], g_r[ix], r_i[ix],
-                                     i_z[ix], z_y[ix], flux_rat[ix]))
+                output_file.write('%s %e %e\n'
+                                  % (list_of_files[ix],
+                                     ebv, flux_rat[ix]))

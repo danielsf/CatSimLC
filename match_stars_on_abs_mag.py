@@ -305,21 +305,30 @@ import sys
 sys.setrecursionlimit(10000)
 kep_param_kdtree = KDTree(kep_params)
 
-grid_dtype = np.dtype([('ebv', float),
-                       ('ug', float), ('gr', float), ('ri', float),
-                       ('iz', float), ('zy', float), ('kep_flux', float)])
-
-grid_data = np.genfromtxt('data/lsst_color_to_kepler_grid.txt',
-                          dtype=grid_dtype)
-
-lsst_color_kdtree = KDTree(np.array([grid_data['ug'],
-                                    grid_data['gr'], grid_data['ri'],
-                                    grid_data['iz'], grid_data['zy']]).transpose(),
-                           leafsize=100)
-
+print 'built tree'
 
 print kep_params
 
+grid_dict = {}
+with open('data/lsst_color_to_kepler_grid.txt', 'r') as input_file:
+    input_lines = input_file.readlines()
+    for line in input_lines:
+        if line[0] == '#':
+            continue
+        line = line.split()
+        name = line[0].replace('.txt','').replace('.gz','')
+        if name not in grid_dict:
+            grid_dict[name] = {}
+            grid_dict[name]['ebv'] = []
+            grid_dict[name]['kep'] = []
+        grid_dict[name]['ebv'].append(float(line[1]))
+        grid_dict[name]['kep'].append(float(line[2]))
+
+for sed_name in grid_dict:
+    grid_dict[sed_name]['ebv'] = np.array(grid_dict[sed_name]['ebv'])
+    grid_dict[sed_name]['kep'] = np.array(grid_dict[sed_name]['kep'])
+
+print 'built grid'
 
 from lsst.sims.catalogs.db import DBObject
 
@@ -327,14 +336,14 @@ db = DBObject(database='LSSTCATSIM', host='fatboy.phys.washington.edu',
               port=1433, driver='mssql+pymssql')
 
 table_name = 'stars_obafgk_part_0870'
-query = 'SELECT TOP 30000 sedfilename, ebv, parallax, umag, gmag, rmag, imag, zmag, ymag FROM %s' % table_name
+query = 'SELECT TOP 300000 sedfilename, ebv, parallax, gmag, rmag, imag, zmag FROM %s' % table_name
 
 query_dtype = np.dtype([('sedfilename', str, 256), ('ebv', float), ('parallax', float),
-                         ('u', float), ('g', float), ('r', float),
-                         ('i', float), ('z', float), ('y', float)])
+                         ('g', float), ('r', float),
+                         ('i', float), ('z', float)])
 
 star_iter = db.get_arbitrary_chunk_iterator(query, dtype=query_dtype,
-                                            chunk_size=10000)
+                                            chunk_size=100000)
 
 
 sed_list = None
@@ -355,24 +364,26 @@ dummy_sed = Sed()
 t_lookup = 0.0
 t_start = time.time()
 t_query = 0.0
+t_param = 0.0
 ct=0
 _au_to_parsec = 1.0/206265.0
 for chunk in star_iter:
     ct += len(chunk)
-    
-    pts = np.array([chunk['u']-chunk['g'], chunk['g']-chunk['r'],
-                    chunk['r']-chunk['i'], chunk['i']-chunk['z'],
-                    chunk['z']-chunk['y']]).transpose()
-
-    t_start_query = time.time()
-    kep_dist, kep_dex = lsst_color_kdtree.query(pts)
-    t_query += time.time()-t_start_query
 
     gflux = dummy_sed.fluxFromMag(chunk['g'])
     rflux = dummy_sed.fluxFromMag(chunk['r'])
     iflux = dummy_sed.fluxFromMag(chunk['i'])
     zflux = dummy_sed.fluxFromMag(chunk['z'])
-    kep_flux = grid_data['kep_flux'][kep_dex]*(gflux+rflux+iflux+zflux)
+
+    t_start_query = time.time()
+    kep_flux = []
+    for  name, ebv, g, r, i, z in zip(chunk['sedfilename'], chunk['ebv'], gflux, rflux, iflux, zflux):
+        dex = np.argmin(np.abs(ebv-grid_dict[name]['ebv']))
+        kep_flux.append(grid_dict[name]['kep'][dex]*(g+r+i+z))
+
+    kep_flux = np.array(kep_flux)
+    t_query += time.time()-t_start_query
+
     kep_mag = dummy_sed.magFromFlux(kep_flux)
 
     catsim_dist = _au_to_parsec/radiansFromArcsec(0.001*chunk['parallax'])
@@ -390,8 +401,10 @@ for chunk in star_iter:
     teff = np.array(teff)
     logg = np.array(logg)
 
+    t_start_param = time.time()
     pts = np.array([teff/dtemp, logg/dg, catsim_abs_mag/dmag]).transpose()
     param_dist, param_dex = kep_param_kdtree.query(pts)
+    t_param += time.time()-t_start_param
 
     print '    mean dist ',np.mean(param_dist),' median dist ',np.median(param_dist),len(np.unique(param_dex))
 
@@ -413,3 +426,4 @@ print 'dg ',dg
 print 'dmag ',dmag
 print 'that took ',time.time()-t_start
 print 'query took ',t_query
+print 'param took ',t_param
