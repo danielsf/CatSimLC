@@ -407,7 +407,7 @@ for chunk in star_iter:
 
     t_start_param = time.time()
     pts = np.array([teff/dtemp, logg/dg, catsim_abs_mag/dmag]).transpose()
-    param_dist, param_dex_raw = kep_param_kdtree.query(pts, k=10, eps=0.1)
+    param_dist, param_dex_raw = kep_param_kdtree.query(pts, k=10, eps=0.25)
     draws = rng.randint(0,10,size=len(chunk))
     param_dex = []
     for ix in range(len(chunk)):
