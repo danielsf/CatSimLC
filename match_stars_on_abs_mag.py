@@ -372,6 +372,8 @@ t_prob = 0.0
 ct=0
 _au_to_parsec = 1.0/206265.0
 
+total_param_dex = np.zeros(0,dtype=int)
+
 for chunk in star_iter:
     ct += len(chunk)
 
@@ -425,6 +427,8 @@ for chunk in star_iter:
     t_prob += time.time()-t_start_prob
 
     print '    mean dist ',np.mean(param_dist),' median dist ',np.median(param_dist),len(np.unique(param_dex))
+    total_param_dex = np.append(total_param_dex, param_dex)
+    print '    n unique ',len(np.unique(total_param_dex))
 
     with open(out_name, 'a') as output_file:
         for ix, (name, dx) in enumerate(zip(chunk['sedfilename'], param_dex)):
@@ -446,3 +450,4 @@ print 'that took ',time.time()-t_start
 print 'query took ',t_query
 print 'param took ',t_param
 print 'prob took ',t_prob
+print 'unique ',len(np.unique(total_param_dex))
