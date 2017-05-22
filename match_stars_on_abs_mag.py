@@ -337,7 +337,7 @@ db = DBObject(database='LSSTCATSIM', host='fatboy.phys.washington.edu',
               port=1433, driver='mssql+pymssql')
 
 table_name = 'stars_obafgk_part_0870'
-query = 'SELECT TOP 600000 sedfilename, ebv, parallax, gmag, rmag, imag, zmag FROM %s' % table_name
+query = 'SELECT TOP 300000 sedfilename, ebv, parallax, gmag, rmag, imag, zmag FROM %s' % table_name
 
 query_dtype = np.dtype([('sedfilename', str, 256), ('ebv', float), ('parallax', float),
                          ('g', float), ('r', float),
