@@ -368,6 +368,7 @@ t_lookup = 0.0
 t_start = time.time()
 t_query = 0.0
 t_param = 0.0
+t_prob = 0.0
 ct=0
 _au_to_parsec = 1.0/206265.0
 
@@ -408,11 +409,20 @@ for chunk in star_iter:
     t_start_param = time.time()
     pts = np.array([teff/dtemp, logg/dg, catsim_abs_mag/dmag]).transpose()
     param_dist, param_dex_raw = kep_param_kdtree.query(pts, k=10, eps=0.25)
-    draws = rng.randint(0,10,size=len(chunk))
+    t_param = time.time()-t_start_param
+
+    t_start_prob = time.time()
     param_dex = []
     for ix in range(len(chunk)):
-        param_dex.append(param_dex_raw[ix][draws[ix]])
-    t_param += time.time()-t_start_param
+        sorted_dex = np.argsort(param_dist[ix])
+        param_dist[ix] = param_dist[ix][sorted_dex]
+        param_dex_raw[ix] = param_dex_raw[ix][sorted_dex]
+        dist_min  = param_dist[ix].min()
+        param_prob = np.exp(-0.5*np.power(param_dist[ix]-dist_min,2))
+        param_prob = param_prob/param_prob.sum()
+        dex = rng.choice(param_dex_raw[ix], p=param_prob)
+        param_dex.append(dex)
+    t_prob += time.time()-t_start_prob
 
     print '    mean dist ',np.mean(param_dist),' median dist ',np.median(param_dist),len(np.unique(param_dex))
 
@@ -435,3 +445,4 @@ print 'dmag ',dmag
 print 'that took ',time.time()-t_start
 print 'query took ',t_query
 print 'param took ',t_param
+print 'prob took ',t_prob
