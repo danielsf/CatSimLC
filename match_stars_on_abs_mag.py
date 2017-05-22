@@ -364,11 +364,12 @@ rng = np.random.RandomState(99)
 
 dummy_sed = Sed()
 
-t_lookup = 0.0
 t_start = time.time()
+t_lookup = 0.0
 t_query = 0.0
 t_param = 0.0
 t_prob = 0.0
+t_out = 0.0
 ct=0
 _au_to_parsec = 1.0/206265.0
 
@@ -377,36 +378,33 @@ total_param_dex = np.zeros(0,dtype=int)
 for chunk in star_iter:
     ct += len(chunk)
 
+    t_start_query = time.time()
     gflux = dummy_sed.fluxFromMag(chunk['g'])
     rflux = dummy_sed.fluxFromMag(chunk['r'])
     iflux = dummy_sed.fluxFromMag(chunk['i'])
     zflux = dummy_sed.fluxFromMag(chunk['z'])
 
-    t_start_query = time.time()
     kep_flux = []
     for  name, ebv, g, r, i, z in zip(chunk['sedfilename'], chunk['ebv'], gflux, rflux, iflux, zflux):
         dex = np.argmin(np.abs(ebv-grid_dict[name]['ebv']))
         kep_flux.append(grid_dict[name]['kep'][dex]*(g+r+i+z))
 
     kep_flux = np.array(kep_flux)
+    kep_mag = dummy_sed.magFromFlux(kep_flux)
+    catsim_dist = _au_to_parsec/radiansFromArcsec(0.001*chunk['parallax'])
+    catsim_abs_mag = kep_mag-5.0*np.log10(catsim_dist/10.0)
     t_query += time.time()-t_start_query
 
-    kep_mag = dummy_sed.magFromFlux(kep_flux)
-
-    catsim_dist = _au_to_parsec/radiansFromArcsec(0.001*chunk['parallax'])
-
-    catsim_abs_mag = kep_mag-5.0*np.log10(catsim_dist/10.0)
-
+    t_start_lookup = time.time()
     teff = []
     logg = []
-    t_start_lookup = time.time()
     for name in chunk['sedfilename']:
        name = name.strip().replace('.txt','').replace('.gz','')
        teff.append(teff_dict[name])
        logg.append(logg_dict[name])
-    t_lookup += time.time()-t_start_lookup
     teff = np.array(teff)
     logg = np.array(logg)
+    t_lookup += time.time()-t_start_lookup
 
     t_start_param = time.time()
     pts = np.array([teff/dtemp, logg/dg, catsim_abs_mag/dmag]).transpose()
@@ -426,6 +424,7 @@ for chunk in star_iter:
         param_dex.append(dex)
     t_prob += time.time()-t_start_prob
 
+    t_start_out = time.time()
     print '    mean dist ',np.mean(param_dist),' median dist ',np.median(param_dist),len(np.unique(param_dex))
     total_param_dex = np.append(total_param_dex, param_dex)
     print '    n unique ',len(np.unique(total_param_dex))
@@ -440,8 +439,8 @@ for chunk in star_iter:
 
 
     print 'did %d in %e ' % (ct, time.time()-t_start)
+    t_out += time.time()-t_start_out
 
-print 't_lookup ',t_lookup
 print 'data points ',len(kep_data)
 print 'dtemp ',dtemp
 print 'dg ',dg
@@ -450,4 +449,6 @@ print 'that took ',time.time()-t_start
 print 'query took ',t_query
 print 'param took ',t_param
 print 'prob took ',t_prob
+print 'out took ',t_out
+print 'lookup took ',t_lookup
 print 'unique ',len(np.unique(total_param_dex))
