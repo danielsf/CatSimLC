@@ -2,6 +2,7 @@ from __future__ import with_statement
 import numpy as np
 import os
 import time
+import argparse
 
 def get_kurucz_phys(sed_name):
     """
@@ -119,6 +120,11 @@ def get_physical_characteristics(sed_name):
     get_physical_characteristics.logg_dict[sed_name] = gg
 
     return tt, mm, gg
+
+
+parser = argparse.ArgumentParser()
+parser.add_argument('--k', type=int, default=10)
+args = parser.parse_args()
 
 #need to create lookup table of temp, fe/h, logg
 #and see how those things correlate when we just
@@ -350,7 +356,7 @@ star_iter = db.get_arbitrary_chunk_iterator(query, dtype=query_dtype,
 print 'query took ',time.time()-t_start
 sed_list = None
 
-out_name = 'test_star_fits.txt'
+out_name = 'test_star_fits_k%d.txt' % args.k
 
 
 with open(out_name, 'w') as output_file:
@@ -408,20 +414,26 @@ for chunk in star_iter:
 
     t_start_param = time.time()
     pts = np.array([teff/dtemp, logg/dg, catsim_abs_mag/dmag]).transpose()
-    param_dist, param_dex_raw = kep_param_kdtree.query(pts, k=10, eps=0.25)
+    if args.k==1:
+        param_dist, param_dex_raw = kep_param_kdtree.query(pts)
+    else:
+        param_dist, param_dex_raw = kep_param_kdtree.query(pts, k=args.k, eps=0.25)
     t_param = time.time()-t_start_param
 
     t_start_prob = time.time()
-    param_dex = []
-    for ix in range(len(chunk)):
-        sorted_dex = np.argsort(param_dist[ix])
-        param_dist[ix] = param_dist[ix][sorted_dex]
-        param_dex_raw[ix] = param_dex_raw[ix][sorted_dex]
-        dist_min  = param_dist[ix].min()
-        param_prob = np.exp(-0.5*np.power(param_dist[ix]-dist_min,2))
-        param_prob = param_prob/param_prob.sum()
-        dex = rng.choice(param_dex_raw[ix], p=param_prob)
-        param_dex.append(dex)
+    if args.k==1:
+        param_dex = param_dex_raw
+    else:
+        param_dex = []
+        for ix in range(len(chunk)):
+            sorted_dex = np.argsort(param_dist[ix])
+            param_dist[ix] = param_dist[ix][sorted_dex]
+            param_dex_raw[ix] = param_dex_raw[ix][sorted_dex]
+            dist_min  = param_dist[ix].min()
+            param_prob = np.exp(-0.5*np.power(param_dist[ix]-dist_min,2))
+            param_prob = param_prob/param_prob.sum()
+            dex = rng.choice(param_dex_raw[ix], p=param_prob)
+            param_dex.append(dex)
     t_prob += time.time()-t_start_prob
 
     t_start_out = time.time()
@@ -432,8 +444,8 @@ for chunk in star_iter:
     with open(out_name, 'a') as output_file:
         for ix, (name, dx) in enumerate(zip(chunk['sedfilename'], param_dex)):
             name = name.strip().replace('.txt','').replace('.gz','')
-            output_file.write('%e %e %e %e %e %e\n' %
-                              (kep_data['teff'][dx],teff_dict[name],
+            output_file.write('%d %e %e %e %e %e %e\n' %
+                              (dx,kep_data['teff'][dx],teff_dict[name],
                                kep_data['logg'][dx], logg_dict[name],
                                abs_mag[dx], catsim_abs_mag[ix]))
 
