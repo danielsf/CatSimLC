@@ -345,7 +345,7 @@ db = DBObject(database='LSSTCATSIM', host='fatboy.phys.washington.edu',
 
 table_name = 'stars_obafgk_part_%s' % args.table
 query = 'SELECT sedfilename, ebv, parallax, gmag, rmag, imag, zmag FROM %s ' % table_name
-query += 'TABLESAMPLE(0.1 percent)'
+query += 'TABLESAMPLE(0.2 percent)'
 
 query_dtype = np.dtype([('sedfilename', str, 256), ('ebv', float), ('parallax', float),
                          ('g', float), ('r', float),
