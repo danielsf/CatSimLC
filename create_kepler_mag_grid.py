@@ -90,13 +90,18 @@ for dir_name in ('kurucz', 'mlt', 'wDs'):
         flux_list = bp_dict.fluxListForSedList(sed_list).transpose()
         mag_list = converter.magFromFlux(flux_list)
 
+
+        sed_list.flush()
+        sed_list.loadSedsFromList(list_of_files, magnorm_list)
+        no_dust_flux_list = bp_dict.fluxListForSedList(sed_list).transpose()
+
         u_g = mag_list[0]-mag_list[1]
         g_r = mag_list[1]-mag_list[2]
         r_i = mag_list[2]-mag_list[3]
         i_z = mag_list[3]-mag_list[4]
         z_y = mag_list[4]-mag_list[5]
         griz_flux = flux_list[1]+flux_list[2]+flux_list[3]+flux_list[4]
-        flux_rat = flux_list[6]/griz_flux
+        flux_rat = no_dust_flux_list[6]/griz_flux
 
         with open(out_name, 'a') as output_file:
             for ix in range(len(flux_rat)):
