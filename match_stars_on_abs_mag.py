@@ -124,6 +124,7 @@ def get_physical_characteristics(sed_name):
 
 parser = argparse.ArgumentParser()
 parser.add_argument('--k', type=int, default=10)
+parser.add_argument('--table', type=str, default='0870')
 args = parser.parse_args()
 
 #need to create lookup table of temp, fe/h, logg
@@ -342,8 +343,9 @@ from lsst.sims.catalogs.db import DBObject
 db = DBObject(database='LSSTCATSIM', host='fatboy.phys.washington.edu',
               port=1433, driver='mssql+pymssql')
 
-table_name = 'stars_obafgk_part_0870'
-query = 'SELECT TOP 300000 sedfilename, ebv, parallax, gmag, rmag, imag, zmag FROM %s' % table_name
+table_name = 'stars_obafgk_part_%s' % args.table
+query = 'SELECT sedfilename, ebv, parallax, gmag, rmag, imag, zmag FROM %s ' % table_name
+query += 'TABLESAMPLE(0.1 percent)'
 
 query_dtype = np.dtype([('sedfilename', str, 256), ('ebv', float), ('parallax', float),
                          ('g', float), ('r', float),
@@ -356,7 +358,7 @@ star_iter = db.get_arbitrary_chunk_iterator(query, dtype=query_dtype,
 print 'query took ',time.time()-t_start
 sed_list = None
 
-out_name = 'test_star_fits_k%d.txt' % args.k
+out_name = 'test_star_fits_k%d_t%s.txt' % (args.k, args.table)
 
 
 with open(out_name, 'w') as output_file:
