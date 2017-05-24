@@ -124,7 +124,7 @@ def get_physical_characteristics(sed_name):
 
 parser = argparse.ArgumentParser()
 parser.add_argument('--k', type=int, default=10)
-parser.add_argument('--table', type=str, default='0870')
+#parser.add_argument('--table', type=str, default='0870', nargs='+')
 args = parser.parse_args()
 
 #need to create lookup table of temp, fe/h, logg
@@ -288,7 +288,20 @@ print 'n_kep ',len(kep_data)
 
 abs_mag = kep_data['kepmag']-5.0*np.log10(kep_data['dist']/10.0)
 
-kep_params = np.array([kep_data['teff']/dtemp, kep_data['logg']/dg, kep_data['feh']/dfeh]).transpose()
+try:
+    assert kep_data['dist_err2'].max()<0.0
+except:
+    print kep_data['dist_err2'].min(),kep_data['dist_err2'].max()
+    raise
+
+abs_up = kep_data['kepmag']-5.0*np.log10((kep_data['dist']+kep_data['dist_err2'])/10.0)
+abs_down = kep_data['kepmag']-5.0*np.log10((kep_data['dist']+kep_data['dist_err1'])/10.0)
+
+dmag = np.median(abs_up-abs_down)
+assert dmag>0.0
+assert (abs_up-abs_down).min()>0.0
+
+kep_params = np.array([kep_data['teff']/dtemp, abs_mag/dmag]).transpose()
 
 import sys
 
@@ -325,26 +338,11 @@ from lsst.sims.catalogs.db import DBObject
 db = DBObject(database='LSSTCATSIM', host='fatboy.phys.washington.edu',
               port=1433, driver='mssql+pymssql')
 
-table_name = 'stars_obafgk_part_%s' % args.table
-query = 'SELECT sedfilename, ebv, parallax, gmag, rmag, imag, zmag FROM %s ' % table_name
-query += 'TABLESAMPLE(0.1 percent)'
 
-query_dtype = np.dtype([('sedfilename', str, 256), ('ebv', float), ('parallax', float),
-                         ('g', float), ('r', float),
-                         ('i', float), ('z', float)])
-
-t_start = time.time()
-star_iter = db.get_arbitrary_chunk_iterator(query, dtype=query_dtype,
-                                            chunk_size=100000)
-
-print 'query took ',time.time()-t_start
-sed_list = None
-
-out_name = 'test_star_fits_k%d_t%s.txt' % (args.k, args.table)
-
+out_name = 'test_star_fits_k%d.txt' % args.k
 
 with open(out_name, 'w') as output_file:
-    output_file.write('# teff, logg, absmag\n')
+    output_file.write('# teff, logg, FeH, absmag\n')
 
 
 from lsst.sims.utils import radiansFromArcsec
@@ -365,81 +363,99 @@ _au_to_parsec = 1.0/206265.0
 
 total_param_dex = np.zeros(0,dtype=int)
 
-for chunk in star_iter:
-    ct += len(chunk)
+for table_subset in ['0870', '1100', '1160', '1180', '1200', '1220', '1250',
+                     '1400']:
 
-    t_start_query = time.time()
-    gflux = dummy_sed.fluxFromMag(chunk['g'])
-    rflux = dummy_sed.fluxFromMag(chunk['r'])
-    iflux = dummy_sed.fluxFromMag(chunk['i'])
-    zflux = dummy_sed.fluxFromMag(chunk['z'])
+    table_name = 'stars_obafgk_part_%s' % table_subset
+    query = 'SELECT sedfilename, ebv, parallax, gmag, rmag, imag, zmag FROM %s ' % table_name
+    query += 'TABLESAMPLE(0.2 percent)'
 
-    kep_flux = []
-    for  name, ebv, g, r, i, z in zip(chunk['sedfilename'], chunk['ebv'], gflux, rflux, iflux, zflux):
-        dex = np.argmin(np.abs(ebv-grid_dict[name]['ebv']))
-        kep_flux.append(grid_dict[name]['kep'][dex]*(g+r+i+z))
+    query_dtype = np.dtype([('sedfilename', str, 256), ('ebv', float), ('parallax', float),
+                             ('g', float), ('r', float),
+                         ('i', float), ('z', float)])
 
-    kep_flux = np.array(kep_flux)
-    kep_mag = dummy_sed.magFromFlux(kep_flux)
-    catsim_dist = _au_to_parsec/radiansFromArcsec(0.001*chunk['parallax'])
-    catsim_abs_mag = kep_mag-5.0*np.log10(catsim_dist/10.0)
-    t_query += time.time()-t_start_query
+    t_start = time.time()
+    star_iter = db.get_arbitrary_chunk_iterator(query, dtype=query_dtype,
+                                                chunk_size=100000)
 
-    t_start_lookup = time.time()
-    teff = []
-    logg = []
-    feh = []
-    for name in chunk['sedfilename']:
-       name = name.strip().replace('.txt','').replace('.gz','')
-       teff.append(teff_dict[name])
-       logg.append(logg_dict[name])
-       feh.append(metallicity_dict[name])
-    teff = np.array(teff)
-    logg = np.array(logg)
-    feh = np.array(feh)
-    t_lookup += time.time()-t_start_lookup
+    print 'query took ',time.time()-t_start
+    sed_list = None
 
-    t_start_param = time.time()
-    pts = np.array([teff/dtemp, logg/dg, feh/dfeh]).transpose()
-    if args.k==1:
-        param_dist, param_dex_raw = kep_param_kdtree.query(pts)
-    else:
-        param_dist, param_dex_raw = kep_param_kdtree.query(pts, k=args.k, eps=0.25)
-    t_param = time.time()-t_start_param
+    for chunk in star_iter:
+        ct += len(chunk)
 
-    t_start_prob = time.time()
-    if args.k==1:
-        param_dex = param_dex_raw
-    else:
-        param_dex = []
-        for ix in range(len(chunk)):
-            sorted_dex = np.argsort(param_dist[ix])
-            param_dist[ix] = param_dist[ix][sorted_dex]
-            param_dex_raw[ix] = param_dex_raw[ix][sorted_dex]
-            dist_min  = param_dist[ix].min()
-            param_prob = np.exp(-0.5*np.power(param_dist[ix]-dist_min,2))
-            param_prob = param_prob/param_prob.sum()
-            dex = rng.choice(param_dex_raw[ix], p=param_prob)
-            param_dex.append(dex)
-    t_prob += time.time()-t_start_prob
+        t_start_query = time.time()
+        gflux = dummy_sed.fluxFromMag(chunk['g'])
+        rflux = dummy_sed.fluxFromMag(chunk['r'])
+        iflux = dummy_sed.fluxFromMag(chunk['i'])
+        zflux = dummy_sed.fluxFromMag(chunk['z'])
 
-    t_start_out = time.time()
-    print '    mean dist ',np.mean(param_dist),' median dist ',np.median(param_dist),len(np.unique(param_dex))
-    total_param_dex = np.append(total_param_dex, param_dex)
-    print '    n unique ',len(np.unique(total_param_dex))
+        kep_flux = []
+        for  name, ebv, g, r, i, z in zip(chunk['sedfilename'], chunk['ebv'], gflux, rflux, iflux, zflux):
+            dex = np.argmin(np.abs(ebv-grid_dict[name]['ebv']))
+            kep_flux.append(grid_dict[name]['kep'][dex]*(g+r+i+z))
 
-    with open(out_name, 'a') as output_file:
-        for ix, (name, dx) in enumerate(zip(chunk['sedfilename'], param_dex)):
+        kep_flux = np.array(kep_flux)
+        kep_mag = dummy_sed.magFromFlux(kep_flux)
+        catsim_dist = _au_to_parsec/radiansFromArcsec(0.001*chunk['parallax'])
+        catsim_abs_mag = kep_mag-5.0*np.log10(catsim_dist/10.0)
+        t_query += time.time()-t_start_query
+
+        t_start_lookup = time.time()
+        teff = []
+        logg = []
+        feh = []
+        for name in chunk['sedfilename']:
             name = name.strip().replace('.txt','').replace('.gz','')
-            output_file.write('%d %e %e %e %e %e %e %e %e\n' %
-                              (dx,kep_data['teff'][dx],teff_dict[name],
-                               kep_data['logg'][dx], logg_dict[name],
-                               kep_data['feh'][dx], metallicity_dict[name],
-                               abs_mag[dx], catsim_abs_mag[ix]))
+            teff.append(teff_dict[name])
+            logg.append(logg_dict[name])
+            feh.append(metallicity_dict[name])
+        teff = np.array(teff)
+        logg = np.array(logg)
+        feh = np.array(feh)
+        t_lookup += time.time()-t_start_lookup
+
+        t_start_param = time.time()
+        pts = np.array([teff/dtemp, catsim_abs_mag/dmag]).transpose()
+        if args.k==1:
+            param_dist, param_dex_raw = kep_param_kdtree.query(pts)
+        else:
+            param_dist, param_dex_raw = kep_param_kdtree.query(pts, k=args.k, eps=0.25)
+        t_param = time.time()-t_start_param
+
+        t_start_prob = time.time()
+        if args.k==1:
+            param_dex = param_dex_raw
+        else:
+            param_dex = []
+            for ix in range(len(chunk)):
+                sorted_dex = np.argsort(param_dist[ix])
+                param_dist[ix] = param_dist[ix][sorted_dex]
+                param_dex_raw[ix] = param_dex_raw[ix][sorted_dex]
+                dist_min  = param_dist[ix].min()
+                param_prob = np.exp(-0.5*np.power(param_dist[ix]-dist_min,2))
+                param_prob = param_prob/param_prob.sum()
+                dex = rng.choice(param_dex_raw[ix], p=param_prob)
+                param_dex.append(dex)
+        t_prob += time.time()-t_start_prob
+
+        t_start_out = time.time()
+        print '    mean dist ',np.mean(param_dist),' median dist ',np.median(param_dist),len(np.unique(param_dex))
+        total_param_dex = np.append(total_param_dex, param_dex)
+        print '    n unique ',len(np.unique(total_param_dex))
+
+        with open(out_name, 'a') as output_file:
+            for ix, (name, dx) in enumerate(zip(chunk['sedfilename'], param_dex)):
+                name = name.strip().replace('.txt','').replace('.gz','')
+                output_file.write('%d %e %e %e %e %e %e %e %e\n' %
+                                  (dx,kep_data['teff'][dx],teff_dict[name],
+                                   kep_data['logg'][dx], logg_dict[name],
+                                   kep_data['feh'][dx], metallicity_dict[name],
+                                   abs_mag[dx], catsim_abs_mag[ix]))
 
 
-    print 'did %d in %e ' % (ct, time.time()-t_start)
-    t_out += time.time()-t_start_out
+        print 'did %d in %e ' % (ct, time.time()-t_start)
+        t_out += time.time()-t_start_out
 
 print 'data points ',len(kep_data)
 print 'dtemp ',dtemp
