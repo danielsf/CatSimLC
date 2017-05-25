@@ -26,13 +26,6 @@ throughput_dir = getPackageDir('throughputs')
 bp_list = []
 bp_name_list = []
 
-for name in ('u', 'g', 'r', 'i', 'z', 'y'):
-    file_name = os.path.join(throughput_dir, 'baseline', 'total_%s.dat' % name)
-    bp = Bandpass()
-    bp.readThroughput(file_name)
-    bp_list.append(bp)
-    bp_name_list.append(name)
-
 file_name =  'data/kepler_throughput.txt'
 dtype = np.dtype([('w', float), ('sb', float)])
 data = np.genfromtxt(file_name, dtype=dtype)
@@ -67,44 +60,28 @@ converter = Sed()
 out_name = 'data/lsst_color_to_kepler_grid.txt'
 
 with open(out_name, 'w') as output_file:
-    output_file.write('# ebv u-g g-r r-i i-z z-y kep_flux/griz_flux\n')
+    output_file.write('# sed_name magnorm kepler_magnitude\n')
+
+magnorm_list = np.arange(5.0, 29.01, 0.1)
 
 for dir_name in ('kurucz', 'mlt', 'wDs'):
     print 'processing ',dir_name
 
     list_of_files = os.listdir(os.path.join(star_dir, dir_name))
     list_of_files = np.array(list_of_files)
-    magnorm_list = 15.0*np.ones(len(list_of_files))
-    for ebv in np.arange(0.0, 7.0, 0.1):
-        print '    ebv ',ebv,dir_name
-        av_list = 3.1*np.ones(len(list_of_files))*ebv
+    for magnorm in magnorm_list:
+        local_magnorm_list = np.array([magnorm]*len(list_of_files))
         if sed_list is None:
-           sed_list = SedList(list_of_files, magnorm_list,
-                              galacticAvList=av_list,
+           sed_list = SedList(list_of_files, local_magnorm_list,
                               wavelenMatch=bp_dict.wavelenMatch)
         else:
             sed_list.flush()
-            sed_list.loadSedsFromList(list_of_files, magnorm_list,
-                                      galacticAvList=av_list)
+            sed_list.loadSedsFromList(list_of_files, local_magnorm_list)
 
-        flux_list = bp_dict.fluxListForSedList(sed_list).transpose()
-        mag_list = converter.magFromFlux(flux_list)
-
-
-        sed_list.flush()
-        sed_list.loadSedsFromList(list_of_files, magnorm_list)
-        no_dust_flux_list = bp_dict.fluxListForSedList(sed_list).transpose()
-
-        u_g = mag_list[0]-mag_list[1]
-        g_r = mag_list[1]-mag_list[2]
-        r_i = mag_list[2]-mag_list[3]
-        i_z = mag_list[3]-mag_list[4]
-        z_y = mag_list[4]-mag_list[5]
-        griz_flux = flux_list[1]+flux_list[2]+flux_list[3]+flux_list[4]
-        flux_rat = no_dust_flux_list[6]/griz_flux
+        mag_list = bp_dict.magListForSedList(sed_list).transpose()
 
         with open(out_name, 'a') as output_file:
-            for ix in range(len(flux_rat)):
-                output_file.write('%s %e %e\n'
+            for ix in range(len(list_of_files)):
+                output_file.write('%s %.2f %e\n'
                                   % (list_of_files[ix],
-                                     ebv, flux_rat[ix]))
+                                     magnorm, mag_list[0][ix]))
