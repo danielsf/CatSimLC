@@ -52,13 +52,9 @@ dfeh = 0.1
 dlogg = 0.1
 
 plt.figsize = (30, 30)
-plt.subplot(1,2,1)
+plt.subplot(2,2,1)
 
-catsim_t_m, catsim_density = make_2d_histogram(catsim_data['teff'], catsim_data['m'], dt, dm)
-#plot_color(catsim_data['teff'], catsim_data['m'], dt, dm)
-counts, xbins, ybins = np.histogram2d(catsim_data['teff'], catsim_data['m'], bins=100)
-plt.contour(counts.transpose(),extent=[xbins.min(),xbins.max(),ybins.min(),ybins.max()],
-            colors='black')
+plot_color(catsim_data['teff'], catsim_data['m'], dt, dm)
 plt.title('CatSim')
 plt.xlabel('Teff')
 plt.ylabel('Absolute Kepler magnitude')
@@ -68,20 +64,53 @@ plt.ylim(m_min, m_max)
 plt.gca().invert_xaxis()
 plt.gca().invert_yaxis()
 
-#plt.subplot(1,2,2)
+plt.subplot(2,2,2)
 plt.title('Kepler')
 plt.xlabel('Teff')
 plt.ylabel('Absolute Kepler magnitude')
-#plot_color(kep_data['teff'], kep_data['m'], dt, dm)
-
-counts,xbins,ybins = np.histogram2d(kep_data['teff'], kep_data['m'], bins=100)
-plt.contour(counts.transpose(),extent=[xbins.min(),xbins.max(),ybins.min(),ybins.max()],
-            colors='blue', alpha=0.5)
+plot_color(kep_data['teff'], kep_data['m'], dt, dm)
 plt.xlim(t_min, t_max)
 plt.xticks(t_ticks, t_labels, fontsize=7)
 plt.ylim(m_min, m_max)
 plt.gca().invert_xaxis()
 plt.gca().invert_yaxis()
+
+
+plt.subplot(2,2,3)
+counts, xbins, ybins = np.histogram2d(catsim_data['teff'], catsim_data['m'], bins=100)
+catsim = plt.contour(counts.transpose(),extent=[xbins.min(),xbins.max(),ybins.min(),ybins.max()],
+            colors='r', alpha=0.5)
+
+print 'catsim counts shape ',counts.shape
+
+counts,xbins,ybins = np.histogram2d(kep_data['teff'], kep_data['m'], bins=100)
+kep = plt.contour(counts.transpose(),extent=[xbins.min(),xbins.max(),ybins.min(),ybins.max()],
+            colors='blue', alpha=0.5)
+
+print 'kepler counts shape ',counts.shape
+
+plt.xlabel('Teff')
+plt.ylabel('Absolute Kepler magnitude')
+
+m_min=-5
+m_max=10
+
+t_min=3000.0
+t_max=7000.0
+t_ticks = np.arange(np.round(t_min/1000.0)*1000.0, np.round(t_max/1000.0)*1000.0, 2000.0)
+t_labels = ['%d' % tt for tt in t_ticks]
+
+
+plt.xlim(t_min, t_max)
+plt.xticks(t_ticks, t_labels, fontsize=7)
+plt.ylim(m_min, m_max)
+
+plt.text(t_max-0.1*(t_max-t_min),m_min+0.25*(m_max-m_min),
+         'Blue is Kepler; Red is CatSim')
+
+plt.gca().invert_xaxis()
+plt.gca().invert_yaxis()
+
 plt.tight_layout()
 plt.savefig('kepler_hr_diagram_remove_dust.png')
 plt.close()
