@@ -148,28 +148,22 @@ for kk in (1, 10):
     data = np.genfromtxt(data_file, dtype=dtype)
     print 'read in data'
 
-    used_dexes = np.unique(data['dex'])
-    unused_dexes = [ix for ix in range(len(kep_data)) if ix not in used_dexes]
-    unused_dexes = np.array(unused_dexes)
-    print ('used ',len(used_dexes),' unused ',len(unused_dexes),' available ',
-           len(kep_data))
-
     plt.figsize = (30, 30)
-    plt.subplot(3,2,1)
-    plot_color(kep_data['teff'][unused_dexes], kep_abs_mag[unused_dexes],
-               100.0, 0.1)
-    t_min = kep_data['teff'].min()
-    t_max = kep_data['teff'].max()
-    xticks = np.arange(np.round(t_min/1000.0)*1000.0,
-                       np.round(t_max/1000.0)*1000.0,
-                       2000.0)
+    plt.subplot(2,2,1)
+    plot_color(data['catsim_teff'], data['kep_teff'], 100.0, 100.0)
+    t_min = min(data['catsim_teff'].min(), data['kep_teff'].min())
+    t_max = max(data['catsim_teff'].max(), data['kep_teff'].max())
+    t_ticks = np.arange(np.round(t_min/1000.0)*1000.0, np.round(t_max/1000.0)*1000.0,
+                        2000.0)
 
-    xlabels = ['%d' % xx for xx in xticks]
-    plt.xlabel('Teff', fontsize=7)
-    plt.ylabel('Absolute Kepler Magnitude', fontsize=7)
-    plt.xticks(xticks, xlabels, fontsize=7)
-    plt.gca().invert_xaxis()
-    plt.gca().invert_yaxis()
+    t_labels = ['%d' % xx for xx in t_ticks]
+    plt.xlabel('CatSim Teff', fontsize=10)
+    plt.xticks(t_ticks, t_labels, fontsize=10)
+    plt.ylabel('Kepler Teff', fontsize=10)
+    plt.yticks(t_ticks, t_labels, fontsize=10)
+    plt.xlim(t_min, t_max)
+    plt.ylim(t_min, t_max)
+    plt.plot((t_min, t_max),(t_min, t_max), color='r', linestyle='--')
 
     plt.tight_layout()
     plt.savefig('fit_plots_nn%d.png' % kk)
