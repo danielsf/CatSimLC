@@ -1,8 +1,6 @@
 """
-This script will create a look up table that will map LSST colors to
-the ratio of Kepler flux to the sum of g, r, i, z fluxes.  This should
-allow us to approximate the Kepler magnitudes of objects in CatSim without
-having to read in their SEDs and integrate over the Kepler bandpass directly.
+This script will create a look up table that will map sed_name and magNorm
+to Kepler magnitude (without dust)
 """
 
 from __future__ import with_statement
