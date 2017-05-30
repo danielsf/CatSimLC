@@ -44,6 +44,9 @@ t_start = time.time()
 
 out_dict = {}
 
+with open(args.out, 'w') as out_file:
+    pass
+
 for file_name in list_of_targets:
     out_dict[file_name] = {}
     out_dict[file_name]['components'] = len(param_dict[file_name])
@@ -65,8 +68,15 @@ for file_name in list_of_targets:
     ct += 1
     if ct%1000 == 0:
         print '%d took %e' % (ct, (time.time()-t_start)/60.0)
+        with open(args.out, 'a') as out_file:
+            for file_name in out_dict:
+                out_file.write('%s %d ' % (file_name, out_dict[file_name]['components']))
+                for ix in range(5):
+                    out_file.write('%e ' % out_dict[file_name]['chisq'][ix])
+                out_file.write('\n')
+        out_dict = {}
 
-with open(args.out, 'w') as out_file:
+with open(args.out, 'a') as out_file:
     for file_name in out_dict:
         out_file.write('%s %d ' % (file_name, out_dict[file_name]['components']))
         for ix in range(5):
