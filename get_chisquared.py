@@ -60,7 +60,7 @@ for file_name in list_of_targets:
         model += params[1]*np.sin(arg)
         chisq = np.power((data['f']-model)/data['s'],2).sum()
         out_dict[file_name]['chisq'].append(chisq)
-    while len(out_dict[file_name]['chisq']<5):
+    while len(out_dict[file_name]['chisq'])<5:
         out_dict[file_name]['chisq'].append(chisq)
     ct += 1
     if ct%1000 == 0:
