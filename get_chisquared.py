@@ -66,7 +66,7 @@ for file_name in list_of_targets:
     while len(out_dict[file_name]['chisq'])<5:
         out_dict[file_name]['chisq'].append(chisq)
     ct += 1
-    print '%s %e' % (file_name,chisq)
+
     if ct%1000 == 0:
         print '%d took %e' % (ct, (time.time()-t_start)/60.0)
         with open(args.out, 'a') as out_file:
