@@ -20,12 +20,12 @@ def make_2d_histogram(xx, yy, dx, dy):
     return unique_rows, unique_counts
 
 
-def plot_color(xx, yy, dx, dy):
+def plot_color(xx, yy, dx, dy, s=5):
     dexes, cts = make_2d_histogram(xx, yy, dx, dy)
     sorted_dex = np.argsort(cts)
     dexes = dexes[sorted_dex]
     cts = cts[sorted_dex]
-    plt.scatter(xx[dexes], yy[dexes], c=cts, s=5,
+    plt.scatter(xx[dexes], yy[dexes], c=cts, s=s,
                 cmap=plt.cm.gist_ncar, edgecolor='')
 
     plt.colorbar()
@@ -140,6 +140,7 @@ kep_abs_mag = kep_data['kepmag']-5.0*np.log10(kep_data['dist']/10.0)
 
 
 dtype = np.dtype([('dex', int), ('kep_teff', float), ('catsim_teff', float),
+                  ('kep_logg', float), ('catsim_logg', float),
                   ('kep_feh', float), ('catsim_feh', float),
                   ('kep_mag', float), ('catsim_mag', float)])
 
@@ -148,11 +149,23 @@ for kk in (1, 10):
     data = np.genfromtxt(data_file, dtype=dtype)
     print 'read in data'
 
+    feh_min = min(data['catsim_feh'].min(), data['kep_feh'].min())
+    feh_max = max(data['catsim_feh'].max(), data['kep_feh'].max())
+    t_min = min(data['catsim_teff'].min(), data['kep_teff'].min())
+    t_max = max(data['catsim_teff'].max(), data['kep_teff'].max())
+    mag_min = min(data['catsim_mag'].min(), data['kep_mag'].min())
+    mag_max = max(data['catsim_mag'].max(), data['kep_mag'].max())
+    logg_min = min(data['catsim_logg'].min(), data['kep_logg'].min())
+    logg_max = max(data['catsim_logg'].max(), data['kep_logg'].max())
+
+    print 't ',t_min,t_max
+    print 'feh ',feh_min,feh_max
+    print 'mag ',mag_min,mag_max
+
+
     plt.figsize = (30, 30)
     plt.subplot(2,2,1)
     plot_color(data['catsim_teff'], data['kep_teff'], 100.0, 100.0)
-    t_min = min(data['catsim_teff'].min(), data['kep_teff'].min())
-    t_max = max(data['catsim_teff'].max(), data['kep_teff'].max())
     t_ticks = np.arange(np.round(t_min/1000.0)*1000.0, np.round(t_max/1000.0)*1000.0,
                         2000.0)
 
@@ -164,6 +177,60 @@ for kk in (1, 10):
     plt.xlim(t_min, t_max)
     plt.ylim(t_min, t_max)
     plt.plot((t_min, t_max),(t_min, t_max), color='r', linestyle='--')
+
+    plt.subplot(2,2,2)
+    plot_color(data['catsim_feh'], data['kep_feh'], 0.1, 0.1)
+    #counts, xbins, ybins = np.histogram2d(data['catsim_feh'], data['kep_feh'],
+    #                                      bins=200)
+
+    #plt.contour(counts.transpose(),
+    #            extent=[xbins.min(), xbins.max(), ybins.min(), ybins.max()])
+
+    feh_ticks = np.arange(np.round(feh_min/0.25)*0.25, np.round(feh_max/0.25)*0.25,
+                        1.0)
+
+    feh_labels = ['%.2f' % xx for xx in feh_ticks]
+    plt.xlabel('CatSim FeH', fontsize=10)
+    plt.xticks(feh_ticks, feh_labels, fontsize=10)
+    plt.ylabel('Kepler FeH', fontsize=10)
+    plt.yticks(feh_ticks, feh_labels, fontsize=10)
+    plt.xlim(feh_min-0.1, feh_max+0.1)
+    plt.ylim(feh_min-0.1, feh_max+0.1)
+    plt.plot((feh_min, feh_max),(feh_min, feh_max), color='r', linestyle='--')
+
+    plt.subplot(2,2,3)
+    plot_color(data['catsim_mag'], data['kep_mag'], 0.1, 0.1)
+    mag_ticks = np.arange(np.round(mag_min/0.25)*0.25, np.round(mag_max/0.25)*0.25,
+                        0.5)
+
+    mag_labels = ['%.2f' % xx for xx in mag_ticks]
+    plt.xlabel('CatSim mag', fontsize=10)
+    plt.xticks(mag_ticks, mag_labels, fontsize=10)
+    plt.ylabel('Kepler mag', fontsize=10)
+    plt.yticks(mag_ticks, mag_labels, fontsize=10)
+    plt.xlim(mag_min-0.1, mag_max+0.1)
+    plt.ylim(mag_min-0.1, mag_max+0.1)
+    plt.plot((mag_min, mag_max),(mag_min, mag_max), color='r', linestyle='--')
+
+    plt.subplot(2,2,4)
+    plot_color(data['catsim_logg'], data['kep_logg'], 0.1, 0.1, s=10)
+    #counts, xbins, ybins = np.histogram2d(data['catsim_logg'], data['kep_logg'],
+    #                                      bins=200)
+    #plt.contour(counts.transpose(),
+    #            extent=[xbins.min(), xbins.max(), ybins.min(), ybins.max()])
+
+    logg_ticks = np.arange(np.round(logg_min/0.25)*0.25, np.round(logg_max/0.25)*0.25,
+                        1.0)
+
+    logg_labels = ['%.2f' % xx for xx in logg_ticks]
+    plt.xlabel('CatSim logg', fontsize=10)
+    plt.xticks(logg_ticks, logg_labels, fontsize=10)
+    plt.ylabel('Kepler logg', fontsize=10)
+    plt.yticks(logg_ticks, logg_labels, fontsize=10)
+    plt.xlim(logg_min-0.1, logg_max+0.1)
+    plt.ylim(logg_min-0.1, logg_max+0.1)
+    plt.plot((logg_min, logg_max),(logg_min, logg_max), color='r', linestyle='--')
+
 
     plt.tight_layout()
     plt.savefig('fit_plots_nn%d.png' % kk)
