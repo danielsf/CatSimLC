@@ -56,7 +56,7 @@ for file_name in list_of_targets:
     data = np.genfromtxt(full_name, dtype=dtype)
     model = np.zeros(len(data['t']))
     for ix in range(min(len(param_dict[file_name]), 5)):
-        params = param_dict[name][ix]
+        params = param_dict[file_name][ix]
         model += params[2]
         arg = params[4]*(data['t']-data['t'].min()-params[3])
         model += params[0]*np.cos(arg)
@@ -66,7 +66,7 @@ for file_name in list_of_targets:
     while len(out_dict[file_name]['chisq'])<5:
         out_dict[file_name]['chisq'].append(chisq)
     ct += 1
-    print file_name,chisq
+    print '%s %e' % (file_name,chisq)
     if ct%1000 == 0:
         print '%d took %e' % (ct, (time.time()-t_start)/60.0)
         with open(args.out, 'a') as out_file:
