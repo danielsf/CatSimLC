@@ -11,6 +11,8 @@ parser.add_argument('--out', type=str, default=None)
 
 args = parser.parse_args()
 
+print 'getting params from ',args.params
+
 list_of_targets = []
 with open(args.targets, 'r') as input_file:
     for line in input_file:
