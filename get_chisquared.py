@@ -6,8 +6,15 @@ import argparse
 parser = argparse.ArgumentParser()
 parser.add_argument('--lcdir', type=str, default=None)
 parser.add_argument('--params', type=str, default=None)
+parser.add_argument('--targets', type=str, default=None)
+parser.add_argument('--out', type=str, default=None)
 
 args = parser.parse_args()
+
+list_of_targets = []
+with open(args.targets, 'r') as input_file:
+    for line in input_file:
+        list_of_targets.append(line.strip())
 
 param_dict = {}
 with open(args.params, 'r') as input_file:
@@ -32,27 +39,35 @@ chisquared_dict = {}
 ct = 0
 import time
 t_start = time.time()
-with open('chisquared_of_models.txt', 'w') as out_file:
-    for file_name in param_dict:
-        out_file.write('%s %d ' % (file_name, len(param_dict[file_name])))
 
-        full_name = os.path.join(args.lcdir, file_name)
-        data = np.genfromtxt(full_name, dtype=dtype)
-        model = np.zeros(len(data['t']))
-        for ix in range(min(len(param_dict[name]), 5)):
-            params = param_dict[name][ix]
-            model += params[2]
-            arg = params[4]*(data['t']-data['t'].min()-params[3])
-            model += params[0]*np.cos(arg)
-            model += params[1]*np.sin(arg)
-            chisq = np.power((data['f']-model)/data['s'],2).sum()
-            out_file.write('%e ' % chisq)
-        if ix<4:
-            while ix<5:
-                out_file.write('%e ' % chisq)
-                ix += 1
-        ct += 1
-        if ct%1000 == 0:
-            print '%d took %e' % (ct, (time.time()-t_start)/60.0)
+out_dict = {}
+
+for file_name in list_of_targets:
+    out_dict[file_name] = {}
+    out_dict[file_name]['components'] = len(param_dict[file_name])
+    out_dict[file_name]['chisq'] = []
+
+    full_name = os.path.join(args.lcdir, file_name)
+    data = np.genfromtxt(full_name, dtype=dtype)
+    model = np.zeros(len(data['t']))
+    for ix in range(min(len(param_dict[name]), 5)):
+        params = param_dict[name][ix]
+        model += params[2]
+        arg = params[4]*(data['t']-data['t'].min()-params[3])
+        model += params[0]*np.cos(arg)
+        model += params[1]*np.sin(arg)
+        chisq = np.power((data['f']-model)/data['s'],2).sum()
+        out_dict[file_name]['chisq'].append(chisq)
+    while len(out_dict[file_name]['chisq']<5):
+        out_dict[file_name]['chisq'].append(chisq)
+    ct += 1
+    if ct%1000 == 0:
+        print '%d took %e' % (ct, (time.time()-t_start)/60.0)
+
+with open(args.out, 'w') as out_file:
+    for file_name in out_dict:
+        out_file.write('%s %d ' % (file_name, out_dict[file_name]['components']))
+        for ix in range(5):
+            out_file.write('%e ' % out_dict[file_name]['chisq'][ix])
         out_file.write('\n')
 
