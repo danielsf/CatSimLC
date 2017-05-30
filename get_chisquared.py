@@ -55,7 +55,7 @@ for file_name in list_of_targets:
     full_name = os.path.join(args.lcdir, file_name)
     data = np.genfromtxt(full_name, dtype=dtype)
     model = np.zeros(len(data['t']))
-    for ix in range(min(len(param_dict[name]), 5)):
+    for ix in range(min(len(param_dict[file_name]), 5)):
         params = param_dict[name][ix]
         model += params[2]
         arg = params[4]*(data['t']-data['t'].min()-params[3])
