@@ -7,7 +7,7 @@ parser = argparse.ArgumentParser()
 parser.add_argument('--lcdir', type=str, default=None)
 parser.add_argument('--params', type=str, default=None)
 
-parser.parse_args()
+args = parser.parse_args()
 
 param_dict = {}
 with open(args.params, 'r') as input_file:
