@@ -27,7 +27,7 @@ with open(args.params, 'r') as input_file:
             omega = float(line[base_dex+4])
             param_dict[name].append((aa, bb, cc, tau, omega))
 
-dtype = np.dtype([('f', float), ('f', float), ('s', float)])
+dtype = np.dtype([('t', float), ('f', float), ('s', float)])
 chisquared_dict = {}
 ct = 0
 import time
