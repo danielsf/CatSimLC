@@ -27,7 +27,7 @@ with open(args.params, 'r') as input_file:
         name = line[0]
         param_dict[name] = []
         n_components = int(line[1])
-        for ix in range(min(3,n_components)):
+        for ix in range(n_components):
             base_dex = 4+5*ix
             aa = float(line[base_dex])
             bb = float(line[base_dex+1])
