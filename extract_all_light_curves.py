@@ -15,7 +15,7 @@ if args.out_dir is None:
     raise RuntimeError('must specify out_dir')
 
 if args.in_dirs is None:
-    raise RuntimeERror('must specify in_dirs')
+    raise RuntimeError('must specify in_dirs')
 
 if not isinstance(args.in_dirs, list):
     in_dirs = [args.in_dirs]
