@@ -26,10 +26,10 @@ out_dir = args.out_dir
 if not os.path.exists(out_dir):
     os.mkdir(out_dir)
 
-t_end = {}
-flux_end = {}
-
 has_written = []
+
+t_end = {}
+end_points = {}
 
 for lc_dir in in_dirs:
     tar_file_list = os.listdir(lc_dir)
@@ -62,18 +62,17 @@ for lc_dir in in_dirs:
             flux = flux[valid_dexes]
             sig = sig[valid_dexes]
 
-            if obj_name in flux_end:
-                flux -= flux[0]
-                flux += flux_end[obj_name]
-
             if obj_name in t_end:
                 if mjd.min()<t_end[obj_name]:
                     raise RuntimeError('%s %s times out of order %e; %e'
                                        % (os.path.join(lc_dir, tar_file_name),
                                           obj_name, mjd.min(), t_end[obj_name]))
 
-            flux_end[obj_name] = flux[-1]
             t_end[obj_name] = mjd[-1]
+
+            if out_name not in end_points:
+                end_points[out_name] = []
+            end_points[out_name].append((mjd[0], mjd[-1]))
 
             if out_name in has_written:
                 mode = 'a'
@@ -86,3 +85,9 @@ for lc_dir in in_dirs:
                     output_file.write('%.12e %e %e\n' % (tt, ff, ss))
 
         print 'processed in %s' % tar_file_name
+
+for out_name in end_points:
+    with open(out_name, 'a') as output_file:
+        output_file.write('# observing quarter end points\n')
+        for span in end_points[out_name]:
+            output_file.write('# %.12e %.12e\n' % (span[0], span[1]))
