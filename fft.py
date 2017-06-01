@@ -44,6 +44,27 @@ class FFTransformer(object):
     def __init__(self):
         pass
 
+    def _initialize_fft_real(self, n_bits, n_strides):
+
+        self.cos_cache = np.cos(2.0*np.pi*self.cache_calc_dexes/self.tot_pts)
+        self.sin_cache = np.sin(2.0*np.pi*self.cache_calc_dexes/self.tot_pts)
+
+        n_pts = 1
+
+        self.even_dexes = []
+        self.odd_dexes = []
+        self.cache_dexes = []
+        for i_bit in range(n_bits):
+            n_pts *= 2
+            n_strides = n_strides//2
+            base_dexes = np.arange(0, n_strides*n_pts, n_pts)
+            even_dexes = np.array([base_dexes + k for k in range(n_pts//2)]).flatten()
+            self.even_dexes.append(even_dexes)
+            self.odd_dexes.append(even_dexes + n_pts//2)
+            self.cache_dexes.append(np.array([[k*self.tot_pts//n_pts]*len(base_dexes)
+                                               for k in range(n_pts//2)]).flatten())
+
+
     def fft_real(self, time_arr, f_arr):
         """
         Fast Fourier Transform a real function as described in section 12.2.1
@@ -81,28 +102,12 @@ class FFTransformer(object):
             n_bits != self.n_bits or
             tot_pts != self.tot_pts):
 
-            n_pts = 1
             n_strides = len(f_arr)
 
             self.cache_calc_dexes = copy.deepcopy(cache_calc_dexes)
             self.n_bits = n_bits
             self.tot_pts = tot_pts
-
-            self.cos_cache = np.cos(2.0*np.pi*cache_calc_dexes/tot_pts)
-            self.sin_cache = np.sin(2.0*np.pi*cache_calc_dexes/tot_pts)
-
-            self.even_dexes = []
-            self.odd_dexes = []
-            self.cache_dexes = []
-            for i_bit in range(n_bits):
-                n_pts *= 2
-                n_strides = n_strides//2
-                base_dexes = np.arange(0, n_strides*n_pts, n_pts)
-                even_dexes = np.array([base_dexes + k for k in range(n_pts//2)]).flatten()
-                self.even_dexes.append(even_dexes)
-                self.odd_dexes.append(even_dexes + n_pts//2)
-                self.cache_dexes.append(np.array([[k*tot_pts//n_pts]*len(base_dexes)
-                                                   for k in range(n_pts//2)]).flatten())
+            self._initialize_fft_real(n_bits, n_strides)
 
         #print 'prep took ',time.time()-t_start
         t_start = time.time()
