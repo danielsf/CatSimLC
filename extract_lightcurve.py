@@ -48,6 +48,7 @@ overhang = 100
 
 obj_id = '009449503'
 #obj_id = '008097275'
+obj_id = '008228261'
 
 data_dir = os.path.join('workspace', 'data')
 list_of_files = os.listdir(data_dir)
