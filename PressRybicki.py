@@ -338,11 +338,11 @@ def _is_significant(aa, bb, cc, omega, tau,
 
     if bic_1 < _is_significant.bic_0:
         _is_significant.bic_0 = bic_1
-        return True
-    return False
+        return True, bic_1
+    return False, bic_1
 
 def get_clean_spectrum_PressRybicki(time_arr, f_arr, sigma_arr, delta,
-                                    max_components=10):
+                                    max_components=None, gain=1.0):
     """
     Clean a time series according to the algorithm presented in
     Roberts et al. 1987 (AJ 93, 968) (though this works in real
@@ -381,8 +381,6 @@ def get_clean_spectrum_PressRybicki(time_arr, f_arr, sigma_arr, delta,
 
     _is_significant.model = None
 
-    gain = 1.0
-
     residual_arr = copy.deepcopy(f_arr)
 
     (pspec, freq_arr,
@@ -394,7 +392,8 @@ def get_clean_spectrum_PressRybicki(time_arr, f_arr, sigma_arr, delta,
     tau_list = []
     omega_list = []
 
-    for it in range(1, max_components+1):
+    significance = True
+    while significance:
         valid = np.where(np.logical_and(np.logical_not(np.isnan(pspec)),
                                         freq_arr<get_ls_PressRybicki.cut_off_freq))
         pspec = pspec[valid]
@@ -409,30 +408,38 @@ def get_clean_spectrum_PressRybicki(time_arr, f_arr, sigma_arr, delta,
         tau_max = tau[max_dex]
         aa_max = aa[max_dex]*gain
         bb_max = bb[max_dex]*gain
-        cc_max = cc[max_dex]*gain
+        cc_max = cc[max_dex]
         omega_max = freq_max*2.0*np.pi
 
-        if _is_significant(aa_list, bb_list, cc_list, omega_list, tau_list,
-                           aa_max, bb_max, cc_max, omega_max, tau_max,
-                           time_arr, f_arr, sigma_arr):
+        significance, bic_1 = _is_significant(aa_list, bb_list, cc_list, omega_list, tau_list,
+                                              aa_max, bb_max, cc_max, omega_max, tau_max,
+                                              time_arr, f_arr, sigma_arr)
 
+        if significance:
             aa_list.append(aa_max)
             bb_list.append(bb_max)
             cc_list.append(cc_max)
             tau_list.append(tau_max)
             omega_list.append(omega_max)
+            print '    components %d %e' % (len(aa_list), bic_1)
 
         else:
             break
 
-        model = np.array([cc_max]*len(time_arr))
-        model += aa_max*np.cos(omega_max*(time_arr-time_arr.min()-tau_max))
-        model += bb_max*np.sin(omega_max*(time_arr-time_arr.min()-tau_max))
+        if max_components is not None and len(aa_list)>=max_components:
+            significance = False
 
-        residual_arr -= model
-        if it<max_components:
+        if significance:
+
+            model = np.array([cc_max]*len(time_arr))
+            model += aa_max*np.cos(omega_max*(time_arr-time_arr.min()-tau_max))
+            model += bb_max*np.sin(omega_max*(time_arr-time_arr.min()-tau_max))
+
+            residual_arr -= model
+
             (pspec, freq_arr,
              tau, aa, bb, cc) = get_ls_PressRybicki(time_arr, residual_arr, sigma_arr, delta)
+
 
     return (np.array(aa_list), np.array(bb_list),
             np.array(cc_list), np.array(omega_list),
