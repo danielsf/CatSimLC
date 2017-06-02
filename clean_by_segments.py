@@ -43,7 +43,7 @@ components = 3
 import time
 
 t_start = time.time()
-for segment in segment_list:
+for i_seg, segment in enumerate(segment_list):
     if time_arr is None:
         time_arr = segment[0]
         flux_arr = segment[1]
@@ -78,12 +78,46 @@ for segment in segment_list:
     #print '%e %e' % (omega[0], cc[0])
     #print np.median(time_arr)
 
+    with open('kplr%s_segment_%d.txt' % (args.objid, i_seg), 'w') as out_file:
+        for tt, ff, ss in zip(segment[0], segment[1]-offset, segment[2]):
+            out_file.write('%.12e %e %e\n' % (tt, ff, ss))
+
     time_arr = np.append(time_arr, segment[0])
     flux_arr = np.append(flux_arr, segment[1]-offset)
     sig_arr = np.append(sig_arr, segment[2])
 
-print 'smoothing data took ',time.time()-t_start
 
-with open(args.outfile, 'w') as out_file:
+with open('kplr%s_stitched.txt' % args.objid, 'w') as out_file:
     for tt, ff, ss in zip(time_arr, flux_arr, sig_arr):
         out_file.write('%.12e %e %e\n' % (tt, ff, ss))
+
+
+dt = 0.1*np.diff(np.unique(time_arr)).min()
+
+(aa, bb, cc,
+ omega, tau, freq) = get_clean_spectrum_PressRybicki(time_arr,
+                                                     flux_arr,
+                                                     sig_arr,
+                                                     dt, gain=0.2,
+                                                     max_components=10)
+
+model3 = np.zeros(len(time_arr))
+model_max = np.zeros(len(time_arr))
+print 'final component count %d' % len(aa)
+for ix in range(min(len(aa), 50)):
+    xx = omega[ix]*(time_arr-time_arr.min()-tau[ix])
+    if ix<3:
+        model3 += cc[ix]
+        model3 += aa[ix]*np.cos(xx)
+        model_max += bb[ix]*np.sin(xx)
+    model_max += cc[ix]
+    model_max += aa[ix]*np.cos(xx)
+    model_max += bb[ix]*np.sin(xx)
+
+with open(args.outfile, 'w') as out_file:
+    for tt, ff, ss, m3, m_max in zip(time_arr, flux_arr, sig_arr, model3, model_max):
+        out_file.write('%.12e %e %e %e %e\n' % (tt, ff, ss, m3, m_max))
+
+
+print 'smoothing data took ',time.time()-t_start
+
