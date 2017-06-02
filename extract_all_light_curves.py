@@ -28,7 +28,6 @@ if not os.path.exists(out_dir):
 
 has_written = []
 
-t_end = {}
 end_points = {}
 
 for lc_dir in in_dirs:
@@ -61,14 +60,6 @@ for lc_dir in in_dirs:
             mjd = mjd[valid_dexes]
             flux = flux[valid_dexes]
             sig = sig[valid_dexes]
-
-            if obj_name in t_end:
-                if mjd.min()<t_end[obj_name]:
-                    raise RuntimeError('%s %s times out of order %e; %e'
-                                       % (os.path.join(lc_dir, tar_file_name),
-                                          obj_name, mjd.min(), t_end[obj_name]))
-
-            t_end[obj_name] = mjd[-1]
 
             if out_name not in end_points:
                 end_points[out_name] = []
