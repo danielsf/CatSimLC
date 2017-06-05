@@ -342,7 +342,7 @@ def _is_significant(aa, bb, cc, omega, tau,
     return False, bic_1
 
 def get_clean_spectrum_PressRybicki(time_arr, f_arr, sigma_arr, delta,
-                                    max_components=None, gain=1.0):
+                                    max_components=None):
     """
     Clean a time series according to the algorithm presented in
     Roberts et al. 1987 (AJ 93, 968) (though this works in real
@@ -406,8 +406,8 @@ def get_clean_spectrum_PressRybicki(time_arr, f_arr, sigma_arr, delta,
 
         freq_max = valid_freq[max_dex]
         tau_max = tau[max_dex]
-        aa_max = aa[max_dex]*gain
-        bb_max = bb[max_dex]*gain
+        aa_max = aa[max_dex]
+        bb_max = bb[max_dex]
         cc_max = cc[max_dex]
         omega_max = freq_max*2.0*np.pi
 
