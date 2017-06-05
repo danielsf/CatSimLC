@@ -97,6 +97,8 @@ for file_name in obj_list['lc']:
 
             del data_dict
             data_dict = {}
+            del header_dict
+            header_dict = {}
     except:
         print('failed on %s' % file_name)
         raise
