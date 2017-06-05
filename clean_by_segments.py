@@ -4,18 +4,37 @@ import numpy as np
 import argparse
 
 parser = argparse.ArgumentParser()
-parser.add_argument('--objid', type=str, default=None)
-parser.add_argument('--outfile', type=str, default=None)
+parser.add_argument('--list', type=str, default=None,
+                    help='file containing the list of the names of the '
+                         'lightcurve files to be smoothed')
+parser.add_argument('--indir', type=str, default=None,
+                    help='the directory where the lightcurves in --list '
+                         'are saved')
+parser.add_argument('--do_stitch', type=bool, default=True,
+                    help='do we need to do stitching')
+parser.add_argument('--stitchdir', type=str, default=None,
+                    help='if stitch=True, the directory where the stitched '
+                         'together light curves will be output')
+parser.add_argment('--paramfile', type=str, default=None,
+                   help='the file where smoothed lightcurve parameters will ',
+                        'be saved.')
 
 args = parser.parse_args()
-if args.objid is None:
-    raise RuntimeError('Must specify objid')
-if args.outfile is None:
-    raise RuntimeError('Must specify outfile')
 
-data_dir = os.path.join('workspace', 'data')
-list_of_files = os.listdir(data_dir)
-list_of_files.sort()
+if args.list is None:
+    raise RuntimeError("You must specify --list")
+
+if args.paramfile is None:
+    raise RuntimeError("You must specify --parafile")
+
+if args.do_stitch:
+    if args.stitchdir is None:
+        raise RuntimeError("You must specify stitchdir if do_stitch=True')
+
+list_of_lc_files = []
+with open(args.list, 'r') as in_file:
+    for line in in_file:
+        list_of_lc_files.append(line.strip())
 
 import astropy.io.fits as fits
 
