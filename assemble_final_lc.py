@@ -7,6 +7,8 @@ parser = argparse.ArgumentParser()
 parser.add_argument('--obj_list', type=str, default=None)
 parser.add_argument('--out_dir', type=str, default=None)
 parser.add_argument('--write_every', type=int, default=104)
+parser.add_argument('--in_dir_root', type=str, default='lc_nostitch')
+parser.add_argument('--n_in_dir', type=int, default=6)
 
 args = parser.parse_args()
 if args.out_dir is None:
@@ -24,18 +26,11 @@ if not os.path.exists(out_dir):
 
 dtype = np.dtype([('t', float), ('f', float), ('s', float)])
 
-dir_list = ['lc_batch_1',
-            'lc_pickup_Q1_5',
-            'lc_pickup_Q1_6']
+dir_list = []
+for ix in range(1,args.n_in_dir+1):
+    dir_list.append('%s_%d' % (args.in_dir_root, ix))
 
-for dex in range(1,11):
-    dir_list.append('lc_pickup_Q2_%d' % dex)
 
-dir_list.append('lc_batch_2')
-dir_list.append('lc_batch_3')
-dir_list.append('lc_batch_4')
-dir_list.append('lc_batch_5')
-dir_list.append('lc_batch_6')
 
 files_in_dir = {}
 for in_dir in dir_list:
