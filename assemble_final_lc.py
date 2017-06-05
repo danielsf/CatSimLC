@@ -40,6 +40,7 @@ import time
 t_start = time.time()
 
 data_dict = {}
+header_dict = {}
 
 for file_name in obj_list['lc']:
     try:
@@ -53,19 +54,32 @@ for file_name in obj_list['lc']:
 
             in_name = os.path.join(in_dir, file_name)
             data = np.genfromtxt(in_name, dtype=dtype)
-            if data['t'].min() < last_t:
-                continue
-
-            last_t = data['t'].max()
 
             if flux is None:
                 flux = data['f']
                 mjd = data['t']
                 sig = data['s']
             else:
-                flux = np.append(flux, data['f'] - data['f'][0] + flux[-1])
+                flux = np.append(flux, data['f'])
                 mjd = np.append(mjd, data['t'])
                 sig = np.append(sig, data['s'])
+
+            # get the "header" information encoding
+            # where segments begin and end
+            with open(in_name, 'r') as in_file:
+                in_lines = in_file.readlines()
+            in_lines = np.array(in_lines)
+            comment_dexes = np.wher(np.char.find(in_lines, '#')==0)
+            if file_name not in header_dict:
+                header_dict[file_name] = []
+            for ix in comment_dexes[0][1:]:
+                end_pts = in_lines[ix].strip().split()
+                header_dict[file_name].append((float(end_pts[1]), float(end_pts[2])))
+
+        sorted_dexes = np.argsort(mjd)
+        mjd = mjd[sorted_dexes]
+        flux = flux[sorted_dexes]
+        sig = sig[sorted_dexes]
 
         data_dict[file_name] = (mjd, flux, sig)
 
@@ -75,9 +89,11 @@ for file_name in obj_list['lc']:
             for file_name in data_dict.keys():
                 out_name = os.path.join(out_dir, file_name)
                 with open(out_name, 'w') as out_file:
-                   obj_data = data_dict[file_name]
-                   for (tt, ff, ss) in zip(obj_data[0], obj_data[1], obj_data[2]):
-                       out_file.write('%.12e %e %e\n' % (tt, ff, ss))
+                    for end_pts in header_dict[file_name]:
+                        out_file.write('# %.12e %.12e\n' % (end_pts[0], end_pts[1]))
+                    obj_data = data_dict[file_name]
+                    for (tt, ff, ss) in zip(obj_data[0], obj_data[1], obj_data[2]):
+                        out_file.write('%.12e %e %e\n' % (tt, ff, ss))
 
             del data_dict
             data_dict = {}
