@@ -385,9 +385,6 @@ def get_clean_spectrum_PressRybicki(time_arr, f_arr, sigma_arr, delta,
 
     residual_arr = copy.deepcopy(f_arr)
 
-    (pspec, freq_arr,
-     tau, aa, bb, cc) = get_ls_PressRybicki(time_arr, residual_arr, sigma_arr, delta)
-
     aa_list = []
     bb_list = []
     cc_list = []
@@ -401,6 +398,14 @@ def get_clean_spectrum_PressRybicki(time_arr, f_arr, sigma_arr, delta,
     model_rms_var = 1.0
 
     data_snr = np.median(f_arr/sigma_arr)
+
+    residual_arr -= median_flux
+    model += median_flux
+    chisq = np.mean(np.power((model-f_arr)/sigma_arr,2))
+    print 'first median ',median_flux,np.median(model)
+
+    (pspec, freq_arr,
+     tau, aa, bb, cc) = get_ls_PressRybicki(time_arr, residual_arr, sigma_arr, delta)
 
     while (min_components is not None and len(aa_list)<min_components) or \
     len(aa_list)==0 or chisq>data_snr/snr_target:
@@ -450,6 +455,6 @@ def get_clean_spectrum_PressRybicki(time_arr, f_arr, sigma_arr, delta,
              tau, aa, bb, cc) = get_ls_PressRybicki(time_arr, residual_arr, sigma_arr, delta)
 
 
-    return (np.array(aa_list), np.array(bb_list),
+    return (median_flux,np.array(aa_list), np.array(bb_list),
             np.array(cc_list), np.array(omega_list),
             np.array(tau_list), freq_arr)
