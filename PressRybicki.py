@@ -342,7 +342,8 @@ def _is_significant(aa, bb, cc, omega, tau,
     return False, bic_1
 
 def get_clean_spectrum_PressRybicki(time_arr, f_arr, sigma_arr, delta,
-                                    max_components=None):
+                                    max_components=None,
+                                    snr_target=100.0):
     """
     Clean a time series according to the algorithm presented in
     Roberts et al. 1987 (AJ 93, 968) (though this works in real
@@ -392,8 +393,15 @@ def get_clean_spectrum_PressRybicki(time_arr, f_arr, sigma_arr, delta,
     tau_list = []
     omega_list = []
 
-    significance = True
-    while significance:
+    model = np.zeros(len(time_arr))
+    snr=1.0
+    median_flux = np.median(f_arr)
+    data_rms_var = np.sqrt(np.mean(np.power(f_arr/median_flux-1.0,2)))
+    model_rms_var = 1.0
+
+    data_snr = np.median(f_arr/sigma_arr)
+
+    while len(aa_list)==0 or chisq>data_snr/snr_target:
         valid = np.where(np.logical_and(np.logical_not(np.isnan(pspec)),
                                         freq_arr<get_ls_PressRybicki.cut_off_freq))
         pspec = pspec[valid]
@@ -411,31 +419,29 @@ def get_clean_spectrum_PressRybicki(time_arr, f_arr, sigma_arr, delta,
         cc_max = cc[max_dex]
         omega_max = freq_max*2.0*np.pi
 
-        significance, bic_1 = _is_significant(aa_list, bb_list, cc_list, omega_list, tau_list,
-                                              aa_max, bb_max, cc_max, omega_max, tau_max,
-                                              time_arr, f_arr, sigma_arr)
+        t_arg = omega_max*(time_arr-time_arr.min()-tau_max)
+        local_model = np.array([cc_max]*len(time_arr))
+        local_model += aa_max*np.cos(omega_max*(time_arr-time_arr.min()-tau_max))
+        local_model += bb_max*np.sin(omega_max*(time_arr-time_arr.min()-tau_max))
 
-        if significance:
-            aa_list.append(aa_max)
-            bb_list.append(bb_max)
-            cc_list.append(cc_max)
-            tau_list.append(tau_max)
-            omega_list.append(omega_max)
-            print '    components %d %e' % (len(aa_list), bic_1)
+        residual_arr -= local_model
 
-        else:
-            break
+        model += local_model
+        model_rms_var = np.mean(np.power(model/median_flux-1.0,2))
+        model_rms_var = np.sqrt(model_rms_var)
+
+        aa_list.append(aa_max)
+        bb_list.append(bb_max)
+        cc_list.append(cc_max)
+        tau_list.append(tau_max)
+        omega_list.append(omega_max)
+        chisq=np.mean(np.power((model-f_arr)/sigma_arr,2))
 
         if max_components is not None and len(aa_list)>=max_components:
-            significance = False
-
-        if significance:
-
-            model = np.array([cc_max]*len(time_arr))
-            model += aa_max*np.cos(omega_max*(time_arr-time_arr.min()-tau_max))
-            model += bb_max*np.sin(omega_max*(time_arr-time_arr.min()-tau_max))
-
-            residual_arr -= model
+            break
+        elif snr>=snr_target:
+            break
+        else:
 
             (pspec, freq_arr,
              tau, aa, bb, cc) = get_ls_PressRybicki(time_arr, residual_arr, sigma_arr, delta)
