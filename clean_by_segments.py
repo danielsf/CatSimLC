@@ -22,7 +22,13 @@ import astropy.io.fits as fits
 segment_list = []
 for file_name in list_of_files:
     if args.objid in file_name:
-        data = fits.open(os.path.join(data_dir,file_name))
+        if not file_name.endswith('.fits'):
+            break
+        try:
+            data = fits.open(os.path.join(data_dir,file_name))
+        except:
+            print 'died on ',file_name
+            raise
         d = data[1].data
         valid_dexes = np.where(np.logical_and(np.logical_not(np.isnan(d['TIME'])),
                                np.logical_and(np.logical_not(np.isnan(d['PDCSAP_FLUX'])),
@@ -53,15 +59,16 @@ for i_seg, segment in enumerate(segment_list):
     #dt = (time_arr.max()-time_arr.min())/n_steps
     dt = 0.1*np.diff(np.unique(time_arr)).min()
 
-    (aa, bb, cc,
+    (median_flux, aa, bb, cc,
      omega, tau, freq) = get_clean_spectrum_PressRybicki(time_arr,
                                                          flux_arr,
                                                          sig_arr,
                                                          dt,
-                                                         max_components=components)
+                                                         min_components=3,
+                                                         max_components=3)
 
 
-    model = np.zeros(len(segment[0]))
+    model = np.array([median_flux]*len(segment[0]))
     for ix in range(min(components, len(aa))):
         model += cc[ix]
         arg = omega[ix]*(segment[0]-time_arr.min()-tau[ix])
@@ -94,17 +101,19 @@ with open('kplr%s_stitched.txt' % args.objid, 'w') as out_file:
 
 dt = 0.1*np.diff(np.unique(time_arr)).min()
 
-(aa, bb, cc,
+(median_flux, aa, bb, cc,
  omega, tau, freq) = get_clean_spectrum_PressRybicki(time_arr,
                                                      flux_arr,
                                                      sig_arr,
-                                                     dt, gain=0.2,
-                                                     max_components=10)
+                                                     dt,
+                                                     max_components=51)
 
 model3 = np.zeros(len(time_arr))
 model_max = np.zeros(len(time_arr))
+model3 += median_flux
+model_max += median_flux
 print 'final component count %d' % len(aa)
-for ix in range(min(len(aa), 50)):
+for ix in range(len(aa)):
     xx = omega[ix]*(time_arr-time_arr.min()-tau[ix])
     if ix<3:
         model3 += cc[ix]
