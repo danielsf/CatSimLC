@@ -343,8 +343,7 @@ def _is_significant(aa, bb, cc, omega, tau,
 
 def get_clean_spectrum_PressRybicki(time_arr, f_arr, sigma_arr, delta,
                                     max_components=None,
-                                    min_components=None,
-                                    snr_target=100.0):
+                                    min_components=None):
     """
     Clean a time series according to the algorithm presented in
     Roberts et al. 1987 (AJ 93, 968) (though this works in real
@@ -392,23 +391,27 @@ def get_clean_spectrum_PressRybicki(time_arr, f_arr, sigma_arr, delta,
     omega_list = []
 
     model = np.zeros(len(time_arr))
-    snr=1.0
     median_flux = np.median(f_arr)
-    data_rms_var = np.sqrt(np.mean(np.power(f_arr/median_flux-1.0,2)))
-    model_rms_var = 1.0
-
-    data_snr = np.median(f_arr/sigma_arr)
 
     residual_arr -= median_flux
     model += median_flux
-    chisq = np.mean(np.power((model-f_arr)/sigma_arr,2))
-    print 'first median ',median_flux,np.median(model)
+    chisq = np.power((model-f_arr)/sigma_arr,2).sum()
+    ln_n_data = np.log(len(f_arr))
+    bic_1 = chisq + ln_n_data
+    bic_0 = np.power(f_arr/sigma_arr,2).sum()
 
     (pspec, freq_arr,
      tau, aa, bb, cc) = get_ls_PressRybicki(time_arr, residual_arr, sigma_arr, delta)
 
-    while (min_components is not None and len(aa_list)<min_components) or \
-           np.sqrt(chisq)>data_snr/snr_target:
+    significance = False
+    if bic_1<bic_0:
+        significance = True
+    bic_0=bic_1
+
+    while significance:
+
+        if max_components is not None and len(aa_list)>=max_components:
+            break
 
         valid = np.where(np.logical_and(np.logical_not(np.isnan(pspec)),
                                         freq_arr<get_ls_PressRybicki.cut_off_freq))
@@ -435,25 +438,23 @@ def get_clean_spectrum_PressRybicki(time_arr, f_arr, sigma_arr, delta,
         residual_arr -= local_model
 
         model += local_model
-        model_rms_var = np.mean(np.power(model/median_flux-1.0,2))
-        model_rms_var = np.sqrt(model_rms_var)
+
+        chisq=np.power((model-f_arr)/sigma_arr,2).sum()
+        bic_1 = chisq + (1.0+4.0*len(aa_list))*ln_n_data
+
+        if bic_1>bic_0 and (min_components is None or len(aa_list)>=min_components):
+            break
 
         aa_list.append(aa_max)
         bb_list.append(bb_max)
         cc_list.append(cc_max)
         tau_list.append(tau_max)
         omega_list.append(omega_max)
-        chisq=np.mean(np.power((model-f_arr)/sigma_arr,2))
 
-        if max_components is not None and len(aa_list)>=max_components:
-            break
-        elif snr>=snr_target:
-            break
-        else:
+        bic_0 = bic_1
 
-            (pspec, freq_arr,
-             tau, aa, bb, cc) = get_ls_PressRybicki(time_arr, residual_arr, sigma_arr, delta)
-
+        (pspec, freq_arr,
+         tau, aa, bb, cc) = get_ls_PressRybicki(time_arr, residual_arr, sigma_arr, delta)
 
     return (median_flux,np.array(aa_list), np.array(bb_list),
             np.array(cc_list), np.array(omega_list),
