@@ -408,7 +408,7 @@ def get_clean_spectrum_PressRybicki(time_arr, f_arr, sigma_arr, delta,
      tau, aa, bb, cc) = get_ls_PressRybicki(time_arr, residual_arr, sigma_arr, delta)
 
     while (min_components is not None and len(aa_list)<min_components) or \
-    len(aa_list)==0 or chisq>data_snr/snr_target:
+           np.sqrt(chisq)>data_snr/snr_target:
 
         valid = np.where(np.logical_and(np.logical_not(np.isnan(pspec)),
                                         freq_arr<get_ls_PressRybicki.cut_off_freq))
