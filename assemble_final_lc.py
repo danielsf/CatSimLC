@@ -69,7 +69,7 @@ for file_name in obj_list['lc']:
             with open(in_name, 'r') as in_file:
                 in_lines = in_file.readlines()
             in_lines = np.array(in_lines)
-            comment_dexes = np.wher(np.char.find(in_lines, '#')==0)
+            comment_dexes = np.where(np.char.find(in_lines, '#')==0)
             if file_name not in header_dict:
                 header_dict[file_name] = []
             for ix in comment_dexes[0][1:]:
