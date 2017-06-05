@@ -343,6 +343,7 @@ def _is_significant(aa, bb, cc, omega, tau,
 
 def get_clean_spectrum_PressRybicki(time_arr, f_arr, sigma_arr, delta,
                                     max_components=None,
+                                    min_components=None,
                                     snr_target=100.0):
     """
     Clean a time series according to the algorithm presented in
@@ -401,7 +402,9 @@ def get_clean_spectrum_PressRybicki(time_arr, f_arr, sigma_arr, delta,
 
     data_snr = np.median(f_arr/sigma_arr)
 
-    while len(aa_list)==0 or chisq>data_snr/snr_target:
+    while (min_components is not None and len(aa_list)<min_components) or \
+    len(aa_list)==0 or chisq>data_snr/snr_target:
+
         valid = np.where(np.logical_and(np.logical_not(np.isnan(pspec)),
                                         freq_arr<get_ls_PressRybicki.cut_off_freq))
         pspec = pspec[valid]
