@@ -3,130 +3,213 @@ import os
 import numpy as np
 import argparse
 
+from PressRybicki import get_clean_spectrum_PressRybicki
+
+def re_calibrate_lc(time_arr, flux_arr, sigma_arr, segments):
+    """
+    Stitch together the differently calibrated segments of a light curve.
+
+    Parameters
+    ----------
+    time_arr -- a numpy array containing the time axis of the light curve
+
+    flux_arr -- a numpy array containing the flux of the light curve
+
+    sigma_arr -- a numpy array containing the uncertainty of the flux
+
+    segments -- a list of tuples; each tuple contains the start time and end
+    time of each light curve segment.
+
+    Return
+    ------
+    stitch_time -- a numpy array of the stitched-together light curve time axis
+
+    stitch_flux -- a numpy array of the stitched-together light curve flux axis
+
+    stitch_sigma -- a numpy array of the stitched-together light curve
+    flux uncertainty
+    """
+
+    sorted_dex = np.argsort(time_arr)
+    time = time_arr[sorted_dex]
+    flux = flux_arr[sorted_dex]
+    sigma = sigma_arr[sorted_dex]
+
+    start_times = []
+    end_times = []
+    for seg in segments:
+        start_times.append(seg[0])
+        end_times.append(seg[1])
+    start_times = np.array(start_times)
+    end_times = np.array(end_times)
+
+    sorted_dex = np.argsort(start_times)
+    start_times = start_times[sorted_dex]
+    end_times = end_times[sorted_dex]
+
+    tol = 1.0e-6
+    first_dexes = np.where(np.logical_and(time>=start_times[0]-tol,
+                                          time<=end_times[0]+tol))
+
+    time_out = time[first_dexes]
+    flux_out = flux[first_dexes]
+    sigma_out = sigma[first_dexes]
+
+    for i_seg in range(1, len(segments)):
+
+        dt = 0.1*np.diff(np.unique(time_out)).min()
+
+        (median_flux, aa, bb, cc,
+         omega, tau, freq) = get_clean_spectrum_PressRybicki(time_out, flux_out,
+                                                             sigma_out, dt,
+                                                             min_components=3,
+                                                             max_components=3)
+
+        valid_dex = np.where(np.logical_and(time>=start_times[i_seg]-tol,
+                                            time<=end_times[i_seg]+tol))
+
+        local_time = time[valid_dex]
+        local_flux = flux[valid_dex]
+        local_sigma = sigma[valid_dex]
+
+        model = np.array([median_flux]*len(local_time))
+        for ix in range(len(aa)):
+            model += cc[ix]
+            t_arg = omega[ix]*(local_time - local_time.min() - tau[ix])
+            model += aa[ix]*np.cos(t_arg)
+            model += bb[ix]*np.sin(t_arg)
+
+        offset_num = ((local_flux-model)/np.power(local_sigma,2)).sum()
+        offset_denom = (1.0/np.power(local_sigma,2)).sum()
+        offset = offset_num/offset_denom
+
+        time_out = np.append(time_out, local_time)
+        flux_out = np.append(flux_out, local_flux-offset)
+        sigma_out = np.append(sigma_out, local_sigma)
+
+    return (time_out, flux_out, sigma_out)
+
+
 parser = argparse.ArgumentParser()
-parser.add_argument('--objid', type=str, default=None)
-parser.add_argument('--outfile', type=str, default=None)
+
+parser.add_argument('--list', type=str, default=None,
+                    help='text file containing a list of the names of the '
+                         'light curves to be processed')
+
+parser.add_argument('--in_dir', type=str, default=None,
+                    help='directory where the light curve files referenced in '
+                         'LIST reside')
+
+parser.add_argument('--do_stitch', type=bool, default=True,
+                    help = 'do we need to stitch these light curves together '
+                           '(i.e. do we need to deal with the variable Kepler '
+                           'calibration)')
+
+parser.add_argument('--stitch_dir', type=str, default=None,
+                    help='if DO_STITCH is True, in what directory should we '
+                         'save the stitched together light curves?')
+
+parser.add_argument('--out_file', type=str, default=None,
+                    help='in what file should we save the parametrization of '
+                         'the light curves')
+
+parser.add_argument('--max_components', type=int, default=51,
+                    help='maximum number of components to use when smoothing '
+                         'light curves')
 
 args = parser.parse_args()
-if args.objid is None:
-    raise RuntimeError('Must specify objid')
-if args.outfile is None:
-    raise RuntimeError('Must specify outfile')
 
-data_dir = os.path.join('workspace', 'data')
-list_of_files = os.listdir(data_dir)
-list_of_files.sort()
+if args.list is None:
+    raise RuntimeError("Must specify LIST")
 
-import astropy.io.fits as fits
+if args.out_file is None:
+    raise RuntimeError("Must specify OUT_FILE")
 
-segment_list = []
-for file_name in list_of_files:
-    if args.objid in file_name:
-        if not file_name.endswith('.fits'):
-            break
-        try:
-            data = fits.open(os.path.join(data_dir,file_name))
-        except:
-            print 'died on ',file_name
-            raise
-        d = data[1].data
-        valid_dexes = np.where(np.logical_and(np.logical_not(np.isnan(d['TIME'])),
-                               np.logical_and(np.logical_not(np.isnan(d['PDCSAP_FLUX'])),
-                                              np.logical_not(np.isnan(d['PDCSAP_FLUX_ERR'])))))
-        segment_list.append((data[1].data['TIME'][valid_dexes],
-                             data[1].data['PDCSAP_FLUX'][valid_dexes],
-                             data[1].data['PDCSAP_FLUX_ERR'][valid_dexes]))
+if args.do_stitch:
+    if args.stitch_dir is None:
+        raise RuntimeError("If DO_STITCH is True, must specify STITCH_DIR")
 
-time_arr = None
-flux_arr = None
-sig_arr = None
+list_of_lc = []
+with open(args.list, 'r') as in_file):
+    for line in in_file:
+        list_of_lc.append(line.strip())
 
-from PressRybicki import get_clean_spectrum_PressRybicki
-n_steps = 1048576
-#n_steps= 1024
-components = 3
+dtype = np.dtype([('t', float), ('f', float), ('s', float)])
 
-import time
+write_every = 500
 
-t_start = time.time()
-for i_seg, segment in enumerate(segment_list):
-    if time_arr is None:
-        time_arr = segment[0]
-        flux_arr = segment[1]
-        sig_arr = segment[2]
-        continue
+output_dict = {}
+stitch_dict = {}
 
-    #dt = (time_arr.max()-time_arr.min())/n_steps
+with open(args.out_file, 'w') as out_file:
+    out_file.write('# lc_name n_t_steps t_span chisquared n_components median_flux '
+    out_file.write('aa bb cc omega tau '
+    out_file.write('{f = cc + aa*cos(omega*(t-tmin-tau)) + bb*sin(omega*(t-tmin-tau))}\n')
+
+for lc_name in list_of_lc:
+    full_name = os.path.join(args.in_dir, lc_name)
+    data = np.genfromtxt(full_name, dtype=dtype)
+
+    segments = []
+    with open(full_name, 'r') as in_file:
+        for line in in_file:
+            if line[0] != '#':
+                break
+            line = line.strip().split()
+            segments.append((float(line[1]), float(line[2])))
+
+    if args.do_stitch:
+        time_arr, flux_arr, sigma_arr = re_calibrate_lc(data['t'], data['f'],
+                                                        data['s'], segments)
+
+        stitch_name = lc_name.replace('.txt','')
+        stitch_name = os.path.join(args.stitch_dir, stitch_name+'_stitched.tx')
+        stitch_dict[lc_name] = (time_arr, flux_arr, sigma_arr)
+    else:
+        time_arr = data['t']
+        flux_arr = data['f']
+        sigma_arr = data['s']
+
     dt = 0.1*np.diff(np.unique(time_arr)).min()
 
-    (median_flux, aa, bb, cc,
-     omega, tau, freq) = get_clean_spectrum_PressRybicki(time_arr,
-                                                         flux_arr,
-                                                         sig_arr,
-                                                         dt,
-                                                         min_components=3,
-                                                         max_components=3)
+    (median_flux,
+     aa, bb,
+     cc, omega,
+     tau, freq) = get_clean_spectrum_PressRybicki(time_arr, flux_arr,
+                                                  sigma_arr, dt,
+                                                  max_components=args.max_components)
 
-
-    model = np.array([median_flux]*len(segment[0]))
-    for ix in range(min(components, len(aa))):
+    model = np.array([median_flux]*len(time_arr))
+    for ix in range(len(aa)):
         model += cc[ix]
-        arg = omega[ix]*(segment[0]-time_arr.min()-tau[ix])
-        model += aa[ix]*np.cos(arg)
-        model += bb[ix]*np.sin(arg)
+        t_arg = omega[ix]*(time_arr-time_arr.min()-tau[ix])
+        model += aa[ix]*np.cos(t_arg)
+        model += bb[ix]*np.sin(t_arg)
 
-    offset_num = ((segment[1]-model)/np.power(segment[2],2)).sum()
-    offset_denom = (1.0/np.power(segment[2],2)).sum()
-    offset = offset_num/offset_denom
+    chisq = np.power((model-flux_arr)/sigma_arr,2).sum()
+    output_dict[lc_name] = {}
+    output_dict[lc_name]['span'] = time_arr.max() - time_arr.min()
+    output_dict[lc_name]['tsteps'] = len(time_arr)
+    output_dict[lc_name]['chisq'] = chisq
+    output_dict[lc_name]['median'] = median_flux
+    output_dict[lc_name]['aa'] = aa
+    output_dict[lc_name]['bb'] = bb
+    output_dict[lc_name]['cc'] = cc
+    output_dict[lc_name]['omega'] = omega
+    output_dict[lc_name]['tau'] = tau
 
-    #print 'did segment time %e n_seg %d off %e' % \
-    #(time.time()-t_start, len(segment_list), offset)
+    if len(output_dict) >= write_every or lc_name == list_of_lc[-1]:
+        with open(args.out_file, 'w') as out_file:
+            out_file.write('%s %d %e %e %d %e' % (lc_name,
+                                                  output_dict[lc_name]['tsteps'],
+                                                  output_dict[lc_name]['span'],
+                                                  output_dict[lc_name]['chisq'],
+                                                  len(output_dict[lc_name]['aa']),
+                                                  output_dict[lc_name]['median']))
 
-    #print '%e %e' % (omega[0], cc[0])
-    #print np.median(time_arr)
-
-    with open('kplr%s_segment_%d.txt' % (args.objid, i_seg), 'w') as out_file:
-        for tt, ff, ss in zip(segment[0], segment[1]-offset, segment[2]):
-            out_file.write('%.12e %e %e\n' % (tt, ff, ss))
-
-    time_arr = np.append(time_arr, segment[0])
-    flux_arr = np.append(flux_arr, segment[1]-offset)
-    sig_arr = np.append(sig_arr, segment[2])
-
-
-with open('kplr%s_stitched.txt' % args.objid, 'w') as out_file:
-    for tt, ff, ss in zip(time_arr, flux_arr, sig_arr):
-        out_file.write('%.12e %e %e\n' % (tt, ff, ss))
-
-
-dt = 0.1*np.diff(np.unique(time_arr)).min()
-
-(median_flux, aa, bb, cc,
- omega, tau, freq) = get_clean_spectrum_PressRybicki(time_arr,
-                                                     flux_arr,
-                                                     sig_arr,
-                                                     dt,
-                                                     max_components=51)
-
-model3 = np.zeros(len(time_arr))
-model_max = np.zeros(len(time_arr))
-model3 += median_flux
-model_max += median_flux
-print 'final component count %d' % len(aa)
-for ix in range(len(aa)):
-    xx = omega[ix]*(time_arr-time_arr.min()-tau[ix])
-    if ix<3:
-        model3 += cc[ix]
-        model3 += aa[ix]*np.cos(xx)
-        model_max += bb[ix]*np.sin(xx)
-    model_max += cc[ix]
-    model_max += aa[ix]*np.cos(xx)
-    model_max += bb[ix]*np.sin(xx)
-
-with open(args.outfile, 'w') as out_file:
-    for tt, ff, ss, m3, m_max in zip(time_arr, flux_arr, sig_arr, model3, model_max):
-        out_file.write('%.12e %e %e %e %e\n' % (tt, ff, ss, m3, m_max))
-
-
-print 'smoothing data took ',time.time()-t_start
-
+            for ix in range(len(output_dict[lc_name]['aa'])):
+                 out_file.write('%e %e %e %e %e\n' % (output_dict[lc_name]['aa'][ix],
+                                                      output_dict[lc_name]['bb'][ix],
+                                                      output_dict[lc_name]['cc'][ix],
+                                                      output_dict[lc_name]['omega'][ix],
+                                                      output_dict[lc_name]['tau'][ix]))
