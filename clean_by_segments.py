@@ -129,8 +129,12 @@ if args.do_stitch:
     if args.stitch_dir is None:
         raise RuntimeError("If DO_STITCH is True, must specify STITCH_DIR")
 
+if args.do_stitch:
+    if not os.path.isdir(args.stitch_dir):
+        os.mkdir(args.stitch_dir)
+
 list_of_lc = []
-with open(args.list, 'r') as in_file):
+with open(args.list, 'r') as in_file:
     for line in in_file:
         list_of_lc.append(line.strip())
 
@@ -142,8 +146,8 @@ output_dict = {}
 stitch_dict = {}
 
 with open(args.out_file, 'w') as out_file:
-    out_file.write('# lc_name n_t_steps t_span chisquared n_components median_flux '
-    out_file.write('aa bb cc omega tau '
+    out_file.write('# lc_name n_t_steps t_span chisquared n_components median_flux ')
+    out_file.write('aa bb cc omega tau ')
     out_file.write('{f = cc + aa*cos(omega*(t-tmin-tau)) + bb*sin(omega*(t-tmin-tau))}\n')
 
 for lc_name in list_of_lc:
