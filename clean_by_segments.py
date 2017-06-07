@@ -116,11 +116,17 @@ def re_calibrate_lc(time_arr, flux_arr, sigma_arr, segments):
         if not use_segment:
             continue
 
-        dt = 0.1*np.diff(np.unique(time_out)).min()
+        n_to_fit = len(time_out)/2
+        time_to_fit = time_out[-n_to_fit:]
+        flux_to_fit = flux_out[-n_to_fit:]
+        sigma_to_fit = sigma_out[-n_to_fit:]
+
+        dt = 0.1*np.diff(np.unique(time_to_fit)).min()
 
         (median_flux, aa, bb, cc,
-         omega, tau, chisq_arr) = get_clean_spectrum_PressRybicki(time_out, flux_out,
-                                                                  sigma_out, dt,
+         omega, tau, chisq_arr) = get_clean_spectrum_PressRybicki(time_to_fit,
+                                                                  flux_to_fit,
+                                                                  sigma_to_fit, dt,
                                                                   min_components=3,
                                                                   max_components=3)
 
@@ -134,7 +140,7 @@ def re_calibrate_lc(time_arr, flux_arr, sigma_arr, segments):
         model = np.array([median_flux]*len(local_time))
         for ix in range(len(aa)):
             model += cc[ix]
-            t_arg = omega[ix]*(local_time - time_out.min() - tau[ix])
+            t_arg = omega[ix]*(local_time - time_to_fit.min() - tau[ix])
             model += aa[ix]*np.cos(t_arg)
             model += bb[ix]*np.sin(t_arg)
 
