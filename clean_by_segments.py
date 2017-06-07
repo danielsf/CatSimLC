@@ -191,6 +191,7 @@ with open(args.out_file, 'w') as out_file:
     out_file.write('aa bb cc omega tau ')
     out_file.write('{f = cc + aa*cos(omega*(t-tmin-tau)) + bb*sin(omega*(t-tmin-tau))}\n')
 
+ct = 0
 t_start = time.time()
 for lc_name in list_of_lc:
     full_name = os.path.join(args.in_dir, lc_name)
@@ -249,7 +250,10 @@ for lc_name in list_of_lc:
     output_dict[lc_name]['omega'] = omega
     output_dict[lc_name]['tau'] = tau
 
-    #print 'finished %d in %e' % (len(output_dict), time.time()-t_start)
+    ct += 1
+
+    print 'finished %d in %e; should take %e' %\
+    (ct, time.time()-t_start, len(list_of_lc)*(time.time()-t_start)/ct)
 
     if len(output_dict) >= write_every or lc_name == list_of_lc[-1]:
         with open(args.out_file, 'a') as out_file:
