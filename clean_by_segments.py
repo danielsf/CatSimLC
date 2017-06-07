@@ -94,6 +94,8 @@ def re_calibrate_lc(time_arr, flux_arr, sigma_arr, segments):
     flux_out = flux[first_dexes]
     sigma_out = sigma[first_dexes]
 
+    seg_ct = 1
+
     for i_seg in range(first_segment+1, len(segments)):
 
         # again: discard light curve segments with double reporting
@@ -116,7 +118,13 @@ def re_calibrate_lc(time_arr, flux_arr, sigma_arr, segments):
         if not use_segment:
             continue
 
-        n_to_fit = len(time_out)/2
+        if seg_ct > 2:
+            n_to_fit = len(time_out)/2
+        else:
+            n_to_fit = len(time_out)
+
+        seg_ct += 1
+
         time_to_fit = time_out[-n_to_fit:]
         flux_to_fit = flux_out[-n_to_fit:]
         sigma_to_fit = sigma_out[-n_to_fit:]
