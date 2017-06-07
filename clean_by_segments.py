@@ -2,6 +2,7 @@ from __future__ import with_statement
 import os
 import numpy as np
 import argparse
+import time
 
 from PressRybicki import get_clean_spectrum_PressRybicki
 
@@ -150,6 +151,7 @@ with open(args.out_file, 'w') as out_file:
     out_file.write('aa bb cc omega tau ')
     out_file.write('{f = cc + aa*cos(omega*(t-tmin-tau)) + bb*sin(omega*(t-tmin-tau))}\n')
 
+t_start = time.time()
 for lc_name in list_of_lc:
     full_name = os.path.join(args.in_dir, lc_name)
     data = np.genfromtxt(full_name, dtype=dtype)
@@ -202,18 +204,38 @@ for lc_name in list_of_lc:
     output_dict[lc_name]['omega'] = omega
     output_dict[lc_name]['tau'] = tau
 
-    if len(output_dict) >= write_every or lc_name == list_of_lc[-1]:
-        with open(args.out_file, 'w') as out_file:
-            out_file.write('%s %d %e %e %d %e' % (lc_name,
-                                                  output_dict[lc_name]['tsteps'],
-                                                  output_dict[lc_name]['span'],
-                                                  output_dict[lc_name]['chisq'],
-                                                  len(output_dict[lc_name]['aa']),
-                                                  output_dict[lc_name]['median']))
+    print 'finished %d in %e' % (len(output_dict), time.time()-t_start)
 
-            for ix in range(len(output_dict[lc_name]['aa'])):
-                 out_file.write('%e %e %e %e %e\n' % (output_dict[lc_name]['aa'][ix],
-                                                      output_dict[lc_name]['bb'][ix],
-                                                      output_dict[lc_name]['cc'][ix],
-                                                      output_dict[lc_name]['omega'][ix],
-                                                      output_dict[lc_name]['tau'][ix]))
+    if len(output_dict) >= write_every or lc_name == list_of_lc[-1]:
+        with open(args.out_file, 'a') as out_file:
+            for lc_name in output_dict:
+                out_file.write('%s %d %e %e %d %e ' % (lc_name,
+                                                       output_dict[lc_name]['tsteps'],
+                                                       output_dict[lc_name]['span'],
+                                                       output_dict[lc_name]['chisq'],
+                                                       len(output_dict[lc_name]['aa']),
+                                                       output_dict[lc_name]['median']))
+
+                for ix in range(len(output_dict[lc_name]['aa'])):
+                     out_file.write('%e %e %e %e %e ' % (output_dict[lc_name]['aa'][ix],
+                                                          output_dict[lc_name]['bb'][ix],
+                                                          output_dict[lc_name]['cc'][ix],
+                                                          output_dict[lc_name]['omega'][ix],
+                                                          output_dict[lc_name]['tau'][ix]))
+                out_file.write('\n')
+
+        if args.do_stitch:
+            for lc_name in stitch_dict:
+                out_name = os.path.join(args.stitch_dir,
+                                        lc_name.replace('.txt','')+'_stitched.txt')
+                with open(out_name, 'w') as out_file:
+                    for tt, ff, ss in zip(stitch_dict[lc_name][0],
+                                          stitch_dict[lc_name][1],
+                                          stitch_dict[lc_name][2]):
+
+                        out_file.write('%.12e %e %e\n' % (tt, ff, ss))
+
+        output_dict = {}
+        stitch_dict = {}
+
+print 'that took ',time.time()-t_start
