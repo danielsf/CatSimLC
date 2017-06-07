@@ -49,14 +49,50 @@ def re_calibrate_lc(time_arr, flux_arr, sigma_arr, segments):
     end_times = end_times[sorted_dex]
 
     tol = 1.0e-6
-    first_dexes = np.where(np.logical_and(time>=start_times[0]-tol,
-                                          time<=end_times[0]+tol))
+
+    # In some cases, the first Kepler observing quarter contains two
+    # light curves (with identical time axes) for the same source.
+    # I did not know this when I started processing the data.  Rather than
+    # separate these light curves from each other and try to pick one, I am
+    # just going to discard any light curve segments that have double reporting.
+    first_segment = 0
+    while ((start_times[first_segment] > start_times[first_segment+1]-tol and
+            start_times[first_segment] < end_times[first_segment+1]+tol) or
+           (start_times[first_segment] > start_times[first_segment-1]-tol and
+            start_times[first_segment] < end_times[first_segment-1]-tol)):
+
+        first_segment += 1
+
+    print '    first_segment ',first_segment
+
+    first_dexes = np.where(np.logical_and(time>=start_times[first_segment]-tol,
+                                          time<=end_times[first_segment]+tol))
 
     time_out = time[first_dexes]
     flux_out = flux[first_dexes]
     sigma_out = sigma[first_dexes]
 
-    for i_seg in range(1, len(segments)):
+    for i_seg in range(first_segment+1, len(segments)):
+
+        # again: discard light curve segments with double reporting
+        use_segment = True
+        if i_seg < len(segments)-1:
+            if ((start_times[i_seg] > start_times[i_seg+1]-tol and
+                 start_times[i_seg] < end_times[i_seg+1]+tol) or
+                (end_times[i_seg] > start_times[i_seg+1]-tol and
+                 end_times[i_seg] < end_times[i_seg+1]+tol)):
+
+                use_segment = False
+
+        if ((start_times[i_seg] > start_times[i_seg-1]-tol and
+             start_times[i_seg] < end_times[i_seg-1]+tol) or
+            (end_times[i_seg] > start_times[i_seg-1]-tol and
+             end_times[i_seg] < end_times[i_seg-1]+tol)):
+
+            use_segment = False
+
+        if not use_segment:
+            continue
 
         dt = 0.1*np.diff(np.unique(time_out)).min()
 
