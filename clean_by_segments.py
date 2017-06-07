@@ -120,11 +120,13 @@ def re_calibrate_lc(time_arr, flux_arr, sigma_arr, segments):
         offset_denom = (1.0/np.power(local_sigma,2)).sum()
         offset = offset_num/offset_denom
         chisq = np.power((model-local_flux-offset)/local_sigma,2).sum()
-        print '    calculated offset %e %d %e -- dt %e' % (offset,i_seg,chisq,dt)
 
         time_out = np.append(time_out, local_time)
         flux_out = np.append(flux_out, local_flux-offset)
         sigma_out = np.append(sigma_out, local_sigma)
+
+        print '    calculated offset %e %d of %d %e -- dt %e %d' % \
+        (offset,i_seg,len(segments),chisq,dt,len(time_out))
 
     return (time_out, flux_out, sigma_out)
 
