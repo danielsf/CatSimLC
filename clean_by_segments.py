@@ -125,8 +125,8 @@ def re_calibrate_lc(time_arr, flux_arr, sigma_arr, segments):
         flux_out = np.append(flux_out, local_flux-offset)
         sigma_out = np.append(sigma_out, local_sigma)
 
-        print '    calculated offset %e %d of %d %e -- dt %e %d' % \
-        (offset,i_seg,len(segments),chisq,dt,len(time_out))
+        print '    calculated offset %e %d of %d %e -- dt %e %d -- %d' % \
+        (offset,i_seg,len(segments),chisq,dt,len(time_out), len(aa))
 
     return (time_out, flux_out, sigma_out)
 
