@@ -57,14 +57,35 @@ def re_calibrate_lc(time_arr, flux_arr, sigma_arr, segments):
     # just going to discard any light curve segments that have double reporting.
     first_segment = 0
     if len(start_times)>1:
-        while ((start_times[first_segment] > start_times[first_segment+1]-tol and
-                start_times[first_segment] < end_times[first_segment+1]+tol) or
-               (start_times[first_segment] > start_times[first_segment-1]-tol and
-                start_times[first_segment] < end_times[first_segment-1]-tol)):
+        is_valid = False
+        while not is_valid:
+            is_valid = True
+            if first_segment < len(start_times)-1:
+                if (start_times[first_segment] > start_times[first_segment+1]-tol and
+                    start_times[first_segment] < end_times[first_segment+1]+tol):
 
-            first_segment += 1
+                    is_valid = False
 
     #print '    first_segment ',first_segment
+                if (end_times[first_segment] > start_times[first_segment+1]-tol and
+                    end_times[first_segment] < end_times[first_segment+1]+tol):
+
+                    is_valid = False
+
+            if first_segment>0:
+               if (start_times[first_segment] > start_times[first_segment-1]-tol and
+                   start_times[first_segment] < end_times[first_segment-1]-tol):
+
+                   is_valid = False
+
+               if (end_times[first_segment] > start_times[first_segment-1]-tol and
+                   end_times[first_segment] < end_times[first_segment-1]-tol):
+
+                   is_valid = False
+
+            if not is_valid:
+                first_segment += 1
+
 
     first_dexes = np.where(np.logical_and(time>=start_times[first_segment]-tol,
                                           time<=end_times[first_segment]+tol))
