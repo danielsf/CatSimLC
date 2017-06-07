@@ -63,7 +63,7 @@ def re_calibrate_lc(time_arr, flux_arr, sigma_arr, segments):
 
         first_segment += 1
 
-    print '    first_segment ',first_segment
+    #print '    first_segment ',first_segment
 
     first_dexes = np.where(np.logical_and(time>=start_times[first_segment]-tol,
                                           time<=end_times[first_segment]+tol))
@@ -125,8 +125,8 @@ def re_calibrate_lc(time_arr, flux_arr, sigma_arr, segments):
         flux_out = np.append(flux_out, local_flux-offset)
         sigma_out = np.append(sigma_out, local_sigma)
 
-        print '    calculated offset %e %d of %d %e -- dt %e %d -- %d' % \
-        (offset,i_seg,len(segments),chisq,dt,len(time_out), len(aa))
+        #print '    calculated offset %e %d of %d %e -- dt %e %d -- %d' % \
+        #(offset,i_seg,len(segments),chisq,dt,len(time_out), len(aa))
 
     return (time_out, flux_out, sigma_out)
 
@@ -249,7 +249,7 @@ for lc_name in list_of_lc:
     output_dict[lc_name]['omega'] = omega
     output_dict[lc_name]['tau'] = tau
 
-    print 'finished %d in %e' % (len(output_dict), time.time()-t_start)
+    #print 'finished %d in %e' % (len(output_dict), time.time()-t_start)
 
     if len(output_dict) >= write_every or lc_name == list_of_lc[-1]:
         with open(args.out_file, 'a') as out_file:
