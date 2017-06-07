@@ -134,7 +134,7 @@ def re_calibrate_lc(time_arr, flux_arr, sigma_arr, segments):
         model = np.array([median_flux]*len(local_time))
         for ix in range(len(aa)):
             model += cc[ix]
-            t_arg = omega[ix]*(local_time - local_time.min() - tau[ix])
+            t_arg = omega[ix]*(local_time - time_out.min() - tau[ix])
             model += aa[ix]*np.cos(t_arg)
             model += bb[ix]*np.sin(t_arg)
 
