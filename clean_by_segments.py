@@ -252,8 +252,9 @@ for lc_name in list_of_lc:
 
     ct += 1
 
-    print 'finished %d in %e; should take %e' %\
-    (ct, time.time()-t_start, len(list_of_lc)*(time.time()-t_start)/ct)
+    if ct%10 == 0:
+        print 'finished %d in %e; should take %e' %\
+        (ct, time.time()-t_start, len(list_of_lc)*(time.time()-t_start)/ct)
 
     if len(output_dict) >= write_every or lc_name == list_of_lc[-1]:
         with open(args.out_file, 'a') as out_file:
