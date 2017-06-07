@@ -219,8 +219,8 @@ for lc_name in list_of_lc:
     try:
         assert len(time_arr) == len(np.unique(time_arr))
     except:
-        print 'failed on ',lc_name
-        raise
+        print 'unique(time) failed on ',lc_name
+        continue
 
     dt = 0.1*np.diff(np.unique(time_arr)).min()
 
