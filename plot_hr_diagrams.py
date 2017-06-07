@@ -97,7 +97,7 @@ m_max=10
 
 t_min=3000.0
 t_max=7000.0
-t_ticks = np.arange(np.round(t_min/1000.0)*1000.0, np.round(t_max/1000.0)*1000.0, 2000.0)
+t_ticks = np.arange(np.round(t_min/1000.0)*1000.0, np.round(t_max/1000.0)*1000.0, 1000.0)
 t_labels = ['%d' % tt for tt in t_ticks]
 
 
