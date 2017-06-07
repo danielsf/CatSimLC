@@ -181,7 +181,7 @@ with open(args.list, 'r') as in_file:
 
 dtype = np.dtype([('t', float), ('f', float), ('s', float)])
 
-write_every = 500
+write_every = 100
 
 output_dict = {}
 stitch_dict = {}
