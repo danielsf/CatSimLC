@@ -216,6 +216,12 @@ for lc_name in list_of_lc:
         flux_arr = data['f']
         sigma_arr = data['s']
 
+    try:
+        assert len(time_arr) == len(np.unique(time_arr))
+    except:
+        print 'failed on ',lc_name
+        raise
+
     dt = 0.1*np.diff(np.unique(time_arr)).min()
 
     (median_flux,
