@@ -85,7 +85,7 @@ def re_calibrate_lc(time_arr, flux_arr, sigma_arr, segments):
             if not is_valid:
                 first_segment += 1
 
-    print '    first_segment ',first_segment
+    #print '    first_segment ',first_segment
 
     first_dexes = np.where(np.logical_and(time>=start_times[first_segment]-tol,
                                           time<=end_times[first_segment]+tol))
@@ -288,7 +288,7 @@ for lc_name in list_of_lc:
 
     ct += 1
 
-    print 'done with %d in %e' % (ct, time.time()-t_start)
+    #print 'done with %d in %e' % (ct, time.time()-t_start)
     if ct%10 == 0:
         with open('lc_timing_log.txt', 'a') as out_file:
             out_file.write('finished %d in %e; should take %e' %\
