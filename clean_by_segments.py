@@ -97,10 +97,10 @@ def re_calibrate_lc(time_arr, flux_arr, sigma_arr, segments):
         dt = 0.1*np.diff(np.unique(time_out)).min()
 
         (median_flux, aa, bb, cc,
-         omega, tau, freq) = get_clean_spectrum_PressRybicki(time_out, flux_out,
-                                                             sigma_out, dt,
-                                                             min_components=3,
-                                                             max_components=3)
+         omega, tau, chisq_arr) = get_clean_spectrum_PressRybicki(time_out, flux_out,
+                                                                  sigma_out, dt,
+                                                                  min_components=3,
+                                                                  max_components=3)
 
         valid_dex = np.where(np.logical_and(time>=start_times[i_seg]-tol,
                                             time<=end_times[i_seg]+tol))
@@ -187,7 +187,7 @@ output_dict = {}
 stitch_dict = {}
 
 with open(args.out_file, 'w') as out_file:
-    out_file.write('# lc_name n_t_steps t_span chisquared n_components median_flux ')
+    out_file.write('# lc_name n_t_steps t_span n_components chisquared median_flux ')
     out_file.write('aa bb cc omega tau ')
     out_file.write('{f = cc + aa*cos(omega*(t-tmin-tau)) + bb*sin(omega*(t-tmin-tau))}\n')
 
@@ -227,9 +227,9 @@ for lc_name in list_of_lc:
     (median_flux,
      aa, bb,
      cc, omega,
-     tau, freq) = get_clean_spectrum_PressRybicki(time_arr, flux_arr,
-                                                  sigma_arr, dt,
-                                                  max_components=args.max_components)
+     tau, chisq_arr) = get_clean_spectrum_PressRybicki(time_arr, flux_arr,
+                                                       sigma_arr, dt,
+                                                       max_components=args.max_components)
 
     model = np.array([median_flux]*len(time_arr))
     for ix in range(len(aa)):
@@ -238,11 +238,10 @@ for lc_name in list_of_lc:
         model += aa[ix]*np.cos(t_arg)
         model += bb[ix]*np.sin(t_arg)
 
-    chisq = np.power((model-flux_arr)/sigma_arr,2).sum()
     output_dict[lc_name] = {}
     output_dict[lc_name]['span'] = time_arr.max() - time_arr.min()
     output_dict[lc_name]['tsteps'] = len(time_arr)
-    output_dict[lc_name]['chisq'] = chisq
+    output_dict[lc_name]['chisq'] = chisq_arr
     output_dict[lc_name]['median'] = median_flux
     output_dict[lc_name]['aa'] = aa
     output_dict[lc_name]['bb'] = bb
@@ -255,12 +254,17 @@ for lc_name in list_of_lc:
     if len(output_dict) >= write_every or lc_name == list_of_lc[-1]:
         with open(args.out_file, 'a') as out_file:
             for lc_name in output_dict:
-                out_file.write('%s %d %e %e %d %e ' % (lc_name,
+                out_file.write('%s %d %e %d ' % (lc_name,
                                                        output_dict[lc_name]['tsteps'],
                                                        output_dict[lc_name]['span'],
-                                                       output_dict[lc_name]['chisq'],
-                                                       len(output_dict[lc_name]['aa']),
-                                                       output_dict[lc_name]['median']))
+                                                       len(output_dict[lc_name]['aa'])))
+
+                assert len(output_dict[lc_name]['chisq']) == len(output_dict[lc_name]['aa'])
+
+                for ix in range(len(output_dict[lc_name]['chisq'])):
+                    out_file.write('%e ' % output_dict[lc_name]['chisq'][ix])
+
+                out_file.write('%e ' % output_dict[lc_name]['median'])
 
                 for ix in range(len(output_dict[lc_name]['aa'])):
                      out_file.write('%e %e %e %e %e ' % (output_dict[lc_name]['aa'][ix],

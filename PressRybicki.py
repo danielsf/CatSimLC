@@ -389,6 +389,7 @@ def get_clean_spectrum_PressRybicki(time_arr, f_arr, sigma_arr, delta,
     cc_list = []
     tau_list = []
     omega_list = []
+    chisq_arr = []
 
     model = np.zeros(len(time_arr))
     median_flux = np.median(f_arr)
@@ -450,6 +451,7 @@ def get_clean_spectrum_PressRybicki(time_arr, f_arr, sigma_arr, delta,
         cc_list.append(cc_max)
         tau_list.append(tau_max)
         omega_list.append(omega_max)
+        chisq_arr.append(chisq)
         #print "%d components; bic %e %e" % (len(aa_list), bic_0, bic_1)
 
         bic_0 = bic_1
@@ -459,4 +461,4 @@ def get_clean_spectrum_PressRybicki(time_arr, f_arr, sigma_arr, delta,
 
     return (median_flux,np.array(aa_list), np.array(bb_list),
             np.array(cc_list), np.array(omega_list),
-            np.array(tau_list), freq_arr)
+            np.array(tau_list), np.array(chisq_arr))
