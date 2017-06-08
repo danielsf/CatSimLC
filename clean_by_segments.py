@@ -118,16 +118,39 @@ def re_calibrate_lc(time_arr, flux_arr, sigma_arr, segments):
         if not use_segment:
             continue
 
-        if seg_ct > 2:
-            n_to_fit = len(time_out)/2
+
+        valid_dex = np.where(np.logical_and(time>=start_times[i_seg]-tol,
+                                            time<=end_times[i_seg]+tol))
+
+        next_time = time[valid_dex]
+        next_flux = flux[valid_dex]
+        next_sigma = sigma[valid_dex]
+
+        if len(time_out) < len(next_time):
+            time_to_fit_master = next_time
+            flux_to_fit_master = next_flux
+            sigma_to_fit_master = next_sigma
+            time_to_offset = time_out
+            flux_to_offset = flux_out
+            sigma_to_offset = sigma_out
         else:
-            n_to_fit = len(time_out)
+            time_to_fit_master = time_out
+            flux_to_fit_master = flux_out
+            sigma_to_fit_master = sigma_out
+            time_to_offset = next_time
+            flux_to_offset = next_flux
+            sigma_to_offset = next_sigma
+
+        if seg_ct<2:
+            n_to_fit = len(time_to_fit_master)
+        else:
+            n_to_fit = len(time_to_fit_master)/2
 
         seg_ct += 1
 
-        time_to_fit = time_out[-n_to_fit:]
-        flux_to_fit = flux_out[-n_to_fit:]
-        sigma_to_fit = sigma_out[-n_to_fit:]
+        time_to_fit = time_to_fit_master[-n_to_fit:]
+        flux_to_fit = flux_to_fit_master[-n_to_fit:]
+        sigma_to_fit = sigma_to_fit_master[-n_to_fit:]
 
         dt = 0.1*np.diff(np.unique(time_to_fit)).min()
 
@@ -138,28 +161,26 @@ def re_calibrate_lc(time_arr, flux_arr, sigma_arr, segments):
                                                                   min_components=3,
                                                                   max_components=3)
 
-        valid_dex = np.where(np.logical_and(time>=start_times[i_seg]-tol,
-                                            time<=end_times[i_seg]+tol))
-
-        local_time = time[valid_dex]
-        local_flux = flux[valid_dex]
-        local_sigma = sigma[valid_dex]
-
-        model = np.array([median_flux]*len(local_time))
+        model = np.array([median_flux]*len(time_to_offset))
         for ix in range(len(aa)):
             model += cc[ix]
-            t_arg = omega[ix]*(local_time - time_to_fit.min() - tau[ix])
+            t_arg = omega[ix]*(time_to_offset - time_to_fit.min() - tau[ix])
             model += aa[ix]*np.cos(t_arg)
             model += bb[ix]*np.sin(t_arg)
 
-        offset_num = ((local_flux-model)/np.power(local_sigma,2)).sum()
-        offset_denom = (1.0/np.power(local_sigma,2)).sum()
+        offset_num = ((flux_to_offset-model)/np.power(sigma_to_offset,2)).sum()
+        offset_denom = (1.0/np.power(sigma_to_offset,2)).sum()
         offset = offset_num/offset_denom
-        chisq = np.power((model-local_flux-offset)/local_sigma,2).sum()
+        chisq = np.power((model-flux_to_offset-offset)/sigma_to_offset,2).sum()
 
-        time_out = np.append(time_out, local_time)
-        flux_out = np.append(flux_out, local_flux-offset)
-        sigma_out = np.append(sigma_out, local_sigma)
+        if time_to_offset[-1] < time_to_fit[0]:
+            time_out = np.append(time_to_offset, time_to_fit_master)
+            flux_out = np.append(flux_to_offset-offset, flux_to_fit_master)
+            sigma_out = np.append(sigma_to_offset, sigma_to_fit_master)
+        else:
+            time_out = np.append(time_to_fit_master, time_to_offset)
+            flux_out = np.append(flux_to_fit_master, flux_to_offset-offset)
+            sigma_out = np.append(sigma_to_fit_master, sigma_to_offset)
 
         #print '    calculated offset %e %d of %d %e -- dt %e %d -- %d' % \
         #(offset,i_seg,len(segments),chisq,dt,len(time_out), len(aa))
