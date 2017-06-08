@@ -215,6 +215,9 @@ parser.add_argument('--max_components', type=int, default=51,
                     help='maximum number of components to use when smoothing '
                          'light curves')
 
+parser.add_argument('--log_file', type=str, default='lc_timing_log.txt',
+                    help='log file where timing information is written')
+
 args = parser.parse_args()
 
 if args.list is None:
@@ -311,7 +314,7 @@ for lc_name in list_of_lc:
 
     #print 'done with %d in %e' % (ct, time.time()-t_start)
     if ct%10 == 0:
-        with open('lc_timing_log.txt', 'a') as out_file:
+        with open(args.log_file, 'a') as out_file:
             out_file.write('finished %d in %e; should take %e\n' %\
             (ct, time.time()-t_start, len(list_of_lc)*(time.time()-t_start)/ct))
 
