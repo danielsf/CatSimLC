@@ -291,7 +291,7 @@ for lc_name in list_of_lc:
     #print 'done with %d in %e' % (ct, time.time()-t_start)
     if ct%10 == 0:
         with open('lc_timing_log.txt', 'a') as out_file:
-            out_file.write('finished %d in %e; should take %e' %\
+            out_file.write('finished %d in %e; should take %e\n' %\
             (ct, time.time()-t_start, len(list_of_lc)*(time.time()-t_start)/ct))
 
     if len(output_dict) >= write_every or lc_name == list_of_lc[-1]:
