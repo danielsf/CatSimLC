@@ -274,8 +274,8 @@ for lc_name_global in list_of_lc:
             line = line.strip().split()
             segments.append((float(line[1]), float(line[2])))
 
-    data_dict[lc_name_global]
-    segment_dict[lc_name_global]
+    data_dict[lc_name_global] = data
+    segment_dict[lc_name_global] = segments
     print 'read in ',len(data_dict),time.time()-t_start
 
     if len(data_dict) >= write_every:
