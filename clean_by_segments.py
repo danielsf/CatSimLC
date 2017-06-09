@@ -220,6 +220,9 @@ parser.add_argument('--log_file', type=str, default='lc_timing_log.txt',
 
 args = parser.parse_args()
 
+if os.path.exists(args.log_file):
+    os.unlink(args.log_file)
+
 if args.do_stitch.lower()[0] == 't':
     do_stitch = True
 else:
