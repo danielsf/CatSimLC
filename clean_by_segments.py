@@ -198,10 +198,10 @@ parser.add_argument('--in_dir', type=str, default=None,
                     help='directory where the light curve files referenced in '
                          'LIST reside')
 
-parser.add_argument('--do_stitch', type=bool, default=True,
+parser.add_argument('--do_stitch', type=str, default='True',
                     help = 'do we need to stitch these light curves together '
                            '(i.e. do we need to deal with the variable Kepler '
-                           'calibration)')
+                           'calibration).  True/False.')
 
 parser.add_argument('--stitch_dir', type=str, default=None,
                     help='if DO_STITCH is True, in what directory should we '
@@ -220,17 +220,22 @@ parser.add_argument('--log_file', type=str, default='lc_timing_log.txt',
 
 args = parser.parse_args()
 
+if args.do_stitch.lower()[0] == 't':
+    do_stitch = True
+else:
+    do_stitch = False
+
 if args.list is None:
     raise RuntimeError("Must specify LIST")
 
 if args.out_file is None:
     raise RuntimeError("Must specify OUT_FILE")
 
-if args.do_stitch:
+if do_stitch:
     if args.stitch_dir is None:
         raise RuntimeError("If DO_STITCH is True, must specify STITCH_DIR")
 
-if args.do_stitch:
+if do_stitch:
     if not os.path.isdir(args.stitch_dir):
         os.mkdir(args.stitch_dir)
 
@@ -265,7 +270,7 @@ for lc_name in list_of_lc:
             line = line.strip().split()
             segments.append((float(line[1]), float(line[2])))
 
-    if args.do_stitch:
+    if do_stitch:
         time_arr, flux_arr, sigma_arr = re_calibrate_lc(data['t'], data['f'],
                                                         data['s'], segments)
 
@@ -341,7 +346,7 @@ for lc_name in list_of_lc:
                                                           output_dict[lc_name]['tau'][ix]))
                 out_file.write('\n')
 
-        if args.do_stitch:
+        if do_stitch:
             for lc_name in stitch_dict:
                 out_name = os.path.join(args.stitch_dir,
                                         lc_name.replace('.txt','')+'_stitched.txt')
