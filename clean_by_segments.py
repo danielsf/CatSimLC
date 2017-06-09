@@ -324,7 +324,7 @@ for lc_name_global in list_of_lc:
             ct += 1
 
             #print 'done with %d in %e' % (ct, time.time()-t_start)
-            if ct%10 == 0:
+            if ct%100 == 0:
                 with open(args.log_file, 'a') as out_file:
                     out_file.write('finished %d in %e sec; should take %e days\n' %\
                     (ct, time.time()-t_start, (len(list_of_lc)*(time.time()-t_start)/ct)/(24.0*3600.0)))
