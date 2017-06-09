@@ -246,10 +246,7 @@ with open(args.list, 'r') as in_file:
 
 dtype = np.dtype([('t', float), ('f', float), ('s', float)])
 
-write_every = 100
-
-output_dict = {}
-stitch_dict = {}
+write_every = 500
 
 with open(args.out_file, 'w') as out_file:
     out_file.write('# lc_name n_t_steps t_span n_components chisquared median_flux ')
@@ -258,8 +255,15 @@ with open(args.out_file, 'w') as out_file:
 
 ct = 0
 t_start = time.time()
-for lc_name in list_of_lc:
-    full_name = os.path.join(args.in_dir, lc_name)
+
+data_dict = {}
+segment_dict = {}
+output_dict = {}
+stitch_dict = {}
+
+for lc_name_global in list_of_lc:
+
+    full_name = os.path.join(args.in_dir, lc_name_global)
     data = np.genfromtxt(full_name, dtype=dtype)
 
     segments = []
@@ -270,66 +274,71 @@ for lc_name in list_of_lc:
             line = line.strip().split()
             segments.append((float(line[1]), float(line[2])))
 
-    if do_stitch:
-        time_arr, flux_arr, sigma_arr = re_calibrate_lc(data['t'], data['f'],
-                                                        data['s'], segments)
+    data_dict[lc_name_global]
+    segment_dict[lc_name_global]
+    print 'read in ',len(data_dict),time.time()-t_start
 
-        stitch_name = lc_name.replace('.txt','')
-        stitch_name = os.path.join(args.stitch_dir, stitch_name+'_stitched.tx')
-        stitch_dict[lc_name] = (time_arr, flux_arr, sigma_arr)
-    else:
-        time_arr = data['t']
-        flux_arr = data['f']
-        sigma_arr = data['s']
+    if len(data_dict) >= write_every:
+        for lc_name in data_dict:
+            data = data_dict[lc_name]
+            segments = segment_dict[lc_name]
 
-    try:
-        assert len(time_arr) == len(np.unique(time_arr))
-    except:
-        print 'unique(time) failed on ',lc_name
-        continue
+            if do_stitch:
+                time_arr, flux_arr, sigma_arr = re_calibrate_lc(data['t'], data['f'],
+                                                                data['s'], segments)
 
-    dt = 0.1*np.diff(np.unique(time_arr)).min()
+                stitch_name = lc_name.replace('.txt','')
+                stitch_name = os.path.join(args.stitch_dir, stitch_name+'_stitched.tx')
+                stitch_dict[lc_name] = (time_arr, flux_arr, sigma_arr)
+            else:
+                time_arr = data['t']
+                flux_arr = data['f']
+                sigma_arr = data['s']
 
-    (median_flux,
-     aa, bb,
-     cc, omega,
-     tau, chisq_arr) = get_clean_spectrum_PressRybicki(time_arr, flux_arr,
-                                                       sigma_arr, dt,
-                                                       max_components=args.max_components)
+            try:
+                assert len(time_arr) == len(np.unique(time_arr))
+            except:
+                print 'unique(time) failed on ',lc_name
+                continue
 
-    model = np.array([median_flux]*len(time_arr))
-    for ix in range(len(aa)):
-        model += cc[ix]
-        t_arg = omega[ix]*(time_arr-time_arr.min()-tau[ix])
-        model += aa[ix]*np.cos(t_arg)
-        model += bb[ix]*np.sin(t_arg)
+            dt = 0.1*np.diff(np.unique(time_arr)).min()
 
-    output_dict[lc_name] = {}
-    output_dict[lc_name]['span'] = time_arr.max() - time_arr.min()
-    output_dict[lc_name]['tsteps'] = len(time_arr)
-    output_dict[lc_name]['chisq'] = chisq_arr
-    output_dict[lc_name]['median'] = median_flux
-    output_dict[lc_name]['aa'] = aa
-    output_dict[lc_name]['bb'] = bb
-    output_dict[lc_name]['cc'] = cc
-    output_dict[lc_name]['omega'] = omega
-    output_dict[lc_name]['tau'] = tau
+            (median_flux,
+             aa, bb,
+             cc, omega,
+             tau, chisq_arr) = get_clean_spectrum_PressRybicki(time_arr, flux_arr,
+                                                               sigma_arr, dt,
+                                                               max_components=args.max_components)
 
-    ct += 1
+            output_dict[lc_name] = {}
+            output_dict[lc_name]['span'] = time_arr.max() - time_arr.min()
+            output_dict[lc_name]['tsteps'] = len(time_arr)
+            output_dict[lc_name]['chisq'] = chisq_arr
+            output_dict[lc_name]['median'] = median_flux
+            output_dict[lc_name]['aa'] = aa
+            output_dict[lc_name]['bb'] = bb
+            output_dict[lc_name]['cc'] = cc
+            output_dict[lc_name]['omega'] = omega
+            output_dict[lc_name]['tau'] = tau
 
-    #print 'done with %d in %e' % (ct, time.time()-t_start)
-    if ct%10 == 0:
-        with open(args.log_file, 'a') as out_file:
-            out_file.write('finished %d in %e sec; should take %e days\n' %\
-            (ct, time.time()-t_start, (len(list_of_lc)*(time.time()-t_start)/ct)/(24.0*3600.0)))
+            ct += 1
+
+            #print 'done with %d in %e' % (ct, time.time()-t_start)
+            if ct%10 == 0:
+                with open(args.log_file, 'a') as out_file:
+                    out_file.write('finished %d in %e sec; should take %e days\n' %\
+                    (ct, time.time()-t_start, (len(list_of_lc)*(time.time()-t_start)/ct)/(24.0*3600.0)))
+
+        data_dict = {}
+        segment_dict = {}
 
     if len(output_dict) >= write_every or lc_name == list_of_lc[-1]:
         with open(args.out_file, 'a') as out_file:
             for lc_name in output_dict:
                 out_file.write('%s %d %e %d ' % (lc_name,
-                                                       output_dict[lc_name]['tsteps'],
-                                                       output_dict[lc_name]['span'],
-                                                       len(output_dict[lc_name]['aa'])))
+                                                 output_dict[lc_name]['tsteps'],
+                                                 output_dict[lc_name]['span'],
+                                                 len(output_dict[lc_name]['aa'])))
 
                 assert len(output_dict[lc_name]['chisq']) == len(output_dict[lc_name]['aa'])
 
@@ -340,10 +349,10 @@ for lc_name in list_of_lc:
 
                 for ix in range(len(output_dict[lc_name]['aa'])):
                      out_file.write('%e %e %e %e %e ' % (output_dict[lc_name]['aa'][ix],
-                                                          output_dict[lc_name]['bb'][ix],
-                                                          output_dict[lc_name]['cc'][ix],
-                                                          output_dict[lc_name]['omega'][ix],
-                                                          output_dict[lc_name]['tau'][ix]))
+                                                         output_dict[lc_name]['bb'][ix],
+                                                         output_dict[lc_name]['cc'][ix],
+                                                         output_dict[lc_name]['omega'][ix],
+                                                         output_dict[lc_name]['tau'][ix]))
                 out_file.write('\n')
 
         if do_stitch:
