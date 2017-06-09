@@ -315,8 +315,8 @@ for lc_name in list_of_lc:
     #print 'done with %d in %e' % (ct, time.time()-t_start)
     if ct%10 == 0:
         with open(args.log_file, 'a') as out_file:
-            out_file.write('finished %d in %e; should take %e\n' %\
-            (ct, time.time()-t_start, len(list_of_lc)*(time.time()-t_start)/ct))
+            out_file.write('finished %d in %e sec; should take %e days\n' %\
+            (ct, time.time()-t_start, (len(list_of_lc)*(time.time()-t_start)/ct)/(24.0*3600.0)))
 
     if len(output_dict) >= write_every or lc_name == list_of_lc[-1]:
         with open(args.out_file, 'a') as out_file:
