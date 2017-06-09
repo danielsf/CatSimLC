@@ -111,6 +111,13 @@ plt.text(t_max-0.1*(t_max-t_min),m_min+0.25*(m_max-m_min),
 plt.gca().invert_xaxis()
 plt.gca().invert_yaxis()
 
+
+plt.subplot(2,2,4)
+plt.hist(kep_data['feh'], bins=1000, color='b', zorder=1, edgecolor='b', normed=True)
+plt.hist(catsim_data['feh'], bins=1000, color='r', zorder=2, edgecolor='r',
+         alpha=0.5, normed=True)
+
+plt.xlabel('FeH', fontsize=10)
 plt.tight_layout()
 plt.savefig('kepler_hr_diagram_remove_dust.png')
 plt.close()
