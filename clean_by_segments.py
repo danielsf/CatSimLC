@@ -278,7 +278,7 @@ for lc_name_global in list_of_lc:
     segment_dict[lc_name_global] = segments
     print 'read in ',len(data_dict),time.time()-t_start
 
-    if len(data_dict) >= write_every:
+    if len(data_dict) >= write_every or lc_name_global==list_of_lc[-1]:
         for lc_name in data_dict:
             data = data_dict[lc_name]
             segments = segment_dict[lc_name]
@@ -332,7 +332,7 @@ for lc_name_global in list_of_lc:
         data_dict = {}
         segment_dict = {}
 
-    if len(output_dict) >= write_every or lc_name == list_of_lc[-1]:
+    if len(output_dict) >= write_every or lc_name_global == list_of_lc[-1]:
         with open(args.out_file, 'a') as out_file:
             for lc_name in output_dict:
                 out_file.write('%s %d %e %d ' % (lc_name,
