@@ -29,11 +29,11 @@ def extirp_sums(tt_arr, ff_arr, delta, n_t, ffter):
 
     if (not hasattr(extirp_sums, '_n_t_cache') or
         not extirp_sums._n_t_cache == n_t or
-        not extipr_sums._delta_cache == delta or
+        not extirp_sums._delta_cache == delta or
         not np.array_equal(tt_arr, extirp_sums._tt_cache)):
 
         extirp_sums._n_t_cache = n_t
-        extipr_sums._delta_cache = delta
+        extirp_sums._delta_cache = delta
         extirp_sums._tt_cache = copy.deepcopy(tt_arr)
 
         n_extirp_terms = 25
