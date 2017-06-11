@@ -22,10 +22,10 @@ def extirp_sums(tt_arr, ff_arr, delta, n_t, ffter):
 
 
     t_start = time.time()
-    ttk = np.ascontiguousarray(np.arange(0.0,
-                               n_t*delta,
-                               delta))
-    hk = np.ascontiguousarray(np.zeros(len(ttk)))
+    ttk = np.arange(0.0,
+                    n_t*delta,
+                    delta)
+    hk = np.zeros(len(ttk))
 
     if (not hasattr(extirp_sums, '_n_t_cache') or
         not extirp_sums._n_t_cache == n_t or
@@ -38,14 +38,14 @@ def extirp_sums(tt_arr, ff_arr, delta, n_t, ffter):
 
         n_extirp_terms = 25
 
-        dexes = np.ascontiguousarray(np.zeros(n_extirp_terms, dtype=int))
-        dex_range = np.ascontiguousarray(np.arange(len(dexes),dtype=int))
+        dexes = np.zeros(n_extirp_terms, dtype=int)
+        dex_range = np.arange(len(dexes),dtype=int)
         half_dexes = len(dexes)//2
-        half_dex_range = np.ascontiguousarray(np.arange(-half_dexes, half_dexes+1, 1, dtype=int))
+        half_dex_range = np.arange(-half_dexes, half_dexes+1, 1, dtype=int)
         assert len(half_dex_range) == n_extirp_terms
 
-        time_dexes = np.ascontiguousarray(np.round((tt_arr-ttk.min())/delta).astype(int))
-        dex_arr = np.ascontiguousarray([tj + half_dex_range for tj in time_dexes])
+        time_dexes = np.round((tt_arr-ttk.min())/delta).astype(int)
+        dex_arr = np.array([tj + half_dex_range for tj in time_dexes])
 
         n_neg = 1
         while n_neg>0:
@@ -60,9 +60,9 @@ def extirp_sums(tt_arr, ff_arr, delta, n_t, ffter):
 
         extirp_sums.dex_arr = dex_arr
 
-        col_range = np.ascontiguousarray(np.arange(dex_arr.shape[1], dtype=int))
-        col_range_matrix = np.ascontiguousarray(np.array([np.where(col_range != i_col)[0]
-                                     for i_col in range(n_extirp_terms)]))
+        col_range = np.arange(dex_arr.shape[1], dtype=int)
+        col_range_matrix = np.array([np.where(col_range != i_col)[0]
+                                     for i_col in range(n_extirp_terms)])
 
         other_times_list = []
         for i_col in range(dex_arr.shape[1]):
@@ -75,8 +75,8 @@ def extirp_sums(tt_arr, ff_arr, delta, n_t, ffter):
         for i_col in range(extirp_sums.dex_arr.shape[1]):
             target_dexes = extirp_sums.dex_arr[:,i_col]
             other_times = other_times_list[i_col]
-            num = np.ascontiguousarray(np.product((tt_arr - other_times), axis=0))
-            denom = np.ascontiguousarray(np.product((ttk[target_dexes] - other_times), axis=0))
+            num = np.product((tt_arr - other_times), axis=0)
+            denom = np.product((ttk[target_dexes] - other_times), axis=0)
             extirp_sums.coeff_cache.append(num/denom)
 
     _t_prep += time.time() - t_start
@@ -145,7 +145,7 @@ def _initialize_PressRybicki(time_arr, sigma_arr, delta, ffter, ffter2):
         n_t *= 2
     #print('n_t %d\ndelta %e' % (int(n_t), delta))
 
-    freq_arr = np.ascontiguousarray([k/(delta*n_t) for k in range(n_t)])
+    freq_arr = np.array([k/(delta*n_t) for k in range(n_t)])
 
     w = (1.0/np.power(sigma_arr, 2)).sum()
     wgt_fn = 1.0/(w*np.power(sigma_arr, 2))
@@ -166,29 +166,29 @@ def _initialize_PressRybicki(time_arr, sigma_arr, delta, ffter, ffter2):
     omega_tau = np.arctan2(s2-2*c*s, c2-c*c+s*s)
     tau = omega_tau/(4.0*np.pi*freq_arr)
 
-    cos_omega_tau = np.ascontiguousarray(np.cos(2.0*np.pi*freq_arr*tau))
-    sin_omega_tau = np.ascontiguousarray(np.sin(2.0*np.pi*freq_arr*tau))
-    cos_tau = np.ascontiguousarray(c*cos_omega_tau + s*sin_omega_tau)
-    sin_tau = np.ascontiguousarray(s*cos_omega_tau - c*sin_omega_tau)
+    cos_omega_tau = np.cos(2.0*np.pi*freq_arr*tau)
+    sin_omega_tau = np.sin(2.0*np.pi*freq_arr*tau)
+    cos_tau = c*cos_omega_tau + s*sin_omega_tau
+    sin_tau = s*cos_omega_tau - c*sin_omega_tau
 
     del c
     del s
 
-    cos_2omega_tau = np.ascontiguousarray(np.cos(4.0*np.pi*freq_arr*tau))
-    sin_2omega_tau = np.ascontiguousarray(np.sin(4.0*np.pi*freq_arr*tau))
+    cos_2omega_tau = np.cos(4.0*np.pi*freq_arr*tau)
+    sin_2omega_tau = np.sin(4.0*np.pi*freq_arr*tau)
     w_sum = wgt_fn.sum()
 
-    csq = np.ascontiguousarray(0.5*w_sum + 0.5*c2*cos_2omega_tau + 0.5*s2*sin_2omega_tau)
-    ssq = np.ascontiguousarray(0.5*w_sum - 0.5*c2*cos_2omega_tau - 0.5*s2*sin_2omega_tau)
-    csomega = np.ascontiguousarray(0.5*(s2*cos_2omega_tau - c2*sin_2omega_tau))  # cos(theta)*sin(theta) = 0.5*sin(2*theta)
+    csq = 0.5*w_sum + 0.5*c2*cos_2omega_tau + 0.5*s2*sin_2omega_tau
+    ssq = 0.5*w_sum - 0.5*c2*cos_2omega_tau - 0.5*s2*sin_2omega_tau
+    csomega = 0.5*(s2*cos_2omega_tau - c2*sin_2omega_tau)  # cos(theta)*sin(theta) = 0.5*sin(2*theta)
 
     del s2
     del c2
 
-    cs = np.ascontiguousarray(csomega - cos_tau*sin_tau)
-    ss = np.ascontiguousarray(ssq - sin_tau*sin_tau)
-    cc = np.ascontiguousarray(csq - cos_tau*cos_tau)
-    d = np.ascontiguousarray(cc*ss - cs*cs)
+    cs = csomega - cos_tau*sin_tau
+    ss = ssq - sin_tau*sin_tau
+    cc = csq - cos_tau*cos_tau
+    d = cc*ss - cs*cs
 
     # return:
     # wgt
@@ -245,8 +245,8 @@ def get_ls_PressRybicki(time_arr_in, f_arr_in, sigma_arr_in, delta):
     time_arr = time_arr_in - time_offset
     sorted_dex = np.argsort(time_arr)
     time_arr = time_arr[sorted_dex]
-    f_arr = np.ascontiguousarray(f_arr_in[sorted_dex])
-    sigma_arr = np.ascontiguousarray(sigma_arr_in[sorted_dex])
+    f_arr = f_arr_in[sorted_dex]
+    sigma_arr = sigma_arr_in[sorted_dex]
 
     if hasattr(get_ls_PressRybicki, 'initialized'):
         if not np.array_equal(sigma_arr_in, get_ls_PressRybicki.sig_cache):
@@ -290,20 +290,20 @@ def get_ls_PressRybicki(time_arr_in, f_arr_in, sigma_arr_in, delta):
                                    get_ls_PressRybicki.n_t,
                                    get_ls_PressRybicki.ffter)
 
-    y_c = np.ascontiguousarray(y_c_raw*get_ls_PressRybicki.cos_omega_tau +
+    y_c = (y_c_raw*get_ls_PressRybicki.cos_omega_tau +
            y_s_raw*get_ls_PressRybicki.sin_omega_tau)
 
-    y_s = np.ascontiguousarray(y_s_raw*get_ls_PressRybicki.cos_omega_tau -
+    y_s = (y_s_raw*get_ls_PressRybicki.cos_omega_tau -
            y_c_raw*get_ls_PressRybicki.sin_omega_tau)
 
     del y_s_raw
     del y_c_raw
 
-    aa = np.ascontiguousarray(y_c*get_ls_PressRybicki.ss - y_s*get_ls_PressRybicki.cs)/get_ls_PressRybicki.d
-    bb = np.ascontiguousarray(y_s*get_ls_PressRybicki.cc - y_c*get_ls_PressRybicki.cs)/get_ls_PressRybicki.d
-    cc = np.ascontiguousarray(y_bar - aa*get_ls_PressRybicki.c - bb*get_ls_PressRybicki.s)
+    aa = (y_c*get_ls_PressRybicki.ss - y_s*get_ls_PressRybicki.cs)/get_ls_PressRybicki.d
+    bb = (y_s*get_ls_PressRybicki.cc - y_c*get_ls_PressRybicki.cs)/get_ls_PressRybicki.d
+    cc = y_bar - aa*get_ls_PressRybicki.c - bb*get_ls_PressRybicki.s
 
-    pgram = np.ascontiguousarray((y_c*y_c/get_ls_PressRybicki.cc) + (y_s*y_s/get_ls_PressRybicki.ss))/yy
+    pgram = ((y_c*y_c/get_ls_PressRybicki.cc) + (y_s*y_s/get_ls_PressRybicki.ss))/yy
 
     return pgram, get_ls_PressRybicki.freq_arr, get_ls_PressRybicki.tau, aa, bb, cc
 
@@ -387,7 +387,7 @@ def get_clean_spectrum_PressRybicki(time_arr, f_arr, sigma_arr, delta,
     omega_list = []
     chisq_arr = []
 
-    model = np.ascontiguousarray(np.zeros(len(time_arr)))
+    model = np.zeros(len(time_arr))
     median_flux = np.median(f_arr)
 
     residual_arr -= median_flux
