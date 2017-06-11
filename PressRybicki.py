@@ -80,6 +80,13 @@ def extirp_sums(tt_arr, ff_arr, delta, n_t, ffter):
             denom = np.product((ttk[target_dexes] - other_times), axis=0)
             extirp_sums.coeff_cache.append(num/denom)
 
+        del target_dexes
+        del other_times
+        del num
+        del denom
+        extirp_sums.coeff_cache = np.array(extirp_sums.coeff_cache)
+        gc.collect()
+
     _t_prep += time.time() - t_start
 
     t_start = time.time()
