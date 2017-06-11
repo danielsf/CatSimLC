@@ -28,7 +28,7 @@ def _bit_reverse(in_val, num_bits):
 
 def _bit_reverse_vector(in_val, num_bits):
 
-    out = np.zeros(len(in_val), dtype=int)
+    out = np.ascontiguousarray(np.zeros(len(in_val), dtype=int))
     active_val = 2**(num_bits-1)
     additive_val = 1
     for i_bit in range(num_bits):
@@ -46,8 +46,8 @@ class FFTransformer(object):
 
     def _initialize_fft_real(self, n_bits, n_strides):
 
-        self.cos_cache = np.cos(2.0*np.pi*self.cache_calc_dexes/self.tot_pts)
-        self.sin_cache = np.sin(2.0*np.pi*self.cache_calc_dexes/self.tot_pts)
+        self.cos_cache = np.ascontiguousarray(np.cos(2.0*np.pi*self.cache_calc_dexes/self.tot_pts))
+        self.sin_cache = np.ascontiguousarray(np.sin(2.0*np.pi*self.cache_calc_dexes/self.tot_pts))
 
         n_pts = 1
 
@@ -57,12 +57,12 @@ class FFTransformer(object):
         for i_bit in range(n_bits):
             n_pts *= 2
             n_strides = n_strides//2
-            base_dexes = np.arange(0, n_strides*n_pts, n_pts)
-            even_dexes = np.array([base_dexes + k for k in range(n_pts//2)]).flatten()
+            base_dexes = np.ascontiguousarray(np.arange(0, n_strides*n_pts, n_pts))
+            even_dexes = np.ascontiguousarray(np.array([base_dexes + k for k in range(n_pts//2)]).flatten())
             self.even_dexes.append(even_dexes)
             self.odd_dexes.append(even_dexes + n_pts//2)
-            self.cache_dexes.append(np.array([[k*self.tot_pts//n_pts]*len(base_dexes)
-                                               for k in range(n_pts//2)]).flatten())
+            self.cache_dexes.append(np.ascontiguousarray(np.array([[k*self.tot_pts//n_pts]*len(base_dexes)
+                                               for k in range(n_pts//2)]).flatten()))
 
 
     def fft_real(self, time_arr, f_arr):
@@ -81,8 +81,8 @@ class FFTransformer(object):
         """
 
         t_start = time.time()
-        fft_re = np.zeros(len(f_arr))
-        fft_im = np.zeros(len(f_arr))
+        fft_re = np.ascontiguousarray(np.zeros(len(f_arr)))
+        fft_im = np.ascontiguousarray(np.zeros(len(f_arr)))
 
         if len(time_arr) & (len(time_arr)-1) != 0:
             raise RuntimeError("FFT input arrays must have a power of 2 "
@@ -90,12 +90,12 @@ class FFTransformer(object):
 
         n_bits = int(np.log(len(time_arr))/np.log(2.0))
         delta = time_arr[1]-time_arr[0]
-        forward_dexes = np.arange(len(f_arr), dtype=int)
+        forward_dexes = np.ascontiguousarray(np.arange(len(f_arr), dtype=int))
         rev_dexes = _bit_reverse_vector(forward_dexes, n_bits)
         fft_re[rev_dexes] = f_arr
 
         tot_pts = len(time_arr)
-        cache_calc_dexes = np.arange(tot_pts//2)
+        cache_calc_dexes = np.ascontiguousarray(np.arange(tot_pts//2))
 
         if (not hasattr(self, 'cos_cache') or
             not np.array_equal(cache_calc_dexes, self.cache_calc_dexes) or
@@ -118,10 +118,10 @@ class FFTransformer(object):
             even_dexes = self.even_dexes[i_bit]
             w_re = self.cos_cache[cache_dexes]
             w_im = self.sin_cache[cache_dexes]
-            temp_re_even = fft_re[even_dexes]
-            temp_im_even = fft_im[even_dexes]
-            temp_re_odd = fft_re[odd_dexes]*w_re - fft_im[odd_dexes]*w_im
-            temp_im_odd = fft_im[odd_dexes]*w_re + fft_re[odd_dexes]*w_im
+            temp_re_even = np.ascontiguousarray(fft_re[even_dexes])
+            temp_im_even = np.ascontiguousarray(fft_im[even_dexes])
+            temp_re_odd = np.ascontiguousarray(fft_re[odd_dexes]*w_re - fft_im[odd_dexes]*w_im)
+            temp_im_odd = np.ascontiguousarray(fft_im[odd_dexes]*w_re + fft_re[odd_dexes]*w_im)
             fft_re[even_dexes] += temp_re_odd
             fft_im[even_dexes] += temp_im_odd
             fft_re[odd_dexes] = temp_re_even - temp_re_odd
