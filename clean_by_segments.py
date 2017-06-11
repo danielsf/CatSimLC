@@ -253,7 +253,7 @@ with open(args.list, 'r') as in_file:
 
 dtype = np.dtype([('t', float), ('f', float), ('s', float)])
 
-write_every = 500
+write_every = 5
 
 with open(args.out_file, 'w') as out_file:
     out_file.write('# lc_name n_t_steps t_span n_components chisquared median_flux ')
