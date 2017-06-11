@@ -143,7 +143,7 @@ def _initialize_PressRybicki(time_arr, sigma_arr, delta, ffter, ffter2):
     n_t = 2
     while n_t < n_t_init:
         n_t *= 2
-    #print('n_t %d\ndelta %e' % (int(n_t), delta))
+    print('n_t %d\ndelta %e' % (int(n_t), delta))
 
     freq_arr = np.array([k/(delta*n_t) for k in range(n_t)])
 
