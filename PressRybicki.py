@@ -1,3 +1,4 @@
+import gc
 import numpy as np
 import copy
 import time
@@ -100,7 +101,7 @@ def extirp_sums(tt_arr, ff_arr, delta, n_t, ffter):
     ft_re, ft_im = ffter.fft_real(ttk, hk)
     _t_fft += time.time()-t_start
 
-    return (ft_re/delta, ft_im/delta, ttk, hk)
+    return (ft_re/delta, ft_im/delta)
 
 
 def _initialize_PressRybicki(time_arr, sigma_arr, delta, ffter, ffter2):
@@ -150,25 +151,21 @@ def _initialize_PressRybicki(time_arr, sigma_arr, delta, ffter, ffter2):
     w = (1.0/np.power(sigma_arr, 2)).sum()
     wgt_fn = 1.0/(w*np.power(sigma_arr, 2))
 
-    c2_raw, s2_raw, tk, hk = extirp_sums(2.0*time_arr, wgt_fn,
-                                         delta, n_t*2, ffter2)
-    del tk
-    del hk
+    c2_raw, s2_raw = extirp_sums(2.0*time_arr, wgt_fn,
+                                delta, n_t*2, ffter2)
     dexes = range(0,len(c2_raw), 2)
     c2 = c2_raw[dexes]
     del c2_raw
     s2 = s2_raw[dexes]
     del s2_raw
+    gc.collect()
 
-    c, s, tk, hk = extirp_sums(time_arr, wgt_fn, delta, n_t, ffter)
-    del tk
-    del hk
+    c, s = extirp_sums(time_arr, wgt_fn, delta, n_t, ffter)
 
     cut_off_freq = np.exp(-1.3093286772)*np.power(delta, -0.97075831145)
     cut_off_freq *=0.5
 
-    omega_tau = np.arctan2(s2-2*c*s, c2-c*c+s*s)
-    tau = omega_tau/(4.0*np.pi*freq_arr)
+    tau = np.arctan2(s2-2*c*s, c2-c*c+s*s)/(4.0*np.pi*freq_arr)
 
     cos_omega_tau = np.cos(2.0*np.pi*freq_arr*tau)
     sin_omega_tau = np.sin(2.0*np.pi*freq_arr*tau)
@@ -177,6 +174,7 @@ def _initialize_PressRybicki(time_arr, sigma_arr, delta, ffter, ffter2):
 
     del c
     del s
+    gc.collect()
 
     cos_2omega_tau = np.cos(4.0*np.pi*freq_arr*tau)
     sin_2omega_tau = np.sin(4.0*np.pi*freq_arr*tau)
@@ -188,6 +186,7 @@ def _initialize_PressRybicki(time_arr, sigma_arr, delta, ffter, ffter2):
 
     del s2
     del c2
+    gc.collect()
 
     cs = csomega - cos_tau*sin_tau
     ss = ssq - sin_tau*sin_tau
@@ -289,12 +288,10 @@ def get_ls_PressRybicki(time_arr_in, f_arr_in, sigma_arr_in, delta):
     y_bar = (f_arr*get_ls_PressRybicki.w).sum()
     yy = (get_ls_PressRybicki.w*np.power(f_arr-y_bar,2)).sum()
     y_fn = get_ls_PressRybicki.w*(f_arr-y_bar)
-    y_c_raw, y_s_raw, tk, hk = extirp_sums(time_arr, y_fn,
-                                           get_ls_PressRybicki.delta,
-                                           get_ls_PressRybicki.n_t,
-                                           get_ls_PressRybicki.ffter)
-    del tk
-    del hk
+    y_c_raw, y_s_raw = extirp_sums(time_arr, y_fn,
+                                   get_ls_PressRybicki.delta,
+                                   get_ls_PressRybicki.n_t,
+                                   get_ls_PressRybicki.ffter)
 
     y_c = (y_c_raw*get_ls_PressRybicki.cos_omega_tau +
            y_s_raw*get_ls_PressRybicki.sin_omega_tau)
@@ -304,6 +301,7 @@ def get_ls_PressRybicki(time_arr_in, f_arr_in, sigma_arr_in, delta):
 
     del y_s_raw
     del y_c_raw
+    gc.collect()
 
     aa = (y_c*get_ls_PressRybicki.ss - y_s*get_ls_PressRybicki.cs)/get_ls_PressRybicki.d
     bb = (y_s*get_ls_PressRybicki.cc - y_c*get_ls_PressRybicki.cs)/get_ls_PressRybicki.d
