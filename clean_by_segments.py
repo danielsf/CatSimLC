@@ -152,7 +152,7 @@ def re_calibrate_lc(time_arr, flux_arr, sigma_arr, segments):
         flux_to_fit = flux_to_fit_master[-n_to_fit:]
         sigma_to_fit = sigma_to_fit_master[-n_to_fit:]
 
-        dt = 0.1*np.diff(np.unique(time_to_fit)).min()
+        dt = args.dt*np.diff(np.unique(time_to_fit)).min()
 
         (median_flux, aa, bb, cc,
          omega, tau, chisq_arr) = get_clean_spectrum_PressRybicki(time_to_fit,
@@ -217,6 +217,10 @@ parser.add_argument('--max_components', type=int, default=51,
 
 parser.add_argument('--log_file', type=str, default='lc_timing_log.txt',
                     help='log file where timing information is written')
+
+parser.add_argument('--dt', type=float, default=0.1,
+                    help='what fraction of minimum data dt do we use as '
+                         'dt input to Lomb-Scargle periodogram')
 
 args = parser.parse_args()
 
@@ -304,7 +308,7 @@ for lc_name_global in list_of_lc:
                 print 'unique(time) failed on ',lc_name
                 continue
 
-            dt = 0.1*np.diff(np.unique(time_arr)).min()
+            dt = args.dt*np.diff(np.unique(time_arr)).min()
 
             (median_flux,
              aa, bb,
