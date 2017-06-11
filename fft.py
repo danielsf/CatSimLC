@@ -44,10 +44,10 @@ class FFTransformer(object):
     def __init__(self):
         pass
 
-    def _initialize_fft_real(self, n_bits, n_strides):
+    def _initialize_fft_real(self, n_bits, n_strides, calc_dexes):
 
-        self.cos_cache = np.cos(2.0*np.pi*self.cache_calc_dexes/self.tot_pts)
-        self.sin_cache = np.sin(2.0*np.pi*self.cache_calc_dexes/self.tot_pts)
+        self.cos_cache = np.cos(2.0*np.pi*calc_dexes/self.tot_pts)
+        self.sin_cache = np.sin(2.0*np.pi*calc_dexes/self.tot_pts)
 
         n_pts = 1
 
@@ -95,19 +95,17 @@ class FFTransformer(object):
         fft_re[rev_dexes] = f_arr
 
         tot_pts = len(time_arr)
-        cache_calc_dexes = np.arange(tot_pts//2)
 
         if (not hasattr(self, 'cos_cache') or
-            not np.array_equal(cache_calc_dexes, self.cache_calc_dexes) or
             n_bits != self.n_bits or
             tot_pts != self.tot_pts):
 
+            calc_dexes = np.arange(tot_pts//2)
             n_strides = len(f_arr)
 
-            self.cache_calc_dexes = copy.deepcopy(cache_calc_dexes)
             self.n_bits = n_bits
             self.tot_pts = tot_pts
-            self._initialize_fft_real(n_bits, n_strides)
+            self._initialize_fft_real(n_bits, n_strides, calc_dexes)
 
         #print 'prep took ',time.time()-t_start
         t_start = time.time()
