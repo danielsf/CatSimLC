@@ -1,3 +1,4 @@
+import gc
 import numpy as np
 import copy
 import time
@@ -157,6 +158,7 @@ def _initialize_PressRybicki(time_arr, sigma_arr, delta, ffter, ffter2):
     del c2_raw
     s2 = s2_raw[dexes]
     del s2_raw
+    gc.collect()
 
     c, s = extirp_sums(time_arr, wgt_fn, delta, n_t, ffter)
 
@@ -173,6 +175,7 @@ def _initialize_PressRybicki(time_arr, sigma_arr, delta, ffter, ffter2):
 
     del c
     del s
+    gc.collect()
 
     cos_2omega_tau = np.cos(4.0*np.pi*freq_arr*tau)
     sin_2omega_tau = np.sin(4.0*np.pi*freq_arr*tau)
@@ -184,6 +187,7 @@ def _initialize_PressRybicki(time_arr, sigma_arr, delta, ffter, ffter2):
 
     del s2
     del c2
+    gc.collect()
 
     cs = csomega - cos_tau*sin_tau
     ss = ssq - sin_tau*sin_tau
@@ -298,6 +302,7 @@ def get_ls_PressRybicki(time_arr_in, f_arr_in, sigma_arr_in, delta):
 
     del y_s_raw
     del y_c_raw
+    gc.collect()
 
     aa = (y_c*get_ls_PressRybicki.ss - y_s*get_ls_PressRybicki.cs)/get_ls_PressRybicki.d
     bb = (y_s*get_ls_PressRybicki.cc - y_c*get_ls_PressRybicki.cs)/get_ls_PressRybicki.d
