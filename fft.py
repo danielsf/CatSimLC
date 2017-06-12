@@ -91,14 +91,15 @@ class FFTransformer(object):
 
         n_strides = len(f_arr)
         n_pts = 1
+        cache_dexes = np.zeros(tot_pts//2, dtype=int)
         for i_bit in range(n_bits):
             n_pts *= 2
             n_strides = n_strides//2
             base_dexes = np.arange(0, n_strides*n_pts, n_pts)
             even_dexes = np.array([base_dexes + k for k in range(n_pts//2)]).flatten()
             odd_dexes = even_dexes + n_pts//2
-            cache_dexes = np.array([[k*self.tot_pts//n_pts]*len(base_dexes)
-                                    for k in range(n_pts//2)]).flatten()
+            for k in range(n_pts//2):
+                cache_dexes[k*len(base_dexes):(k+1)*len(base_dexes)] = k*self.tot_pts//n_pts
             w_re = self.cos_cache[cache_dexes]
             w_im = self.sin_cache[cache_dexes]
             temp_re_even = fft_re[even_dexes]
