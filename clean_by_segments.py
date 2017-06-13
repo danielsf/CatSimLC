@@ -270,7 +270,11 @@ stitch_dict = {}
 
 for lc_name_global in list_of_lc:
 
-    full_name = os.path.join(args.in_dir, lc_name_global)
+    if args.in_dir is not None:
+        full_name = os.path.join(args.in_dir, lc_name_global)
+    else:
+        full_name = os.path.join(lc_name_global)
+
     data = np.genfromtxt(full_name, dtype=dtype)
 
     segments = []
