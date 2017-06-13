@@ -424,17 +424,26 @@ def get_clean_spectrum_PressRybicki(time_arr, f_arr, sigma_arr, delta,
         tau = tau[valid]
         max_dex = np.argmax(pspec)
 
-        freq_max = valid_freq[max_dex]
-        tau_max = tau[max_dex]
-        aa_max = aa[max_dex]
-        bb_max = bb[max_dex]
-        cc_max = cc[max_dex]
-        omega_max = freq_max*2.0*np.pi
+        poss = np.where(pspec>=0.75*pspec[max_dex])
+        freq_poss = valid_freq[poss]
+        tau_poss = tau[poss]
+        aa_poss = aa[poss]
+        bb_poss = bb[poss]
+        cc_poss = cc[poss]
 
-        t_arg = omega_max*(time_arr-time_arr.min()-tau_max)
-        local_model = np.array([cc_max]*len(time_arr))
-        local_model += aa_max*np.cos(omega_max*(time_arr-time_arr.min()-tau_max))
-        local_model += bb_max*np.sin(omega_max*(time_arr-time_arr.min()-tau_max))
+        best_dex = np.argmin(freq_poss)
+
+        freq_best = freq_poss[best_dex]
+        tau_best = tau_poss[best_dex]
+        aa_best = aa_poss[best_dex]
+        bb_best = bb_poss[best_dex]
+        cc_best = cc_poss[best_dex]
+        omega_best = freq_best*2.0*np.pi
+
+        t_arg = omega_best*(time_arr-time_arr.min()-tau_best)
+        local_model = np.array([cc_best]*len(time_arr))
+        local_model += aa_best*np.cos(t_arg)
+        local_model += bb_best*np.sin(t_arg)
 
         residual_arr -= local_model
 
@@ -446,11 +455,11 @@ def get_clean_spectrum_PressRybicki(time_arr, f_arr, sigma_arr, delta,
         if bic_1>bic_0 and (min_components is None or len(aa_list)>=min_components):
             break
 
-        aa_list.append(aa_max)
-        bb_list.append(bb_max)
-        cc_list.append(cc_max)
-        tau_list.append(tau_max)
-        omega_list.append(omega_max)
+        aa_list.append(aa_best)
+        bb_list.append(bb_best)
+        cc_list.append(cc_best)
+        tau_list.append(tau_best)
+        omega_list.append(omega_best)
         chisq_arr.append(chisq)
         #print "%d components; bic %e %e" % (len(aa_list), bic_0, bic_1)
 
