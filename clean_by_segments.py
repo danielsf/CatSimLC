@@ -226,7 +226,17 @@ parser.add_argument('--write_every', type=int, default=100,
                     help='how often do we write to output '
                          '(in units of completed light curves)')
 
+parser.add_argument('--fig_dir', type=str, default=None,
+                    help='directory in which to output plots')
+
 args = parser.parse_args()
+
+if args.fig_dir is not None:
+    import matplotlib
+    matplotlib.use('Agg')
+    import matplotlib.pyplot as plt
+    if not os.path.isdir(args.fig_dir):
+        os.mkdir(args.fig_dir)
 
 if os.path.exists(args.log_file):
     os.unlink(args.log_file)
@@ -378,6 +388,32 @@ for lc_name_global in list_of_lc:
                                           stitch_dict[lc_name][2]):
 
                         out_file.write('%.12e %e %e\n' % (tt, ff, ss))
+
+            if args.fig_dir is not None:
+                for lc_name in output_dict:
+                    tt = stitch_dict[lc_name][0]
+                    ff = stitch_dict[lc_name][1]
+                    dt = 0.1*np.min(np.diff(np.unique(tt)))
+                    model_t = np.arange(tt.min(), tt.max(), dt)
+                    model = np.zeros(len(model_t))
+                    model += output_dict[lc_name]['median']
+                    aa = output_dict[lc_name]['aa']
+                    bb = output_dict[lc_name]['bb']
+                    cc = output_dict[lc_name]['cc']
+                    omega = output_dict[lc_name]['omega']
+                    tau = output_dict[lc_name]['tau']
+                    for ix in range(len(aa)):
+                        model += cc[ix]
+                        t_arg = omega[ix]*(model_t-tt.min()-tau[ix])
+                        model += aa[ix]*np.cos(t_arg)
+                        model += bb[ix]*np.sin(t_arg)
+                    plt.figsize = (30,30)
+                    plt.scatter(tt, ff, s=5, color='k', edgecolor='',
+                                zorder=1)
+                    plt.plot(model_t, model, color='r', linewidth=1,
+                             zorder=2)
+                    plt.savefig(os.path.join(args.fig_dir, lc_name.replace('.txt','.png')))
+                    plt.close()
 
         output_dict = {}
         stitch_dict = {}
