@@ -417,27 +417,21 @@ def get_clean_spectrum_PressRybicki(time_arr, f_arr, sigma_arr, delta,
         valid = np.where(np.logical_and(np.logical_not(np.isnan(pspec)),
                                         freq_arr<get_ls_PressRybicki.cut_off_freq))
         pspec = pspec[valid]
-        aa = aa[valid]
-        bb = bb[valid]
-        cc = cc[valid]
         valid_freq = freq_arr[valid]
-        tau = tau[valid]
         max_dex = np.argmax(pspec)
 
         poss = np.where(pspec>=0.75*pspec[max_dex])
         freq_poss = valid_freq[poss]
-        tau_poss = tau[poss]
-        aa_poss = aa[poss]
-        bb_poss = bb[poss]
-        cc_poss = cc[poss]
-
         best_dex = np.argmin(freq_poss)
-
         freq_best = freq_poss[best_dex]
-        tau_best = tau_poss[best_dex]
-        aa_best = aa_poss[best_dex]
-        bb_best = bb_poss[best_dex]
-        cc_best = cc_poss[best_dex]
+
+        best_dex = poss[0][best_dex]
+        best_dex = valid[0][best_dex]
+
+        tau_best = tau[best_dex]
+        aa_best = aa[best_dex]
+        bb_best = bb[best_dex]
+        cc_best = cc[best_dex]
         omega_best = freq_best*2.0*np.pi
 
         t_arg = omega_best*(time_arr-time_arr.min()-tau_best)
