@@ -44,7 +44,7 @@ class FFTransformer(object):
     def __init__(self):
         pass
 
-    def fft_real(self, time_arr, f_arr):
+    def fft_real(self, time_arr, f_arr, cache=False):
         """
         Fast Fourier Transform a real function as described in section 12.2.1
         of Numerical Recipes, Third Edition
@@ -54,6 +54,11 @@ class FFTransformer(object):
         time_arr is an evenly-spaced numpy array of time values
 
         f_arr_in is the corresponding numpy array of function values
+
+        cache is a boolean; if True, the fft will pre-compute and store
+        several large arrays of indices controlling how the sums
+        in the Fourier transform are done.  This can be very
+        memory-intensive, but save significant time.
 
         Returns
         -------
@@ -86,6 +91,25 @@ class FFTransformer(object):
             self.cos_cache = np.cos(2.0*np.pi*calc_dexes/self.tot_pts)
             self.sin_cache = np.sin(2.0*np.pi*calc_dexes/self.tot_pts)
 
+            self.even_dex_cache = None
+            self.cache_dex_cache = None
+            if cache:
+                self.even_dex_cache = []
+                self.cache_dex_cache = []
+                n_strides = len(f_arr)
+                n_pts = 1
+                for i_bit in range(n_bits):
+                    n_pts *= 2
+                    n_strides = n_strides//2
+                    base_dexes = np.arange(0, n_strides*n_pts, n_pts)
+                    cache_dexes = np.zeros(tot_pts//2, dtype=int)
+                    even_dexes = np.zeros(tot_pts//2, dtype=int)
+                    for k in range(n_pts//2):
+                        even_dexes[k*n_strides:(k+1)*n_strides] = base_dexes + k
+                        cache_dexes[k*n_strides:(k+1)*n_strides] = k*self.tot_pts//n_pts
+                    self.even_dex_cache.append(even_dexes)
+                    self.cache_dex_cache.append(cache_dexes)
+
         #print 'prep took ',time.time()-t_start
         t_start = time.time()
 
@@ -96,10 +120,15 @@ class FFTransformer(object):
         for i_bit in range(n_bits):
             n_pts *= 2
             n_strides = n_strides//2
-            base_dexes = np.arange(0, n_strides*n_pts, n_pts)
-            for k in range(n_pts//2):
-                even_dexes[k*n_strides:(k+1)*n_strides] = base_dexes + k
-                cache_dexes[k*n_strides:(k+1)*n_strides] = k*self.tot_pts//n_pts
+            if self.even_dex_cache is None:
+                base_dexes = np.arange(0, n_strides*n_pts, n_pts)
+                for k in range(n_pts//2):
+                    even_dexes[k*n_strides:(k+1)*n_strides] = base_dexes + k
+                    cache_dexes[k*n_strides:(k+1)*n_strides] = k*self.tot_pts//n_pts
+            else:
+                even_dexes = self.even_dex_cache[i_bit]
+                cache_dexes = self.cache_dex_cache[i_bit]
+
             odd_dexes = even_dexes + n_pts//2
             w_re = self.cos_cache[cache_dexes]
             w_im = self.sin_cache[cache_dexes]

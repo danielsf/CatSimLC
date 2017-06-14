@@ -90,7 +90,7 @@ import time
 ffter = FFTransformer()
 
 t_start = time.time()
-f_re, f_im = ffter.fft_real(time_arr, y_arr)
+f_re, f_im = ffter.fft_real(time_arr, y_arr, cache=True)
 t_fft = time.time()-t_start
 
 t_start = time.time()

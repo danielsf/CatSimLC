@@ -7,7 +7,8 @@ import time
 from PressRybicki import get_clean_spectrum_PressRybicki
 
 def _fit_and_offset(time_to_fit, flux_to_fit, sigma_to_fit,
-                    time_to_offset, flux_to_offset, sigma_to_offset):
+                    time_to_offset, flux_to_offset, sigma_to_offset,
+                    cache_fft=False):
 
         dt = args.dt*np.diff(np.unique(time_to_fit)).min()
 
@@ -16,7 +17,8 @@ def _fit_and_offset(time_to_fit, flux_to_fit, sigma_to_fit,
                                                                   flux_to_fit,
                                                                   sigma_to_fit, dt,
                                                                   min_components=3,
-                                                                  max_components=3)
+                                                                  max_components=3,
+                                                                  cache_fft=cache_fft)
 
         model = np.array([median_flux]*len(time_to_offset))
         for ix in range(len(aa)):
@@ -33,7 +35,7 @@ def _fit_and_offset(time_to_fit, flux_to_fit, sigma_to_fit,
         return offset, chisq
 
 
-def re_calibrate_lc(time_arr, flux_arr, sigma_arr, segments):
+def re_calibrate_lc(time_arr, flux_arr, sigma_arr, segments, cache_fft=False):
     """
     Stitch together the differently calibrated segments of a light curve.
 
@@ -186,7 +188,8 @@ def re_calibrate_lc(time_arr, flux_arr, sigma_arr, segments):
         sigma_to_fit = sigma_to_fit_master[-n_to_fit:]
 
         offset, chisq = _fit_and_offset(time_to_fit, flux_to_fit, sigma_to_fit,
-                                        time_to_offset, flux_to_offset, sigma_to_offset)
+                                        time_to_offset, flux_to_offset, sigma_to_offset,
+                                        cache_fft=cache_fft)
 
         med_fit = np.median(flux_to_fit)
         stdev_fit = np.sqrt(np.power(flux_to_fit-med_fit,2).sum()/(len(flux_to_fit)+1))
@@ -202,7 +205,8 @@ def re_calibrate_lc(time_arr, flux_arr, sigma_arr, segments):
                                             sigma_to_fit,
                                             time_to_offset,
                                             flux_to_offset,
-                                            sigma_to_offset)
+                                            sigma_to_offset,
+                                            cache_fft=cache_fft)
 
         if time_to_offset[-1] < time_to_fit[0]:
             n_first = len(time_to_offset)
@@ -278,7 +282,16 @@ parser.add_argument('--write_every', type=int, default=100,
 parser.add_argument('--fig_dir', type=str, default=None,
                     help='directory in which to output plots')
 
+parser.add_argument('--cache_fft', type=str, default='False',
+                    help='should use the memory-intensive index cache '
+                         'when FFTing the data')
+
 args = parser.parse_args()
+
+if args.cache_fft.lower()[0] == 'f':
+    cache_fft = False
+else:
+    cache_fft = True
 
 if args.fig_dir is not None:
     import matplotlib
@@ -357,7 +370,8 @@ for lc_name_global in list_of_lc:
 
             if do_stitch:
                 time_arr, flux_arr, sigma_arr = re_calibrate_lc(data['t'], data['f'],
-                                                                data['s'], segments)
+                                                                data['s'], segments,
+                                                                cache_fft=cache_fft)
 
                 stitch_name = lc_name.replace('.txt','')
                 stitch_name = os.path.join(args.stitch_dir, stitch_name+'_stitched.tx')
@@ -381,7 +395,8 @@ for lc_name_global in list_of_lc:
              tau, chisq_arr) = get_clean_spectrum_PressRybicki(time_arr, flux_arr,
                                                                sigma_arr, dt,
                                                                max_components=args.max_components,
-                                                               cut_off_omega=200.0)
+                                                               cut_off_omega=200.0,
+                                                               cache_fft=cache_fft)
 
             output_dict[lc_name] = {}
             output_dict[lc_name]['span'] = time_arr.max() - time_arr.min()

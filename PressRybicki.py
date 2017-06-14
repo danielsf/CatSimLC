@@ -8,13 +8,16 @@ _t_prep =0.0
 _t_loop = 0.0
 _t_fft = 0.0
 
-def extirp_sums(tt_arr, ff_arr, delta, n_t, ffter):
+def extirp_sums(tt_arr, ff_arr, delta, n_t, ffter, cache_fft=False):
     """
     Take an arbitrary function sampled irregularly and return the
     sums in equation (5) of Press and Rybicki 1988 (ApJ 338, 277)
     using the FFT code in this module.
 
     ffter is an instantiation of FFTransformer
+
+    cache_fft is a boolean.  If true, use memory intensive caches
+    to speed up the FFT.
     """
 
     global _t_prep
@@ -98,13 +101,14 @@ def extirp_sums(tt_arr, ff_arr, delta, n_t, ffter):
     _t_loop += time.time()-t_start
 
     t_start = time.time()
-    ft_re, ft_im = ffter.fft_real(ttk, hk)
+    ft_re, ft_im = ffter.fft_real(ttk, hk, cache=cache_fft)
     _t_fft += time.time()-t_start
 
     return (ft_re/delta, ft_im/delta)
 
 
-def _initialize_PressRybicki(time_arr, sigma_arr, delta, ffter, ffter2):
+def _initialize_PressRybicki(time_arr, sigma_arr, delta, ffter, ffter2,
+                             cache_fft=False):
     """
     Initialize arrays for the Press and Rybicki periodogram
     that only depend on t and sigma
@@ -119,6 +123,9 @@ def _initialize_PressRybicki(time_arr, sigma_arr, delta, ffter, ffter2):
     ffter and ffter2 are instantiations of FFTransformer.  One is
     for extirpolating sums over omega*t; one is for extirpolating
     sums over 2*omega*t
+
+    cache_fft is a boolean.  If true, use memory intensive caches
+    to speed up the FFT.
 
     Returns
     -------
@@ -152,7 +159,8 @@ def _initialize_PressRybicki(time_arr, sigma_arr, delta, ffter, ffter2):
     wgt_fn = 1.0/(w*np.power(sigma_arr, 2))
 
     c2_raw, s2_raw = extirp_sums(2.0*time_arr, wgt_fn,
-                                delta, n_t*2, ffter2)
+                                delta, n_t*2, ffter2,
+                                cache_fft=cache_fft)
     dexes = range(0,len(c2_raw), 2)
     c2 = c2_raw[dexes]
     del c2_raw
@@ -160,7 +168,8 @@ def _initialize_PressRybicki(time_arr, sigma_arr, delta, ffter, ffter2):
     del s2_raw
     gc.collect()
 
-    c, s = extirp_sums(time_arr, wgt_fn, delta, n_t, ffter)
+    c, s = extirp_sums(time_arr, wgt_fn, delta, n_t, ffter,
+                       cache_fft=cache_fft)
 
     cut_off_freq = np.exp(-1.3093286772)*np.power(delta, -0.97075831145)
     cut_off_freq *=0.5
@@ -213,7 +222,8 @@ def _initialize_PressRybicki(time_arr, sigma_arr, delta, ffter, ffter2):
             cos_omega_tau, sin_omega_tau,
             cos_tau, sin_tau, cc, ss, cs, d)
 
-def get_ls_PressRybicki(time_arr_in, f_arr_in, sigma_arr_in, delta):
+def get_ls_PressRybicki(time_arr_in, f_arr_in, sigma_arr_in, delta,
+                        cache_fft=False):
     """
     Evaluate the generalized Lomb-Scargle periodogram for a
     ligth curve, as in
@@ -234,6 +244,9 @@ def get_ls_PressRybicki(time_arr_in, f_arr_in, sigma_arr_in, delta):
     evaluate the periodogram
 
     delta is a float; maximum frequency considered will be 1/delta
+
+    cache_fft is a boolean.  If true, use memory intensive caches
+    to speed up the FFT.
 
     Returns
     -------
@@ -283,7 +296,8 @@ def get_ls_PressRybicki(time_arr_in, f_arr_in, sigma_arr_in, delta):
          get_ls_PressRybicki.cs,
          get_ls_PressRybicki.d) = _initialize_PressRybicki(time_arr, sigma_arr, delta,
                                                            get_ls_PressRybicki.ffter,
-                                                           get_ls_PressRybicki.ffter2)
+                                                           get_ls_PressRybicki.ffter2,
+                                                           cache_fft=cache_fft)
 
     y_bar = (f_arr*get_ls_PressRybicki.w).sum()
     yy = (get_ls_PressRybicki.w*np.power(f_arr-y_bar,2)).sum()
@@ -291,7 +305,8 @@ def get_ls_PressRybicki(time_arr_in, f_arr_in, sigma_arr_in, delta):
     y_c_raw, y_s_raw = extirp_sums(time_arr, y_fn,
                                    get_ls_PressRybicki.delta,
                                    get_ls_PressRybicki.n_t,
-                                   get_ls_PressRybicki.ffter)
+                                   get_ls_PressRybicki.ffter,
+                                   cache_fft=cache_fft)
 
     y_c = (y_c_raw*get_ls_PressRybicki.cos_omega_tau +
            y_s_raw*get_ls_PressRybicki.sin_omega_tau)
@@ -344,7 +359,8 @@ def _is_significant(aa, bb, cc, omega, tau,
 def get_clean_spectrum_PressRybicki(time_arr, f_arr, sigma_arr, delta,
                                     max_components=None,
                                     min_components=None,
-                                    cut_off_omega=None):
+                                    cut_off_omega=None,
+                                    cache_fft=False):
     """
     Clean a time series according to the algorithm presented in
     Roberts et al. 1987 (AJ 93, 968) (though this works in real
@@ -370,6 +386,9 @@ def get_clean_spectrum_PressRybicki(time_arr, f_arr, sigma_arr, delta,
 
     cut_off_omega is an optional maximum allowed angular frequency
     for components
+
+    cache_fft is a boolean.  If true, use memory intensive caches
+    to speed up the FFT.
 
     Returns
     -------
@@ -406,7 +425,8 @@ def get_clean_spectrum_PressRybicki(time_arr, f_arr, sigma_arr, delta,
     bic_0 = np.power(f_arr/sigma_arr,2).sum()
 
     (pspec, freq_arr,
-     tau, aa, bb, cc) = get_ls_PressRybicki(time_arr, residual_arr, sigma_arr, delta)
+     tau, aa, bb, cc) = get_ls_PressRybicki(time_arr, residual_arr, sigma_arr, delta,
+                                            cache_fft=cache_fft)
 
     significance = False
     if bic_1<bic_0:
@@ -472,7 +492,8 @@ def get_clean_spectrum_PressRybicki(time_arr, f_arr, sigma_arr, delta,
         bic_0 = bic_1
 
         (pspec, freq_arr,
-         tau, aa, bb, cc) = get_ls_PressRybicki(time_arr, residual_arr, sigma_arr, delta)
+         tau, aa, bb, cc) = get_ls_PressRybicki(time_arr, residual_arr, sigma_arr, delta,
+                                                cache_fft=cache_fft)
 
     return (median_flux,np.array(aa_list), np.array(bb_list),
             np.array(cc_list), np.array(omega_list),
