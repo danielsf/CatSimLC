@@ -393,6 +393,9 @@ for lc_name_global in list_of_lc:
                 for lc_name in output_dict:
                     tt = stitch_dict[lc_name][0]
                     ff = stitch_dict[lc_name][1]
+                    f_sorted = np.sort(ff)
+                    y_min = f_sorted[len(ff)/10]
+                    y_max = f_sorted[len(ff)*9/10]
                     dt = 0.1*np.min(np.diff(np.unique(tt)))
                     model_t = np.arange(tt.min(), tt.max(), dt)
                     model = np.zeros(len(model_t))
@@ -408,10 +411,45 @@ for lc_name_global in list_of_lc:
                         model += aa[ix]*np.cos(t_arg)
                         model += bb[ix]*np.sin(t_arg)
                     plt.figsize = (30,30)
-                    plt.scatter(tt, ff, s=5, color='k', edgecolor='',
+                    plt.subplot(3,1,1)
+                    t_dex = np.where(tt<tt.min()+(tt.max()-tt.min())/3.0)
+                    plt.scatter(tt[t_dex], ff[t_dex], s=5, color='k', edgecolor='',
                                 zorder=1)
-                    plt.plot(model_t, model, color='r', linewidth=1,
+
+                    plt.ylim((y_min,y_max))
+                    plt.xticks(fontsize=10)
+                    plt.yticks(fontsize=10)
+                    t_dex = np.where(model_t<tt.min()+(tt.max()-tt.min())/3.0)
+                    plt.plot(model_t[t_dex], model[t_dex], color='r', linewidth=0.5,
                              zorder=2)
+
+                    plt.subplot(3,1,2)
+                    t_dex = np.where(np.logical_and(tt<tt.min()+2.0*(tt.max()-tt.min())/3.0,
+                                                    tt>tt.min()+(tt.max()-tt.min())/4.0))
+                    plt.scatter(tt[t_dex], ff[t_dex], s=5, color='k', edgecolor='',
+                                zorder=1)
+
+                    plt.ylim((y_min,y_max))
+                    plt.xticks(fontsize=10)
+                    plt.yticks(fontsize=10)
+                    t_dex = np.where(np.logical_and(model_t<tt.min()+2.0*(tt.max()-tt.min())/3.0,
+                                                    model_t>tt.min()+(tt.max()-tt.min())/4.0))
+                    plt.plot(model_t[t_dex], model[t_dex], color='r', linewidth=0.5,
+                             zorder=2)
+
+                    plt.subplot(3,1,3)
+                    t_dex = np.where(tt>tt.min()+2.0*(tt.max()-tt.min())/3.0-0.1*(tt.max()-tt.min()))
+                    plt.scatter(tt[t_dex], ff[t_dex], s=5, color='k', edgecolor='',
+                                zorder=1)
+
+                    plt.ylim((y_min,y_max))
+                    plt.xticks(fontsize=10)
+                    plt.yticks(fontsize=10)
+                    t_dex = np.where(model_t>tt.min()+2.0*(tt.max()-tt.min())/3.0-0.1*(tt.max()-tt.min()))
+                    plt.plot(model_t[t_dex], model[t_dex], color='r', linewidth=0.5,
+                             zorder=2)
+
+                    plt.tight_layout()
                     plt.savefig(os.path.join(args.fig_dir, lc_name.replace('.txt','.png')))
                     plt.close()
 
