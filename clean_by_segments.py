@@ -489,7 +489,7 @@ for lc_name_global in list_of_lc:
                     plt.xticks(fontsize=10)
                     plt.yticks(fontsize=10)
                     t_dex = np.where(model_t<tt.min()+(tt.max()-tt.min())/3.0)
-                    plt.plot(model_t[t_dex], model[t_dex], color='r', linewidth=0.5,
+                    plt.plot(model_t[t_dex], model[t_dex], color='r', linewidth=1,
                              zorder=2)
 
                     plt.subplot(3,1,2)
@@ -503,7 +503,7 @@ for lc_name_global in list_of_lc:
                     plt.yticks(fontsize=10)
                     t_dex = np.where(np.logical_and(model_t<tt.min()+2.0*(tt.max()-tt.min())/3.0,
                                                     model_t>tt.min()+(tt.max()-tt.min())/4.0))
-                    plt.plot(model_t[t_dex], model[t_dex], color='r', linewidth=0.5,
+                    plt.plot(model_t[t_dex], model[t_dex], color='r', linewidth=1,
                              zorder=2)
 
                     plt.subplot(3,1,3)
@@ -515,7 +515,7 @@ for lc_name_global in list_of_lc:
                     plt.xticks(fontsize=10)
                     plt.yticks(fontsize=10)
                     t_dex = np.where(model_t>tt.min()+2.0*(tt.max()-tt.min())/3.0-0.1*(tt.max()-tt.min()))
-                    plt.plot(model_t[t_dex], model[t_dex], color='r', linewidth=0.5,
+                    plt.plot(model_t[t_dex], model[t_dex], color='r', linewidth=1,
                              zorder=2)
 
                     plt.tight_layout()
