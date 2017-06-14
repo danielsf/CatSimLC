@@ -431,6 +431,10 @@ for lc_name_global in list_of_lc:
                         t_arg = omega[ix]*(model_t-tt.min()-tau[ix])
                         model += aa[ix]*np.cos(t_arg)
                         model += bb[ix]*np.sin(t_arg)
+                    with open(os.path.join(args.fig_dir, lc_name.replace('.txt', '_model.txt')), 'w') as out_file:
+                        for t_val, f_val in zip(model_t, model):
+                            out_file.write('%e %e\n' % (t_val, f_val))
+
                     plt.figsize = (30,30)
                     plt.subplot(3,1,1)
                     t_dex = np.where(tt<tt.min()+(tt.max()-tt.min())/3.0)
