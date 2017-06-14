@@ -141,7 +141,10 @@ def re_calibrate_lc(time_arr, flux_arr, sigma_arr, segments):
             flux_to_offset = next_flux
             sigma_to_offset = next_sigma
 
-        n_to_fit = len(time_to_fit_master)
+        if len(time_to_fit_master)/2 > len(time_to_offset)*2:
+            n_to_fit = len(time_to_fit_master)/2
+        else:
+            n_to_fit = len(time_to_fit_master)
 
         seg_ct += 1
 
