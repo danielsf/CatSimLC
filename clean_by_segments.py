@@ -5,6 +5,12 @@ import argparse
 import time
 
 from PressRybicki import get_clean_spectrum_PressRybicki
+from fft import FFTransformer
+
+stitch_ffter = FFTransformer()
+stitch_ffter2 = FFTransformer()
+global_ffter = FFTransformer()
+global_ffter2 = FFTransformer()
 
 def _fit_and_offset(time_to_fit, flux_to_fit, sigma_to_fit,
                     time_to_offset, flux_to_offset, sigma_to_offset,
@@ -18,7 +24,9 @@ def _fit_and_offset(time_to_fit, flux_to_fit, sigma_to_fit,
                                                                   sigma_to_fit, dt,
                                                                   min_components=3,
                                                                   max_components=3,
-                                                                  cache_fft=cache_fft)
+                                                                  cache_fft=cache_fft,
+                                                                  ffter=stitch_ffter,
+                                                                  ffter2=stitch_ffter2)
 
         model = np.array([median_flux]*len(time_to_offset))
         for ix in range(len(aa)):
@@ -396,7 +404,9 @@ for lc_name_global in list_of_lc:
                                                                sigma_arr, dt,
                                                                max_components=args.max_components,
                                                                cut_off_omega=200.0,
-                                                               cache_fft=cache_fft)
+                                                               cache_fft=cache_fft,
+                                                               ffter=global_ffter,
+                                                               ffter2=global_ffter2)
 
             output_dict[lc_name] = {}
             output_dict[lc_name]['span'] = time_arr.max() - time_arr.min()
