@@ -117,9 +117,19 @@ def re_calibrate_lc(time_arr, flux_arr, sigma_arr, segments):
     first_dexes = np.where(np.logical_and(time>=start_times[first_segment]-tol,
                                           time<=end_times[first_segment]+tol))
 
-    time_out = time[first_dexes]
-    flux_out = flux[first_dexes]
-    sigma_out = sigma[first_dexes]
+    time_out = np.zeros(len(time), dtype=float)
+    flux_out = np.zeros(len(time), dtype=float)
+    sigma_out = np.zeros(len(time), dtype=float)
+
+    time_buffer = np.zeros(len(time), dtype=float)
+    flux_buffer = np.zeros(len(time), dtype=float)
+    sigma_buffer = np.zeros(len(time), dtype=float)
+
+    n_out = len(first_dexes[0])
+
+    time_out[:n_out] = time[first_dexes]
+    flux_out[:n_out] = flux[first_dexes]
+    sigma_out[:n_out] = sigma[first_dexes]
 
     for i_seg in range(first_segment+1, len(segments)):
 
@@ -151,17 +161,17 @@ def re_calibrate_lc(time_arr, flux_arr, sigma_arr, segments):
         next_flux = flux[valid_dex]
         next_sigma = sigma[valid_dex]
 
-        if len(time_out) < len(next_time):
+        if n_out < len(next_time):
             time_to_fit_master = next_time
             flux_to_fit_master = next_flux
             sigma_to_fit_master = next_sigma
-            time_to_offset = time_out
-            flux_to_offset = flux_out
-            sigma_to_offset = sigma_out
+            time_to_offset = time_out[:n_out]
+            flux_to_offset = flux_out[:n_out]
+            sigma_to_offset = sigma_out[:n_out]
         else:
-            time_to_fit_master = time_out
-            flux_to_fit_master = flux_out
-            sigma_to_fit_master = sigma_out
+            time_to_fit_master = time_out[:n_out]
+            flux_to_fit_master = flux_out[:n_out]
+            sigma_to_fit_master = sigma_out[:n_out]
             time_to_offset = next_time
             flux_to_offset = next_flux
             sigma_to_offset = next_sigma
@@ -195,18 +205,36 @@ def re_calibrate_lc(time_arr, flux_arr, sigma_arr, segments):
                                             sigma_to_offset)
 
         if time_to_offset[-1] < time_to_fit[0]:
-            time_out = np.append(time_to_offset, time_to_fit_master)
-            flux_out = np.append(flux_to_offset-offset, flux_to_fit_master)
-            sigma_out = np.append(sigma_to_offset, sigma_to_fit_master)
+            n_first = len(time_to_offset)
+            n_out = n_first + len(time_to_fit_master)
+            time_buffer[:n_first] = time_to_offset
+            flux_buffer[:n_first] = flux_to_offset-offset
+            sigma_buffer[:n_first] = sigma_to_offset
+
+            time_buffer[n_first:n_out] = time_to_fit_master
+            flux_buffer[n_first:n_out] = flux_to_fit_master
+            sigma_buffer[n_first:n_out] = sigma_to_fit_master
+
         else:
-            time_out = np.append(time_to_fit_master, time_to_offset)
-            flux_out = np.append(flux_to_fit_master, flux_to_offset-offset)
-            sigma_out = np.append(sigma_to_fit_master, sigma_to_offset)
+            n_first = len(time_to_fit_master)
+            n_out = n_first + len(time_to_offset)
+
+            time_buffer[:n_first] = time_to_fit_master
+            flux_buffer[:n_first] = flux_to_fit_master
+            sigma_buffer[:n_first] = sigma_to_fit_master
+
+            time_buffer[n_first:n_out] = time_to_offset
+            flux_buffer[n_first:n_out] = flux_to_offset-offset
+            sigma_buffer[n_first:n_out] = sigma_to_offset
+
+        time_out[:n_out] = time_buffer[:n_out]
+        flux_out[:n_out] = flux_buffer[:n_out]
+        sigma_out[:n_out] = sigma_buffer[:n_out]
 
         #print '    calculated offset %e %d of %d %e -- dt %e %d -- %d' % \
         #(offset,i_seg,len(segments),chisq,dt,len(time_out), len(aa))
 
-    return (time_out, flux_out, sigma_out)
+    return (time_out[:n_out], flux_out[:n_out], sigma_out[:n_out])
 
 
 parser = argparse.ArgumentParser()
