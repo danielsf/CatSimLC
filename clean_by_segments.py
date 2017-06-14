@@ -6,6 +6,33 @@ import time
 
 from PressRybicki import get_clean_spectrum_PressRybicki
 
+def _fit_and_offset(time_to_fit, flux_to_fit, sigma_to_fit,
+                    time_to_offset, flux_to_offset, sigma_to_offset):
+
+        dt = args.dt*np.diff(np.unique(time_to_fit)).min()
+
+        (median_flux, aa, bb, cc,
+         omega, tau, chisq_arr) = get_clean_spectrum_PressRybicki(time_to_fit,
+                                                                  flux_to_fit,
+                                                                  sigma_to_fit, dt,
+                                                                  min_components=3,
+                                                                  max_components=3)
+
+        model = np.array([median_flux]*len(time_to_offset))
+        for ix in range(len(aa)):
+            model += cc[ix]
+            t_arg = omega[ix]*(time_to_offset - time_to_fit.min() - tau[ix])
+            model += aa[ix]*np.cos(t_arg)
+            model += bb[ix]*np.sin(t_arg)
+
+        offset_num = ((flux_to_offset-model)/np.power(sigma_to_offset,2)).sum()
+        offset_denom = (1.0/np.power(sigma_to_offset,2)).sum()
+        offset = offset_num/offset_denom
+        chisq = np.power((model-flux_to_offset-offset)/sigma_to_offset,2).sum()
+
+        return offset, chisq
+
+
 def re_calibrate_lc(time_arr, flux_arr, sigma_arr, segments):
     """
     Stitch together the differently calibrated segments of a light curve.
@@ -94,8 +121,6 @@ def re_calibrate_lc(time_arr, flux_arr, sigma_arr, segments):
     flux_out = flux[first_dexes]
     sigma_out = sigma[first_dexes]
 
-    seg_ct = 1
-
     for i_seg in range(first_segment+1, len(segments)):
 
         # again: discard light curve segments with double reporting
@@ -141,37 +166,33 @@ def re_calibrate_lc(time_arr, flux_arr, sigma_arr, segments):
             flux_to_offset = next_flux
             sigma_to_offset = next_sigma
 
-        if len(time_to_fit_master)/2 > len(time_to_offset)*4:
-            n_to_fit = len(time_to_fit_master)/2
+        if 2*len(time_to_offset) < len(time_to_fit_master):
+            n_to_fit = 2*len(time_to_offset)
         else:
             n_to_fit = len(time_to_fit_master)
-
-        seg_ct += 1
 
         time_to_fit = time_to_fit_master[-n_to_fit:]
         flux_to_fit = flux_to_fit_master[-n_to_fit:]
         sigma_to_fit = sigma_to_fit_master[-n_to_fit:]
 
-        dt = args.dt*np.diff(np.unique(time_to_fit)).min()
+        offset, chisq = _fit_and_offset(time_to_fit, flux_to_fit, sigma_to_fit,
+                                        time_to_offset, flux_to_offset, sigma_to_offset)
 
-        (median_flux, aa, bb, cc,
-         omega, tau, chisq_arr) = get_clean_spectrum_PressRybicki(time_to_fit,
-                                                                  flux_to_fit,
-                                                                  sigma_to_fit, dt,
-                                                                  min_components=3,
-                                                                  max_components=3)
+        med_fit = np.median(flux_to_fit)
+        stdev_fit = np.sqrt(np.power(flux_to_fit-med_fit,2).sum()/(len(flux_to_fit)+1))
+        med_offset = np.median(flux_to_offset-offset)
 
-        model = np.array([median_flux]*len(time_to_offset))
-        for ix in range(len(aa)):
-            model += cc[ix]
-            t_arg = omega[ix]*(time_to_offset - time_to_fit.min() - tau[ix])
-            model += aa[ix]*np.cos(t_arg)
-            model += bb[ix]*np.sin(t_arg)
+        if np.abs(med_fit-med_offset) > stdev_fit:
+            time_to_fit = time_to_fit_master
+            flux_to_fit = flux_to_fit_master
+            sigma_to_fit = sigma_to_fit_master
 
-        offset_num = ((flux_to_offset-model)/np.power(sigma_to_offset,2)).sum()
-        offset_denom = (1.0/np.power(sigma_to_offset,2)).sum()
-        offset = offset_num/offset_denom
-        chisq = np.power((model-flux_to_offset-offset)/sigma_to_offset,2).sum()
+            offset, chisq = _fit_and_offset(time_to_fit,
+                                            flux_to_fit,
+                                            sigma_to_fit,
+                                            time_to_offset,
+                                            flux_to_offset,
+                                            sigma_to_offset)
 
         if time_to_offset[-1] < time_to_fit[0]:
             time_out = np.append(time_to_offset, time_to_fit_master)
