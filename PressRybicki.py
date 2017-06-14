@@ -343,7 +343,8 @@ def _is_significant(aa, bb, cc, omega, tau,
 
 def get_clean_spectrum_PressRybicki(time_arr, f_arr, sigma_arr, delta,
                                     max_components=None,
-                                    min_components=None):
+                                    min_components=None,
+                                    cut_off_omega=None):
     """
     Clean a time series according to the algorithm presented in
     Roberts et al. 1987 (AJ 93, 968) (though this works in real
@@ -366,6 +367,9 @@ def get_clean_spectrum_PressRybicki(time_arr, f_arr, sigma_arr, delta,
 
     max_components is an integer indicating the maximum number of
     components to find
+
+    cut_off_omega is an optional maximum allowed angular frequency
+    for components
 
     Returns
     -------
@@ -409,13 +413,21 @@ def get_clean_spectrum_PressRybicki(time_arr, f_arr, sigma_arr, delta,
         significance = True
     bic_0=bic_1
 
+    if cut_off_omega is not None:
+        if cut_off_omega/(2.0*np.pi) < get_ls_PressRybicki.cut_off_freq:
+            cut_off_freq = cut_off_omega/(2.0*np.pi)
+        else:
+            cut_off_freq = get_ls_PressRybicki.cut_off_freq
+    else:
+        cut_off_freq = get_ls_PressRybicki.cut_off_freq
+
     while significance:
 
         if max_components is not None and len(aa_list)>=max_components:
             break
 
         valid = np.where(np.logical_and(np.logical_not(np.isnan(pspec)),
-                                        freq_arr<get_ls_PressRybicki.cut_off_freq))
+                                        freq_arr<cut_off_freq))
         pspec = pspec[valid]
         valid_freq = freq_arr[valid]
         max_dex = np.argmax(pspec)

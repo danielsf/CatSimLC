@@ -380,7 +380,8 @@ for lc_name_global in list_of_lc:
              cc, omega,
              tau, chisq_arr) = get_clean_spectrum_PressRybicki(time_arr, flux_arr,
                                                                sigma_arr, dt,
-                                                               max_components=args.max_components)
+                                                               max_components=args.max_components,
+                                                               cut_off_omega=200.0)
 
             output_dict[lc_name] = {}
             output_dict[lc_name]['span'] = time_arr.max() - time_arr.min()
