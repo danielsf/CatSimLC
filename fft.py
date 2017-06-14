@@ -94,7 +94,6 @@ class FFTransformer(object):
             self.even_dex_cache = None
             self.cache_dex_cache = None
             if cache:
-                print 'initializing fft'
                 self.even_dex_cache = []
                 self.cache_dex_cache = []
                 n_strides = len(f_arr)

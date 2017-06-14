@@ -223,9 +223,7 @@ def _initialize_PressRybicki(time_arr, sigma_arr, delta, ffter, ffter2,
             cos_tau, sin_tau, cc, ss, cs, d)
 
 def get_ls_PressRybicki(time_arr_in, f_arr_in, sigma_arr_in, delta,
-                        cache_fft=False,
-                        ffter=None,
-                        ffter2=None):
+                        cache_fft=False):
     """
     Evaluate the generalized Lomb-Scargle periodogram for a
     ligth curve, as in
@@ -272,11 +270,9 @@ def get_ls_PressRybicki(time_arr_in, f_arr_in, sigma_arr_in, delta,
         if not np.array_equal(time_arr_in, get_ls_PressRybicki.time_cache):
             get_ls_PressRybicki.initialized = False
 
-    if ffter is None:
-        ffter = FFTransformer()
-
-    if ffter2 is None:
-        ffter2 = FFTransformer()
+    if not hasattr(get_ls_PressRybicki, 'ffter'):
+        get_ls_PressRybicki.ffter = FFTransformer()
+        get_ls_PressRybicki.ffter2 = FFTransformer()
 
     if (not hasattr(get_ls_PressRybicki, 'initialized') or
         not get_ls_PressRybicki.initialized):
@@ -299,7 +295,8 @@ def get_ls_PressRybicki(time_arr_in, f_arr_in, sigma_arr_in, delta,
          get_ls_PressRybicki.ss,
          get_ls_PressRybicki.cs,
          get_ls_PressRybicki.d) = _initialize_PressRybicki(time_arr, sigma_arr, delta,
-                                                           ffter, ffter2,
+                                                           get_ls_PressRybicki.ffter,
+                                                           get_ls_PressRybicki.ffter2,
                                                            cache_fft=cache_fft)
 
     y_bar = (f_arr*get_ls_PressRybicki.w).sum()
@@ -308,7 +305,8 @@ def get_ls_PressRybicki(time_arr_in, f_arr_in, sigma_arr_in, delta,
     y_c_raw, y_s_raw = extirp_sums(time_arr, y_fn,
                                    get_ls_PressRybicki.delta,
                                    get_ls_PressRybicki.n_t,
-                                   ffter, cache_fft=cache_fft)
+                                   get_ls_PressRybicki.ffter,
+                                   cache_fft=cache_fft)
 
     y_c = (y_c_raw*get_ls_PressRybicki.cos_omega_tau +
            y_s_raw*get_ls_PressRybicki.sin_omega_tau)
@@ -362,9 +360,7 @@ def get_clean_spectrum_PressRybicki(time_arr, f_arr, sigma_arr, delta,
                                     max_components=None,
                                     min_components=None,
                                     cut_off_omega=None,
-                                    cache_fft=False,
-                                    ffter=None,
-                                    ffter2=None):
+                                    cache_fft=False):
     """
     Clean a time series according to the algorithm presented in
     Roberts et al. 1987 (AJ 93, 968) (though this works in real
@@ -430,8 +426,7 @@ def get_clean_spectrum_PressRybicki(time_arr, f_arr, sigma_arr, delta,
 
     (pspec, freq_arr,
      tau, aa, bb, cc) = get_ls_PressRybicki(time_arr, residual_arr, sigma_arr, delta,
-                                            cache_fft=cache_fft, ffter=ffter,
-                                            ffter2=ffter2)
+                                            cache_fft=cache_fft)
 
     significance = False
     if bic_1<bic_0:
@@ -498,8 +493,7 @@ def get_clean_spectrum_PressRybicki(time_arr, f_arr, sigma_arr, delta,
 
         (pspec, freq_arr,
          tau, aa, bb, cc) = get_ls_PressRybicki(time_arr, residual_arr, sigma_arr, delta,
-                                                cache_fft=cache_fft, ffter=ffter,
-                                                ffter2=ffter2)
+                                                cache_fft=cache_fft)
 
     return (median_flux,np.array(aa_list), np.array(bb_list),
             np.array(cc_list), np.array(omega_list),
