@@ -487,7 +487,7 @@ def get_clean_spectrum_PressRybicki(time_arr, f_arr, sigma_arr, delta,
         tau_list.append(tau_best)
         omega_list.append(omega_best)
         chisq_arr.append(chisq)
-        print "%d components; bic %e %e" % (len(aa_list), bic_0, bic_1)
+        print "%d components %e ; bic %e %e" % (len(aa_list), omega_best, bic_0, bic_1)
 
         bic_0 = bic_1
 
