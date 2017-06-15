@@ -1,12 +1,8 @@
 import gc
 import numpy as np
 import copy
-import time
 from fft import FFTransformer
 
-_t_prep =0.0
-_t_loop = 0.0
-_t_fft = 0.0
 
 def extirp_sums(tt_arr, ff_arr, delta, n_t, ffter, cache_fft=False):
     """
@@ -19,13 +15,6 @@ def extirp_sums(tt_arr, ff_arr, delta, n_t, ffter, cache_fft=False):
     cache_fft is a boolean.  If true, use memory intensive caches
     to speed up the FFT.
     """
-
-    global _t_prep
-    global _t_loop
-    global _t_fft
-
-
-    t_start = time.time()
     ttk = np.arange(0.0,
                     n_t*delta,
                     delta)
@@ -83,10 +72,6 @@ def extirp_sums(tt_arr, ff_arr, delta, n_t, ffter, cache_fft=False):
             denom = np.product((ttk[target_dexes] - other_times), axis=0)
             extirp_sums.coeff_cache.append(num/denom)
 
-    _t_prep += time.time() - t_start
-
-    t_start = time.time()
-
     for i_col in range(extirp_sums.dex_arr.shape[1]):
         target_dexes = extirp_sums.dex_arr[:,i_col]
         term = ff_arr*extirp_sums.coeff_cache[i_col]
@@ -98,11 +83,8 @@ def extirp_sums(tt_arr, ff_arr, delta, n_t, ffter, cache_fft=False):
             term[ix] = term[sum_dexes].sum()
 
         hk[unq_targets] += term[unq_dexes]
-    _t_loop += time.time()-t_start
 
-    t_start = time.time()
     ft_re, ft_im = ffter.fft_real(ttk, hk, cache=cache_fft)
-    _t_fft += time.time()-t_start
 
     return (ft_re/delta, ft_im/delta)
 
