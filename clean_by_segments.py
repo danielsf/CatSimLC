@@ -6,6 +6,8 @@ import time
 
 from PressRybicki import get_clean_spectrum_PressRybicki
 
+__all__ = ['clean_spectra']
+
 def _fit_and_offset(time_to_fit, flux_to_fit, sigma_to_fit,
                     time_to_offset, flux_to_offset, sigma_to_offset,
                     cache_fft=False):
@@ -248,288 +250,341 @@ def re_calibrate_lc(time_arr, flux_arr, sigma_arr, segments, cache_fft=False):
     return (time_out[:n_out], flux_out[:n_out], sigma_out[:n_out])
 
 
-parser = argparse.ArgumentParser()
+def clean_spectra(list_of_lc, out_file_name, in_dir=None,
+                  do_stitch=False, stitch_dir=None, fig_dir=None,
+                  log_file=None, write_every=100,
+                  max_components=51, dt_factor=0.1, cache_fft=False):
+    """
+    Clean a list of time series
 
-parser.add_argument('--list', type=str, default=None,
-                    help='text file containing a list of the names of the '
-                         'light curves to be processed')
+    Parameters
+    ----------
+    list_of_lc is a list of filenames, each file storing a light curve
 
-parser.add_argument('--in_dir', type=str, default=None,
-                    help='directory where the light curve files referenced in '
-                         'LIST reside')
+    out_file_name is the name of the file where the cleaning paramters
+    will be saved
 
-parser.add_argument('--do_stitch', type=str, default='True',
-                    help = 'do we need to stitch these light curves together '
-                           '(i.e. do we need to deal with the variable Kepler '
-                           'calibration).  True/False.')
+    in_dir is the directory where the light curve files live
 
-parser.add_argument('--stitch_dir', type=str, default=None,
-                    help='if DO_STITCH is True, in what directory should we '
-                         'save the stitched together light curves?')
+    log_file is the name of a file where we will write logging
+    information
 
-parser.add_argument('--out_file', type=str, default=None,
-                    help='in what file should we save the parametrization of '
-                         'the light curves')
+    write_every is an integer; write output this offten
 
-parser.add_argument('--max_components', type=int, default=51,
-                    help='maximum number of components to use when smoothing '
-                         'light curves')
+    max_components is the maximum number of Fourier components
+    to keep for each light curve
 
-parser.add_argument('--log_file', type=str, default='lc_timing_log.txt',
-                    help='log file where timing information is written')
+    dt_factor controls the size of the time step fed to the FFT
 
-parser.add_argument('--dt', type=float, default=0.1,
-                    help='what fraction of minimum data dt do we use as '
-                         'dt input to Lomb-Scargle periodogram')
+    cache_fft is a boolean controlling whether or not to use
+    memory intensive caching in the FFT
 
-parser.add_argument('--write_every', type=int, default=100,
-                    help='how often do we write to output '
-                         '(in units of completed light curves)')
+    do_stitch is a boolean controlling whether or not we need to
+    stitch together the light curves
 
-parser.add_argument('--fig_dir', type=str, default=None,
-                    help='directory in which to output plots')
+    stitch_dir is the directory where to which we will write the
+    stitched light curves
 
-parser.add_argument('--cache_fft', type=str, default='False',
-                    help='should use the memory-intensive index cache '
-                         'when FFTing the data')
+    fig_dir is the directory to which we will write plots of our
+    light curve data and smoothings
+    """
 
-args = parser.parse_args()
+    if fig_dir is not None:
+        import matplotlib
+        matplotlib.use('Agg')
+        import matplotlib.pyplot as plt
+        if not os.path.isdir(fig_dir):
+            os.mkdir(fig_dir)
 
-if args.cache_fft.lower()[0] == 'f':
-    cache_fft = False
-else:
-    cache_fft = True
 
-if args.fig_dir is not None:
-    import matplotlib
-    matplotlib.use('Agg')
-    import matplotlib.pyplot as plt
-    if not os.path.isdir(args.fig_dir):
-        os.mkdir(args.fig_dir)
+    if os.path.exists(log_file):
+        os.unlink(log_file)
 
-if os.path.exists(args.log_file):
-    os.unlink(args.log_file)
+    if do_stitch:
+        if stitch_dir is None:
+            raise RuntimeError("If DO_STITCH is True, must specify STITCH_DIR")
 
-if args.do_stitch.lower()[0] == 't':
-    do_stitch = True
-else:
-    do_stitch = False
+    if do_stitch:
+        if not os.path.isdir(stitch_dir):
+            os.mkdir(stitch_dir)
 
-if args.list is None:
-    raise RuntimeError("Must specify LIST")
+    dtype = np.dtype([('t', float), ('f', float), ('s', float)])
 
-if args.out_file is None:
-    raise RuntimeError("Must specify OUT_FILE")
+    with open(out_file_name, 'w') as out_file:
+        out_file.write('# lc_name n_t_steps t_span n_components chisquared median_flux ')
+        out_file.write('aa bb cc omega tau ')
+        out_file.write('{f = cc + aa*cos(omega*(t-tmin-tau)) + bb*sin(omega*(t-tmin-tau))}\n')
 
-if do_stitch:
-    if args.stitch_dir is None:
-        raise RuntimeError("If DO_STITCH is True, must specify STITCH_DIR")
+    ct = 0
+    t_start = time.time()
 
-if do_stitch:
-    if not os.path.isdir(args.stitch_dir):
-        os.mkdir(args.stitch_dir)
+    data_dict = {}
+    segment_dict = {}
+    output_dict = {}
+    stitch_dict = {}
 
-list_of_lc = []
-with open(args.list, 'r') as in_file:
-    for line in in_file:
-        list_of_lc.append(line.strip())
+    for lc_name_global in list_of_lc:
 
-dtype = np.dtype([('t', float), ('f', float), ('s', float)])
+        if in_dir is not None:
+            full_name = os.path.join(in_dir, lc_name_global)
+        else:
+            full_name = os.path.join(lc_name_global)
 
-with open(args.out_file, 'w') as out_file:
-    out_file.write('# lc_name n_t_steps t_span n_components chisquared median_flux ')
-    out_file.write('aa bb cc omega tau ')
-    out_file.write('{f = cc + aa*cos(omega*(t-tmin-tau)) + bb*sin(omega*(t-tmin-tau))}\n')
+        data = np.genfromtxt(full_name, dtype=dtype)
 
-ct = 0
-t_start = time.time()
+        segments = []
+        with open(full_name, 'r') as in_file:
+            for line in in_file:
+                if line[0] != '#':
+                    break
+                line = line.strip().split()
+                segments.append((float(line[1]), float(line[2])))
 
-data_dict = {}
-segment_dict = {}
-output_dict = {}
-stitch_dict = {}
+        data_dict[lc_name_global] = data
+        segment_dict[lc_name_global] = segments
+        #print 'read in ',len(data_dict),time.time()-t_start
 
-for lc_name_global in list_of_lc:
+        if len(data_dict) >= write_every or lc_name_global==list_of_lc[-1]:
+            for lc_name in data_dict:
+                data = data_dict[lc_name]
+                segments = segment_dict[lc_name]
 
-    if args.in_dir is not None:
-        full_name = os.path.join(args.in_dir, lc_name_global)
-    else:
-        full_name = os.path.join(lc_name_global)
+                if do_stitch:
+                    print data.shape
+                    time_arr, flux_arr, sigma_arr = re_calibrate_lc(data['t'], data['f'],
+                                                                    data['s'], segments,
+                                                                    cache_fft=cache_fft)
 
-    data = np.genfromtxt(full_name, dtype=dtype)
+                    stitch_name = lc_name.replace('.txt','')
+                    stitch_name = os.path.join(args.stitch_dir, stitch_name+'_stitched.tx')
+                    stitch_dict[lc_name] = (time_arr, flux_arr, sigma_arr)
+                else:
+                    time_arr = data['t']
+                    flux_arr = data['f']
+                    sigma_arr = data['s']
 
-    segments = []
-    with open(full_name, 'r') as in_file:
-        for line in in_file:
-            if line[0] != '#':
-                break
-            line = line.strip().split()
-            segments.append((float(line[1]), float(line[2])))
+                try:
+                    assert len(time_arr) == len(np.unique(time_arr))
+                except:
+                    print 'unique(time) failed on ',lc_name
+                    continue
 
-    data_dict[lc_name_global] = data
-    segment_dict[lc_name_global] = segments
-    #print 'read in ',len(data_dict),time.time()-t_start
+                dt = dt_factor*np.diff(np.unique(time_arr)).min()
 
-    if len(data_dict) >= args.write_every or lc_name_global==list_of_lc[-1]:
-        for lc_name in data_dict:
-            data = data_dict[lc_name]
-            segments = segment_dict[lc_name]
+                (median_flux,
+                 aa, bb,
+                 cc, omega,
+                 tau, chisq_arr) = get_clean_spectrum_PressRybicki(time_arr, flux_arr,
+                                                                   sigma_arr, dt,
+                                                                   max_components=max_components,
+                                                                   cut_off_omega=200.0,
+                                                                   cache_fft=cache_fft)
+
+                output_dict[lc_name] = {}
+                output_dict[lc_name]['span'] = time_arr.max() - time_arr.min()
+                output_dict[lc_name]['tsteps'] = len(time_arr)
+                output_dict[lc_name]['chisq'] = chisq_arr
+                output_dict[lc_name]['median'] = median_flux
+                output_dict[lc_name]['aa'] = aa
+                output_dict[lc_name]['bb'] = bb
+                output_dict[lc_name]['cc'] = cc
+                output_dict[lc_name]['omega'] = omega
+                output_dict[lc_name]['tau'] = tau
+
+                ct += 1
+
+                print 'done with %d in %e' % (ct, time.time()-t_start)
+                if ct%10 == 0:
+                    with open(log_file, 'a') as out_file:
+                        out_file.write('finished %d in %e sec; should take %e days\n' %\
+                        (ct, time.time()-t_start, (len(list_of_lc)*(time.time()-t_start)/ct)/(24.0*3600.0)))
+
+            data_dict = {}
+            segment_dict = {}
+
+        if len(output_dict) >= write_every or lc_name_global == list_of_lc[-1]:
+            with open(out_file_name, 'a') as out_file:
+                for lc_name in output_dict:
+                    out_file.write('%s %d %e %d ' % (lc_name,
+                                                     output_dict[lc_name]['tsteps'],
+                                                     output_dict[lc_name]['span'],
+                                                     len(output_dict[lc_name]['aa'])))
+
+                    assert len(output_dict[lc_name]['chisq']) == len(output_dict[lc_name]['aa'])
+
+                    for ix in range(len(output_dict[lc_name]['chisq'])):
+                        out_file.write('%e ' % output_dict[lc_name]['chisq'][ix])
+
+                    out_file.write('%e ' % output_dict[lc_name]['median'])
+
+                    for ix in range(len(output_dict[lc_name]['aa'])):
+                         out_file.write('%e %e %e %e %e ' % (output_dict[lc_name]['aa'][ix],
+                                                             output_dict[lc_name]['bb'][ix],
+                                                             output_dict[lc_name]['cc'][ix],
+                                                             output_dict[lc_name]['omega'][ix],
+                                                             output_dict[lc_name]['tau'][ix]))
+                    out_file.write('\n')
 
             if do_stitch:
-                time_arr, flux_arr, sigma_arr = re_calibrate_lc(data['t'], data['f'],
-                                                                data['s'], segments,
-                                                                cache_fft=cache_fft)
+                for lc_name in stitch_dict:
+                    out_name = os.path.join(args.stitch_dir,
+                                            lc_name.replace('.txt','')+'_stitched.txt')
+                    with open(out_name, 'w') as out_file:
+                        for tt, ff, ss in zip(stitch_dict[lc_name][0],
+                                              stitch_dict[lc_name][1],
+                                              stitch_dict[lc_name][2]):
 
-                stitch_name = lc_name.replace('.txt','')
-                stitch_name = os.path.join(args.stitch_dir, stitch_name+'_stitched.tx')
-                stitch_dict[lc_name] = (time_arr, flux_arr, sigma_arr)
-            else:
-                time_arr = data['t']
-                flux_arr = data['f']
-                sigma_arr = data['s']
+                            out_file.write('%.12e %e %e\n' % (tt, ff, ss))
 
-            try:
-                assert len(time_arr) == len(np.unique(time_arr))
-            except:
-                print 'unique(time) failed on ',lc_name
-                continue
+                if fig_dir is not None:
+                    for lc_name in output_dict:
+                        tt = stitch_dict[lc_name][0]
+                        ff = stitch_dict[lc_name][1]
+                        f_sorted = np.sort(ff)
+                        y_min = f_sorted[len(ff)/10]
+                        y_max = f_sorted[len(ff)*9/10]
+                        dt = 0.1*np.min(np.diff(np.unique(tt)))
+                        model_t = np.arange(tt.min(), tt.max(), dt)
+                        model = np.zeros(len(model_t))
+                        model += output_dict[lc_name]['median']
+                        aa = output_dict[lc_name]['aa']
+                        bb = output_dict[lc_name]['bb']
+                        cc = output_dict[lc_name]['cc']
+                        omega = output_dict[lc_name]['omega']
+                        tau = output_dict[lc_name]['tau']
+                        for ix in range(len(aa)):
+                            model += cc[ix]
+                            t_arg = omega[ix]*(model_t-tt.min()-tau[ix])
+                            model += aa[ix]*np.cos(t_arg)
+                            model += bb[ix]*np.sin(t_arg)
+                        with open(os.path.join(fig_dir, lc_name.replace('.txt', '_model.txt')), 'w') as out_file:
+                            for t_val, f_val in zip(model_t, model):
+                                out_file.write('%e %e\n' % (t_val, f_val))
 
-            dt = args.dt*np.diff(np.unique(time_arr)).min()
+                        plt.figsize = (30,30)
+                        plt.subplot(3,1,1)
+                        t_dex = np.where(tt<tt.min()+(tt.max()-tt.min())/3.0)
+                        plt.scatter(tt[t_dex], ff[t_dex], s=5, color='k', edgecolor='',
+                                    zorder=1)
 
-            (median_flux,
-             aa, bb,
-             cc, omega,
-             tau, chisq_arr) = get_clean_spectrum_PressRybicki(time_arr, flux_arr,
-                                                               sigma_arr, dt,
-                                                               max_components=args.max_components,
-                                                               cut_off_omega=200.0,
-                                                               cache_fft=cache_fft)
+                        plt.ylim((y_min,y_max))
+                        plt.xticks(fontsize=10)
+                        plt.yticks(fontsize=10)
+                        t_dex = np.where(model_t<tt.min()+(tt.max()-tt.min())/3.0)
+                        plt.plot(model_t[t_dex], model[t_dex], color='r', linewidth=1,
+                                 zorder=2)
 
-            output_dict[lc_name] = {}
-            output_dict[lc_name]['span'] = time_arr.max() - time_arr.min()
-            output_dict[lc_name]['tsteps'] = len(time_arr)
-            output_dict[lc_name]['chisq'] = chisq_arr
-            output_dict[lc_name]['median'] = median_flux
-            output_dict[lc_name]['aa'] = aa
-            output_dict[lc_name]['bb'] = bb
-            output_dict[lc_name]['cc'] = cc
-            output_dict[lc_name]['omega'] = omega
-            output_dict[lc_name]['tau'] = tau
+                        plt.subplot(3,1,2)
+                        t_dex = np.where(np.logical_and(tt<tt.min()+2.0*(tt.max()-tt.min())/3.0,
+                                                        tt>tt.min()+(tt.max()-tt.min())/4.0))
+                        plt.scatter(tt[t_dex], ff[t_dex], s=5, color='k', edgecolor='',
+                                    zorder=1)
 
-            ct += 1
+                        plt.ylim((y_min,y_max))
+                        plt.xticks(fontsize=10)
+                        plt.yticks(fontsize=10)
+                        t_dex = np.where(np.logical_and(model_t<tt.min()+2.0*(tt.max()-tt.min())/3.0,
+                                                        model_t>tt.min()+(tt.max()-tt.min())/4.0))
+                        plt.plot(model_t[t_dex], model[t_dex], color='r', linewidth=1,
+                                 zorder=2)
 
-            print 'done with %d in %e' % (ct, time.time()-t_start)
-            if ct%10 == 0:
-                with open(args.log_file, 'a') as out_file:
-                    out_file.write('finished %d in %e sec; should take %e days\n' %\
-                    (ct, time.time()-t_start, (len(list_of_lc)*(time.time()-t_start)/ct)/(24.0*3600.0)))
+                        plt.subplot(3,1,3)
+                        t_dex = np.where(tt>tt.min()+2.0*(tt.max()-tt.min())/3.0-0.1*(tt.max()-tt.min()))
+                        plt.scatter(tt[t_dex], ff[t_dex], s=5, color='k', edgecolor='',
+                                    zorder=1)
 
-        data_dict = {}
-        segment_dict = {}
+                        plt.ylim((y_min,y_max))
+                        plt.xticks(fontsize=10)
+                        plt.yticks(fontsize=10)
+                        t_dex = np.where(model_t>tt.min()+2.0*(tt.max()-tt.min())/3.0-0.1*(tt.max()-tt.min()))
+                        plt.plot(model_t[t_dex], model[t_dex], color='r', linewidth=1,
+                                 zorder=2)
 
-    if len(output_dict) >= args.write_every or lc_name_global == list_of_lc[-1]:
-        with open(args.out_file, 'a') as out_file:
-            for lc_name in output_dict:
-                out_file.write('%s %d %e %d ' % (lc_name,
-                                                 output_dict[lc_name]['tsteps'],
-                                                 output_dict[lc_name]['span'],
-                                                 len(output_dict[lc_name]['aa'])))
+                        plt.tight_layout()
+                        plt.savefig(os.path.join(args.fig_dir, lc_name.replace('.txt','.png')))
+                        plt.close()
 
-                assert len(output_dict[lc_name]['chisq']) == len(output_dict[lc_name]['aa'])
+            output_dict = {}
+            stitch_dict = {}
 
-                for ix in range(len(output_dict[lc_name]['chisq'])):
-                    out_file.write('%e ' % output_dict[lc_name]['chisq'][ix])
+    print 'that took ',time.time()-t_start
 
-                out_file.write('%e ' % output_dict[lc_name]['median'])
 
-                for ix in range(len(output_dict[lc_name]['aa'])):
-                     out_file.write('%e %e %e %e %e ' % (output_dict[lc_name]['aa'][ix],
-                                                         output_dict[lc_name]['bb'][ix],
-                                                         output_dict[lc_name]['cc'][ix],
-                                                         output_dict[lc_name]['omega'][ix],
-                                                         output_dict[lc_name]['tau'][ix]))
-                out_file.write('\n')
+if __name__ == "__main__":
 
-        if do_stitch:
-            for lc_name in stitch_dict:
-                out_name = os.path.join(args.stitch_dir,
-                                        lc_name.replace('.txt','')+'_stitched.txt')
-                with open(out_name, 'w') as out_file:
-                    for tt, ff, ss in zip(stitch_dict[lc_name][0],
-                                          stitch_dict[lc_name][1],
-                                          stitch_dict[lc_name][2]):
+    parser = argparse.ArgumentParser()
 
-                        out_file.write('%.12e %e %e\n' % (tt, ff, ss))
+    parser.add_argument('--list', type=str, default=None,
+                        help='text file containing a list of the names of the '
+                             'light curves to be processed')
 
-            if args.fig_dir is not None:
-                for lc_name in output_dict:
-                    tt = stitch_dict[lc_name][0]
-                    ff = stitch_dict[lc_name][1]
-                    f_sorted = np.sort(ff)
-                    y_min = f_sorted[len(ff)/10]
-                    y_max = f_sorted[len(ff)*9/10]
-                    dt = 0.1*np.min(np.diff(np.unique(tt)))
-                    model_t = np.arange(tt.min(), tt.max(), dt)
-                    model = np.zeros(len(model_t))
-                    model += output_dict[lc_name]['median']
-                    aa = output_dict[lc_name]['aa']
-                    bb = output_dict[lc_name]['bb']
-                    cc = output_dict[lc_name]['cc']
-                    omega = output_dict[lc_name]['omega']
-                    tau = output_dict[lc_name]['tau']
-                    for ix in range(len(aa)):
-                        model += cc[ix]
-                        t_arg = omega[ix]*(model_t-tt.min()-tau[ix])
-                        model += aa[ix]*np.cos(t_arg)
-                        model += bb[ix]*np.sin(t_arg)
-                    with open(os.path.join(args.fig_dir, lc_name.replace('.txt', '_model.txt')), 'w') as out_file:
-                        for t_val, f_val in zip(model_t, model):
-                            out_file.write('%e %e\n' % (t_val, f_val))
+    parser.add_argument('--in_dir', type=str, default=None,
+                        help='directory where the light curve files referenced in '
+                             'LIST reside')
 
-                    plt.figsize = (30,30)
-                    plt.subplot(3,1,1)
-                    t_dex = np.where(tt<tt.min()+(tt.max()-tt.min())/3.0)
-                    plt.scatter(tt[t_dex], ff[t_dex], s=5, color='k', edgecolor='',
-                                zorder=1)
+    parser.add_argument('--do_stitch', type=str, default='True',
+                        help = 'do we need to stitch these light curves together '
+                               '(i.e. do we need to deal with the variable Kepler '
+                               'calibration).  True/False.')
 
-                    plt.ylim((y_min,y_max))
-                    plt.xticks(fontsize=10)
-                    plt.yticks(fontsize=10)
-                    t_dex = np.where(model_t<tt.min()+(tt.max()-tt.min())/3.0)
-                    plt.plot(model_t[t_dex], model[t_dex], color='r', linewidth=1,
-                             zorder=2)
+    parser.add_argument('--stitch_dir', type=str, default=None,
+                        help='if DO_STITCH is True, in what directory should we '
+                             'save the stitched together light curves?')
 
-                    plt.subplot(3,1,2)
-                    t_dex = np.where(np.logical_and(tt<tt.min()+2.0*(tt.max()-tt.min())/3.0,
-                                                    tt>tt.min()+(tt.max()-tt.min())/4.0))
-                    plt.scatter(tt[t_dex], ff[t_dex], s=5, color='k', edgecolor='',
-                                zorder=1)
+    parser.add_argument('--out_file', type=str, default=None,
+                        help='in what file should we save the parametrization of '
+                             'the light curves')
 
-                    plt.ylim((y_min,y_max))
-                    plt.xticks(fontsize=10)
-                    plt.yticks(fontsize=10)
-                    t_dex = np.where(np.logical_and(model_t<tt.min()+2.0*(tt.max()-tt.min())/3.0,
-                                                    model_t>tt.min()+(tt.max()-tt.min())/4.0))
-                    plt.plot(model_t[t_dex], model[t_dex], color='r', linewidth=1,
-                             zorder=2)
+    parser.add_argument('--max_components', type=int, default=51,
+                        help='maximum number of components to use when smoothing '
+                             'light curves')
 
-                    plt.subplot(3,1,3)
-                    t_dex = np.where(tt>tt.min()+2.0*(tt.max()-tt.min())/3.0-0.1*(tt.max()-tt.min()))
-                    plt.scatter(tt[t_dex], ff[t_dex], s=5, color='k', edgecolor='',
-                                zorder=1)
+    parser.add_argument('--log_file', type=str, default='lc_timing_log.txt',
+                        help='log file where timing information is written')
 
-                    plt.ylim((y_min,y_max))
-                    plt.xticks(fontsize=10)
-                    plt.yticks(fontsize=10)
-                    t_dex = np.where(model_t>tt.min()+2.0*(tt.max()-tt.min())/3.0-0.1*(tt.max()-tt.min()))
-                    plt.plot(model_t[t_dex], model[t_dex], color='r', linewidth=1,
-                             zorder=2)
+    parser.add_argument('--dt', type=float, default=0.1,
+                        help='what fraction of minimum data dt do we use as '
+                             'dt input to Lomb-Scargle periodogram')
 
-                    plt.tight_layout()
-                    plt.savefig(os.path.join(args.fig_dir, lc_name.replace('.txt','.png')))
-                    plt.close()
+    parser.add_argument('--write_every', type=int, default=100,
+                        help='how often do we write to output '
+                             '(in units of completed light curves)')
 
-        output_dict = {}
-        stitch_dict = {}
+    parser.add_argument('--fig_dir', type=str, default=None,
+                        help='directory in which to output plots')
 
-print 'that took ',time.time()-t_start
+    parser.add_argument('--cache_fft', type=str, default='False',
+                        help='should use the memory-intensive index cache '
+                             'when FFTing the data')
+
+    args = parser.parse_args()
+
+    if args.cache_fft.lower()[0] == 'f':
+        cache_fft = False
+    else:
+        cache_fft = True
+
+    if args.do_stitch.lower()[0] == 't':
+        do_stitch = True
+    else:
+        do_stitch = False
+
+    if args.list is None:
+        raise RuntimeError("Must specify LIST")
+
+    if args.out_file is None:
+        raise RuntimeError("Must specify OUT_FILE")
+
+
+    list_of_lc = []
+    with open(args.list, 'r') as in_file:
+        for line in in_file:
+            list_of_lc.append(line.strip())
+
+    print 'list ',list_of_lc
+
+    clean_spectra(list_of_lc, args.out_file, cache_fft=cache_fft,
+                  do_stitch=do_stitch, stitch_dir=args.stitch_dir,
+                  log_file=args.log_file, in_dir=args.in_dir,
+                  dt_factor=args.dt, max_components=args.max_components,
+                  write_every=args.write_every, fig_dir=args.fig_dir)
