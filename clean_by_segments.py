@@ -192,10 +192,11 @@ def re_calibrate_lc(time_arr, flux_arr, sigma_arr, segments, cache_fft=False):
                                         cache_fft=cache_fft)
 
         med_fit = np.median(flux_to_fit)
-        stdev_fit = np.sqrt(np.power(flux_to_fit-med_fit,2).sum()/(len(flux_to_fit)+1))
         med_offset = np.median(flux_to_offset-offset)
+        stdev_fit = np.sqrt(np.power(flux_to_fit-med_fit,2).sum()/(len(flux_to_fit)+1))
+        stdev_offset = np.sqrt(np.power(flux_to_offset-offset-med_offset,2).sum()/(len(flux_to_offset)+1))
 
-        if np.abs(med_fit-med_offset) > stdev_fit:
+        if np.abs(med_fit-med_offset) > min(stdev_fit, stdev_offset):
             time_to_fit = time_to_fit_master
             flux_to_fit = flux_to_fit_master
             sigma_to_fit = sigma_to_fit_master
