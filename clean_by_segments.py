@@ -11,9 +11,9 @@ __all__ = ['clean_spectra']
 def _fit_and_offset(PRobj,
                     time_to_fit, flux_to_fit, sigma_to_fit,
                     time_to_offset, flux_to_offset, sigma_to_offset,
-                    cache_fft=False):
+                    cache_fft=False, dt_factor=0.1):
 
-        dt = args.dt*np.diff(np.unique(time_to_fit)).min()
+        dt = dt_factor*np.diff(np.unique(time_to_fit)).min()
 
         (median_flux, aa, bb, cc,
          omega, tau, chisq_arr) = PRobj.get_clean_spectrum_PressRybicki(time_to_fit,
@@ -39,7 +39,8 @@ def _fit_and_offset(PRobj,
         return offset, chisq
 
 
-def re_calibrate_lc(PRobj, time_arr, flux_arr, sigma_arr, segments, cache_fft=False):
+def re_calibrate_lc(PRobj, time_arr, flux_arr, sigma_arr, segments, cache_fft=False,
+                    dt_factor=0.1):
     """
     Stitch together the differently calibrated segments of a light curve.
 
@@ -200,7 +201,8 @@ def re_calibrate_lc(PRobj, time_arr, flux_arr, sigma_arr, segments, cache_fft=Fa
         offset, chisq = _fit_and_offset(PRobj,
                                         time_to_fit, flux_to_fit, sigma_to_fit,
                                         time_to_offset, flux_to_offset, sigma_to_offset,
-                                        cache_fft=cache_fft)
+                                        cache_fft=cache_fft,
+                                        dt_factor=dt_factor)
 
         med_fit = np.median(flux_to_fit)
         med_offset = np.median(flux_to_offset-offset)
@@ -220,7 +222,8 @@ def re_calibrate_lc(PRobj, time_arr, flux_arr, sigma_arr, segments, cache_fft=Fa
                                             time_to_offset,
                                             flux_to_offset,
                                             sigma_to_offset,
-                                            cache_fft=cache_fft)
+                                            cache_fft=cache_fft,
+                                            dt_factor=dt_factor)
 
         if time_to_offset[-1] < time_to_fit[0]:
             n_first = len(time_to_offset)
@@ -361,10 +364,11 @@ def clean_spectra(list_of_lc, out_file_name, in_dir=None,
                     time_arr, flux_arr, sigma_arr = re_calibrate_lc(PRobj,
                                                                     data['t'], data['f'],
                                                                     data['s'], segments,
-                                                                    cache_fft=cache_fft)
+                                                                    cache_fft=cache_fft,
+                                                                    dt_factor=dt_factor)
 
                     stitch_name = lc_name.replace('.txt','')
-                    stitch_name = os.path.join(args.stitch_dir, stitch_name+'_stitched.tx')
+                    stitch_name = os.path.join(stitch_dir, stitch_name+'_stitched.tx')
                     stitch_dict[lc_name] = (time_arr, flux_arr, sigma_arr)
                 else:
                     time_arr = data['t']
@@ -435,7 +439,7 @@ def clean_spectra(list_of_lc, out_file_name, in_dir=None,
 
             if do_stitch:
                 for lc_name in stitch_dict:
-                    out_name = os.path.join(args.stitch_dir,
+                    out_name = os.path.join(stitch_dir,
                                             lc_name.replace('.txt','')+'_stitched.txt')
                     with open(out_name, 'w') as out_file:
                         for tt, ff, ss in zip(stitch_dict[lc_name][0],
@@ -509,7 +513,7 @@ def clean_spectra(list_of_lc, out_file_name, in_dir=None,
                                  zorder=2)
 
                         plt.tight_layout()
-                        plt.savefig(os.path.join(args.fig_dir, lc_name.replace('.txt','.png')))
+                        plt.savefig(os.path.join(fig_dir, lc_name.replace('.txt','.png')))
                         plt.close()
 
             output_dict = {}
