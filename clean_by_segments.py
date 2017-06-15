@@ -190,9 +190,9 @@ def re_calibrate_lc(PRobj, time_arr, flux_arr, sigma_arr, segments, cache_fft=Fa
         else:
             n_to_fit = len(time_to_fit_master)
 
-        print 'segment %e %e %s %e %e' % \
-        (next_time.min(),next_time.max(),(n_to_fit==len(time_to_fit_master)),
-         time_to_fit_master.min(), time_to_fit_master.max())
+        #print 'segment %e %e %s %e %e' % \
+        #(next_time.min(),next_time.max(),(n_to_fit==len(time_to_fit_master)),
+        # time_to_fit_master.min(), time_to_fit_master.max())
 
         time_to_fit = time_to_fit_master[-n_to_fit:]
         flux_to_fit = flux_to_fit_master[-n_to_fit:]
@@ -360,7 +360,7 @@ def clean_spectra(list_of_lc, out_file_name, in_dir=None,
                 segments = segment_dict[lc_name]
 
                 if do_stitch:
-                    print data.shape
+                    #print data.shape
                     time_arr, flux_arr, sigma_arr = re_calibrate_lc(PRobj,
                                                                     data['t'], data['f'],
                                                                     data['s'], segments,
@@ -405,7 +405,7 @@ def clean_spectra(list_of_lc, out_file_name, in_dir=None,
 
                 ct += 1
 
-                print 'done with %d in %e' % (ct, time.time()-t_start)
+                #print 'done with %d in %e' % (ct, time.time()-t_start)
                 if ct%10 == 0 or ct==len(list_of_lc):
                     with open(log_file, 'a') as out_file:
                         out_file.write('finished %d in %e sec; should take %e days\n' %\
@@ -519,7 +519,7 @@ def clean_spectra(list_of_lc, out_file_name, in_dir=None,
             output_dict = {}
             stitch_dict = {}
 
-    print 'that took ',time.time()-t_start
+    #print 'that took ',time.time()-t_start
 
 
 if __name__ == "__main__":
@@ -593,7 +593,7 @@ if __name__ == "__main__":
         for line in in_file:
             list_of_lc.append(line.strip())
 
-    print 'list ',list_of_lc
+    #print 'list ',list_of_lc
 
     clean_spectra(list_of_lc, args.out_file, cache_fft=cache_fft,
                   do_stitch=do_stitch, stitch_dir=args.stitch_dir,
