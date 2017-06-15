@@ -184,6 +184,10 @@ def re_calibrate_lc(time_arr, flux_arr, sigma_arr, segments, cache_fft=False):
         else:
             n_to_fit = len(time_to_fit_master)
 
+        print 'segment %e %e %s %e %e' % \
+        (next_time.min(),next_time.max(),(n_to_fit==len(time_to_fit_master)),
+         time_to_fit_master.min(), time_to_fit_master.max())
+
         time_to_fit = time_to_fit_master[-n_to_fit:]
         flux_to_fit = flux_to_fit_master[-n_to_fit:]
         sigma_to_fit = sigma_to_fit_master[-n_to_fit:]
