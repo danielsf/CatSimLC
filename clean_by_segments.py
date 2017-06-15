@@ -197,7 +197,8 @@ def re_calibrate_lc(time_arr, flux_arr, sigma_arr, segments, cache_fft=False):
         stdev_fit = np.sqrt(np.power(flux_to_fit-med_fit,2).sum()/(len(flux_to_fit)+1))
         stdev_offset = np.sqrt(np.power(flux_to_offset-offset-med_offset,2).sum()/(len(flux_to_offset)+1))
 
-        if np.abs(med_fit-med_offset) > min(stdev_fit, stdev_offset):
+        if (np.abs(med_fit-med_offset) > min(stdev_fit, stdev_offset) and
+            n_to_fit<len(time_to_fit_master)):
             time_to_fit = time_to_fit_master
             flux_to_fit = flux_to_fit_master
             sigma_to_fit = sigma_to_fit_master
