@@ -18,7 +18,8 @@ def _fit_and_offset(time_to_fit, flux_to_fit, sigma_to_fit,
                                                                   sigma_to_fit, dt,
                                                                   min_components=3,
                                                                   max_components=3,
-                                                                  cache_fft=cache_fft)
+                                                                  cache_fft=cache_fft,
+                                                                  cut_off_omega=200.0)
 
         model = np.array([median_flux]*len(time_to_offset))
         for ix in range(len(aa)):
