@@ -8,8 +8,6 @@ by Press, Teukolsky, Vetterling, and Flannery
 
 import numpy as np
 import copy
-import time
-
 
 def _bit_reverse(in_val, num_bits):
     """
@@ -64,7 +62,6 @@ class FFTransformer(object):
         -------
         """
 
-        t_start = time.time()
         fft_re = np.zeros(len(f_arr))
         fft_im = np.zeros(len(f_arr))
 
@@ -110,9 +107,6 @@ class FFTransformer(object):
                     self.even_dex_cache.append(even_dexes)
                     self.cache_dex_cache.append(cache_dexes)
 
-        #print 'prep took ',time.time()-t_start
-        t_start = time.time()
-
         n_strides = len(f_arr)
         n_pts = 1
         cache_dexes = np.zeros(tot_pts//2, dtype=int)
@@ -141,5 +135,4 @@ class FFTransformer(object):
             fft_re[odd_dexes] = temp_re_even - temp_re_odd
             fft_im[odd_dexes] = temp_im_even - temp_im_odd
 
-        #print 'work took ',time.time()-t_start
         return fft_re*delta, fft_im*delta
