@@ -4,24 +4,25 @@ import numpy as np
 import argparse
 import time
 
-from PressRybicki import get_clean_spectrum_PressRybicki
+from PressRybicki import LombScargle_PressRybicki
 
 __all__ = ['clean_spectra']
 
-def _fit_and_offset(time_to_fit, flux_to_fit, sigma_to_fit,
+def _fit_and_offset(PRobj,
+                    time_to_fit, flux_to_fit, sigma_to_fit,
                     time_to_offset, flux_to_offset, sigma_to_offset,
                     cache_fft=False):
 
         dt = args.dt*np.diff(np.unique(time_to_fit)).min()
 
         (median_flux, aa, bb, cc,
-         omega, tau, chisq_arr) = get_clean_spectrum_PressRybicki(time_to_fit,
-                                                                  flux_to_fit,
-                                                                  sigma_to_fit, dt,
-                                                                  min_components=3,
-                                                                  max_components=3,
-                                                                  cache_fft=cache_fft,
-                                                                  cut_off_omega=200.0)
+         omega, tau, chisq_arr) = PRobj.get_clean_spectrum_PressRybicki(time_to_fit,
+                                                                        flux_to_fit,
+                                                                        sigma_to_fit, dt,
+                                                                        min_components=3,
+                                                                        max_components=3,
+                                                                        cache_fft=cache_fft,
+                                                                        cut_off_omega=200.0)
 
         model = np.array([median_flux]*len(time_to_offset))
         for ix in range(len(aa)):
@@ -38,12 +39,14 @@ def _fit_and_offset(time_to_fit, flux_to_fit, sigma_to_fit,
         return offset, chisq
 
 
-def re_calibrate_lc(time_arr, flux_arr, sigma_arr, segments, cache_fft=False):
+def re_calibrate_lc(PRobj, time_arr, flux_arr, sigma_arr, segments, cache_fft=False):
     """
     Stitch together the differently calibrated segments of a light curve.
 
     Parameters
     ----------
+    PRobj -- an instantiation of LombScargle_PressRybicki to do the work
+
     time_arr -- a numpy array containing the time axis of the light curve
 
     flux_arr -- a numpy array containing the flux of the light curve
@@ -194,7 +197,8 @@ def re_calibrate_lc(time_arr, flux_arr, sigma_arr, segments, cache_fft=False):
         flux_to_fit = flux_to_fit_master[-n_to_fit:]
         sigma_to_fit = sigma_to_fit_master[-n_to_fit:]
 
-        offset, chisq = _fit_and_offset(time_to_fit, flux_to_fit, sigma_to_fit,
+        offset, chisq = _fit_and_offset(PRobj,
+                                        time_to_fit, flux_to_fit, sigma_to_fit,
                                         time_to_offset, flux_to_offset, sigma_to_offset,
                                         cache_fft=cache_fft)
 
@@ -209,7 +213,8 @@ def re_calibrate_lc(time_arr, flux_arr, sigma_arr, segments, cache_fft=False):
             flux_to_fit = flux_to_fit_master
             sigma_to_fit = sigma_to_fit_master
 
-            offset, chisq = _fit_and_offset(time_to_fit,
+            offset, chisq = _fit_and_offset(PRobj,
+                                            time_to_fit,
                                             flux_to_fit,
                                             sigma_to_fit,
                                             time_to_offset,
@@ -289,6 +294,8 @@ def clean_spectra(list_of_lc, out_file_name, in_dir=None,
     light curve data and smoothings
     """
 
+    PRobj = LombScargle_PressRybicki()
+
     if fig_dir is not None:
         import matplotlib
         matplotlib.use('Agg')
@@ -351,7 +358,8 @@ def clean_spectra(list_of_lc, out_file_name, in_dir=None,
 
                 if do_stitch:
                     print data.shape
-                    time_arr, flux_arr, sigma_arr = re_calibrate_lc(data['t'], data['f'],
+                    time_arr, flux_arr, sigma_arr = re_calibrate_lc(PRobj,
+                                                                    data['t'], data['f'],
                                                                     data['s'], segments,
                                                                     cache_fft=cache_fft)
 
@@ -374,11 +382,11 @@ def clean_spectra(list_of_lc, out_file_name, in_dir=None,
                 (median_flux,
                  aa, bb,
                  cc, omega,
-                 tau, chisq_arr) = get_clean_spectrum_PressRybicki(time_arr, flux_arr,
-                                                                   sigma_arr, dt,
-                                                                   max_components=max_components,
-                                                                   cut_off_omega=200.0,
-                                                                   cache_fft=cache_fft)
+                 tau, chisq_arr) = PRobj.get_clean_spectrum_PressRybicki(time_arr, flux_arr,
+                                                                         sigma_arr, dt,
+                                                                         max_components=max_components,
+                                                                         cut_off_omega=200.0,
+                                                                         cache_fft=cache_fft)
 
                 output_dict[lc_name] = {}
                 output_dict[lc_name]['span'] = time_arr.max() - time_arr.min()
