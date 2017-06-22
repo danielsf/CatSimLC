@@ -406,7 +406,7 @@ def clean_spectra(list_of_lc, out_file_name, in_dir=None,
                 ct += 1
 
                 #print 'done with %d in %e' % (ct, time.time()-t_start)
-                if ct%10 == 0 or ct==len(list_of_lc):
+                if ct%100 == 0 or ct==len(list_of_lc):
                     with open(log_file, 'a') as out_file:
                         out_file.write('finished %d in %e sec; should take %e days\n' %\
                         (ct, time.time()-t_start, (len(list_of_lc)*(time.time()-t_start)/ct)/(24.0*3600.0)))

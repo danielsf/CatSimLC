@@ -81,6 +81,7 @@ if __name__ == "__main__":
     else:
         cache_fft = False
 
+    t_start = time.time()
     for ix in range(len(lc_lists)):
         p = Process(target=clean_spectra,
                     args=(lc_lists[ix],
@@ -97,4 +98,4 @@ if __name__ == "__main__":
 
         p.start()
         time.sleep(args.sleep)
-        print 'started %d' % ix
+        print 'started %d at %e ' % (ix, time.time()-t_start)
