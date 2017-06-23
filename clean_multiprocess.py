@@ -66,6 +66,7 @@ if __name__ == "__main__":
     i_list = 0
     with open(args.list, 'r') as input_file:
         for line in input_file:
+            print 'reading ',line
             lc_lists[i_list].append(line.strip())
             i_list += 1
             if i_list >= len(lc_lists):
@@ -80,6 +81,8 @@ if __name__ == "__main__":
         cache_fft = True
     else:
         cache_fft = False
+
+    print 'lc_lists ',lc_lists
 
     t_start = time.time()
     for ix in range(len(lc_lists)):
