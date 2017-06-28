@@ -367,12 +367,15 @@ def clean_spectra(list_of_lc, out_file_name, in_dir=None,
 
                 if do_stitch:
                     #print data.shape
-                    time_arr, flux_arr, sigma_arr = re_calibrate_lc(PRobj,
-                                                                    data['t'], data['f'],
-                                                                    data['s'], segments,
-                                                                    cache_fft=cache_fft,
-                                                                    dt_factor=dt_factor,
-                                                                    lc_name=lc_name)
+                    try:
+                        time_arr, flux_arr, sigma_arr = re_calibrate_lc(PRobj,
+                                                                        data['t'], data['f'],
+                                                                        data['s'], segments,
+                                                                        cache_fft=cache_fft,
+                                                                        dt_factor=dt_factor,
+                                                                        lc_name=lc_name)
+                    except RuntimeError:
+                        continue
 
                     stitch_name = lc_name.replace('.txt','')
                     stitch_name = os.path.join(stitch_dir, stitch_name+'_stitched.tx')
