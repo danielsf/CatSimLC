@@ -40,7 +40,7 @@ def _fit_and_offset(PRobj,
 
 
 def re_calibrate_lc(PRobj, time_arr, flux_arr, sigma_arr, segments, cache_fft=False,
-                    dt_factor=0.1):
+                    dt_factor=0.1, lc_name=None):
     """
     Stitch together the differently calibrated segments of a light curve.
 
@@ -56,6 +56,9 @@ def re_calibrate_lc(PRobj, time_arr, flux_arr, sigma_arr, segments, cache_fft=Fa
 
     segments -- a list of tuples; each tuple contains the start time and end
     time of each light curve segment.
+
+    lc_name -- the name of the light curve file being processed (for inspection
+    in the event that something fails)
 
     Return
     ------
@@ -120,6 +123,9 @@ def re_calibrate_lc(PRobj, time_arr, flux_arr, sigma_arr, segments, cache_fft=Fa
 
             if not is_valid:
                 first_segment += 1
+            if first_segment >= len(start_times):
+                raise RuntimeError('Could not get a valid first_segment '
+                                   '%d %d %s' % (first_segment, len(start_times), lc_name))
 
     #print '    first_segment ',first_segment
 
@@ -365,7 +371,8 @@ def clean_spectra(list_of_lc, out_file_name, in_dir=None,
                                                                     data['t'], data['f'],
                                                                     data['s'], segments,
                                                                     cache_fft=cache_fft,
-                                                                    dt_factor=dt_factor)
+                                                                    dt_factor=dt_factor,
+                                                                    lc_name=lc_name)
 
                     stitch_name = lc_name.replace('.txt','')
                     stitch_name = os.path.join(stitch_dir, stitch_name+'_stitched.tx')
