@@ -32,7 +32,7 @@ def plot_color(xx, yy, dx, dy):
 dtype = np.dtype([('teff', float), ('feh', float), ('logg', float), ('m', float)])
 
 kep_file = 'kep_star_data.txt'
-catsim_file = 'catsim_star_data.txt'
+catsim_file = 'catsim_star_data_same_pointing.txt'
 
 kep_data = np.genfromtxt(kep_file, dtype=dtype)
 catsim_data = np.genfromtxt(catsim_file, dtype=dtype)
@@ -42,6 +42,11 @@ t_min = min(kep_data['teff'].min(), catsim_data['teff'].max())
 t_max = max(kep_data['teff'].max(), catsim_data['teff'].max())
 m_min = min(kep_data['m'].min(), catsim_data['m'].min())
 m_max = max(kep_data['m'].max(), catsim_data['m'].max())
+
+t_min = 3000.0
+t_max = 10000.0
+m_min = -10.0
+m_max = 15.0
 
 t_ticks = np.arange(np.round(t_min/1000.0)*1000.0, np.round(t_max/1000.0)*1000.0, 2000.0)
 t_labels = ['%d' % tt for tt in t_ticks]
@@ -113,13 +118,16 @@ plt.gca().invert_yaxis()
 
 
 plt.subplot(2,2,4)
+valid_dex = np.where(catsim_data['feh']>-900.0)
 plt.hist(kep_data['feh'], bins=1000, color='b', zorder=1, edgecolor='b', normed=True)
-plt.hist(catsim_data['feh'], bins=1000, color='r', zorder=2, edgecolor='r',
+plt.hist(catsim_data['feh'][valid_dex], bins=1000, color='r', zorder=2, edgecolor='r',
          alpha=0.5, normed=True)
 
 plt.xlabel('FeH', fontsize=10)
 plt.tight_layout()
-plt.savefig('kepler_hr_diagram_remove_dust.png')
+plt.savefig('kepler_hr_diagram_same_pointing.png')
 plt.close()
+
+print catsim_data['feh'].min(),catsim_data['feh'].max()
 
 
