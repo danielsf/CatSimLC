@@ -13,12 +13,15 @@ def fold_light_curve(lc_name, period):
     data = np.genfromtxt(lc_name, dtype=dtype)
     t_folded = data['t'] % period
     dtavg = 0.01*(t_folded.max()-t_folded.min())
-    t_avg = np.arange(t_folded.min(),t_folded.max(),dtavg)
+    t_avg_raw = np.arange(t_folded.min(),t_folded.max(),dtavg)
 
     f_avg = []
     s_avg = []
-    for tt in t_avg:
+    t_avg = []
+    for tt in t_avg_raw:
         valid_dex = np.where(np.abs(t_folded-tt)<0.5*dtavg)
+        if len(valid_dex[0])==0:
+            continue
         wgts = 1.0/np.power(data['s'][valid_dex],2)
         wgt_sum = wgts.sum()
         wgts = wgts/wgt_sum
@@ -28,8 +31,10 @@ def fold_light_curve(lc_name, period):
         var = np.power(wgts*data['s'][valid_dex],2)
         var = var.sum()
         s_avg.append(np.sqrt(var))
+        t_avg.append(tt)
     f_avg = np.array(f_avg)
     s_avg= np.array(s_avg)
+    t_avg = np.array(t_avg)
     n_periods = (data['t'].max()-data['t'].min())/period
 
     return t_avg, f_avg, s_avg, data['t'].min(),n_periods
