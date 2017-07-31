@@ -96,6 +96,8 @@ name_arr = name_arr[percentile_95]
 
 # for each light curve, find the maximum power component
 
+print 'max chisq_arr_doff ',chisq_arr_dof.max()
+
 power_arr= []
 omega_arr = []
 aa_arr = []
@@ -103,6 +105,7 @@ bb_arr = []
 cc_arr = []
 tau_arr = []
 median_arr = []
+full_models = {}
 for name, nc in zip(name_arr, nc_arr):
     model = model_dict[name]
     local_power = []
@@ -126,6 +129,13 @@ for name, nc in zip(name_arr, nc_arr):
         local_cc.append(cc)
         local_omega.append(omega)
         local_tau.append(tau)
+    full_models[name] = {}
+    full_models[name]['aa'] = local_aa
+    full_models[name]['bb'] = local_bb
+    full_models[name]['cc'] = local_cc
+    full_models[name]['tau'] = local_tau
+    full_models[name]['omega'] = local_omega
+    full_models[name]['median'] = median
     local_power=np.array(local_power)
     max_dex = np.argmax(local_power)
     power_arr.append(local_power[max_dex])
@@ -135,17 +145,58 @@ for name, nc in zip(name_arr, nc_arr):
     tau_arr.append(local_tau[max_dex])
     omega_arr.append(local_omega[max_dex])
 
-low_power_cases = np.where(np.log10(power_arr)<=-5.0)
-models_to_plot = rng.choice(low_power_cases[0], size=12, replace=False)
+#low_power_cases = np.where(np.log10(power_arr)<=-5.0)
+#models_to_plot = rng.choice(low_power_cases[0], size=12, replace=False)
 
+"""
+models_to_plot = []
+monday_dir = os.path.join(work_dir, 'monday_stitched')
+stitch_dir = monday_dir
+monday_files = os.listdir(monday_dir)
+for file_name in monday_files:
+    key_name = file_name.replace('_stitched','')
+    for ix in range(len(name_arr)):
+        if name_arr[ix] == key_name:
+            models_to_plot.append(ix)
+models_to_plot = np.array(models_to_plot)
+"""
+
+sorted_dex = np.argsort(chisq_arr_dof)
+models_to_plot = []
+models_to_plot.append(sorted_dex[-1])
+models_to_plot.append(sorted_dex[-2])
+models_to_plot.append(sorted_dex[-3])
+models_to_plot.append(sorted_dex[-4])
+
+ii = len(sorted_dex)/2
+models_to_plot.append(sorted_dex[ii])
+models_to_plot.append(sorted_dex[ii+1])
+models_to_plot.append(sorted_dex[ii+2])
+models_to_plot.append(sorted_dex[ii+3])
+
+ii=len(sorted_dex)/10
+models_to_plot.append(sorted_dex[ii])
+models_to_plot.append(sorted_dex[ii+1])
+models_to_plot.append(sorted_dex[ii+2])
+models_to_plot.append(sorted_dex[ii+3])
+
+for ii in models_to_plot:
+    print 'going to plot ',chisq_arr_dof[ii]
+
+not_there = False
 for name in name_arr[models_to_plot]:
     stitch_name = os.path.join(stitch_dir,name.replace('.txt','_stitched.txt'))
     if not os.path.exists(stitch_name):
-        print 'need to get %s' % name_arr[models_to_plot]
-        exit()
+        print 'need to get %s' % stitch_name
+        not_there = True
+if not_there:
+    exit()
 
 i_fig = 0
 i_plot=0
+
+fold_dict = {}
+
 plt.figsize = (30,30)
 for ix in models_to_plot:
     name = name_arr[ix]
@@ -168,11 +219,20 @@ for ix in models_to_plot:
     f_model += bb*np.sin(omega*(t_model-t0-tau))
 
     i_fig += 1
-    plt.subplot(3,2,i_fig)
+    plt.subplot(2,2,i_fig)
     plt.errorbar(t_fold,f_fold,yerr=s_fold,zorder=1,color='b', fmt='o')
     plt.plot(t_model,f_model,color='r', zorder=2)
-    title = '%s\n$\chi^2$/dof=%.2e;\npower=%.2e\nN periods %.2e' % \
-    (name, chisq_arr_dof[ix], power_arr[ix],n_periods)
+    fold_dict[ix] = {}
+    fold_dict[ix]['t_fold'] = t_fold
+    fold_dict[ix]['f_fold'] = f_fold
+    fold_dict[ix]['s_fold'] = s_fold
+    fold_dict[ix]['t_model'] = t_model
+    fold_dict[ix]['f_model'] = f_model
+    #plt.plot(t_model,f_full_model,color='g',zorder=2)
+    title = '%s\n$\chi^2$/dof=%.2e;\npower=%.2e\nN periods %.2e\nN components %d' % \
+    (name, chisq_arr_dof[ix], power_arr[ix],n_periods,len(full_models[name]['aa']))
+
+    print 'plotting ',chisq_arr_dof[ix]
     plt.xticks(fontsize=10)
     plt.yticks(fontsize=10)
     ylim0 = plt.ylim()
@@ -182,10 +242,75 @@ for ix in models_to_plot:
 
     plt.ylim((ylim0[0],ylim0[1]+0.5*(ylim0[1]-ylim0[0])))
 
-    if i_fig==6:
+    if i_fig==1:
+        plt.xlabel('MJD')
+        plt.ylabel('flux')
+
+    if i_fig==4 or ix == models_to_plot[-1]:
         plt.tight_layout()
-        plt.savefig(os.path.join(fig_dir,'low_power_examples_%d.eps' % i_plot))
+        plt.savefig(os.path.join(fig_dir,'monday_talk_examples_again_%d.eps' % i_plot))
         plt.close()
+        plt.figsize=(30,30)
         i_fig=0
         i_plot+=1
 
+
+dtype = np.dtype([('t', float), ('f', float), ('s', float)])
+for i_place, ix in enumerate(models_to_plot):
+    name = name_arr[ix]
+    period = 2.0*np.pi/omega_arr[ix]
+    stitch_name = os.path.join(stitch_dir, name.replace('.txt', '_stitched.txt'))
+    data = np.genfromtxt(stitch_name, dtype=dtype)
+    #t_model = np.arange(data['t'].min(), data['t'].min()+0.05*(data['t'].max()-data['t'].min()), 0.01)
+    t_range = max(5.0*period, 50.0)
+    t_model = np.arange(210.0, 210.0+t_range, 0.01)
+    median = median_arr[ix]
+    t0 = data['t'].min()
+    f_full_model = np.ones(len(t_model))*median
+    for ic in range(len(full_models[name]['aa'])):
+        sin_arg = full_models[name]['omega'][ic]*(t_model-t0-full_models[name]['tau'][ic])
+        f_full_model += full_models[name]['aa'][ic]*np.cos(sin_arg)
+        f_full_model += full_models[name]['bb'][ic]*np.sin(sin_arg)
+        f_full_model += full_models[name]['cc'][ic]
+
+    f_sorted = np.sort(data['f'])
+    f_min = f_sorted[len(f_sorted)/20]
+    f_max = f_sorted[19*len(f_sorted)/20]
+    f_valid_dex = np.where(np.logical_and(data['t']>t_model.min(), data['t']<t_model.min()+2.0*t_range/3.0))
+    f_valid = data['f'][f_valid_dex]
+    f_valid_sorted = np.sort(f_valid)
+    f_min = f_valid_sorted[5]
+    f_max = f_valid_sorted[-6]
+
+    plt.figsize = (30,30)
+
+    plt.subplot(3,1,3)
+    plt.errorbar(fold_dict[ix]['t_fold'],fold_dict[ix]['f_fold'],yerr=fold_dict[ix]['s_fold'],
+                 zorder=1,color='b', fmt='o')
+    plt.plot(fold_dict[ix]['t_model'],fold_dict[ix]['f_model'],color='r', zorder=2)
+    plt.xlabel('MJD')
+    plt.ylabel('flux')
+    plt.title('folded light curve')
+
+    for i_fig in range(2):
+        t_min = t_model.min() + i_fig*t_range/3.0
+        if i_fig>0:
+            t_min -= t_range/15.0
+        t_max = t_model.min() + (i_fig+1)*t_range/4.0
+        t_max += t_range/15.0
+
+        plt.subplot(3,1,i_fig+1)
+        plt.errorbar(data['t'],data['f'],data['s'],zorder=1,color='b',linestyle='')
+        plt.plot(t_model,f_full_model,color='r',zorder=2)
+        plt.xlim(t_min,t_max)
+        plt.ylim(f_min,f_max)
+        if i_fig==0:
+            plt.xlabel('MJD')
+            plt.ylabel('flux')
+            plt.title('$\chi^2$ per dof = %.2e' % chisq_arr_dof[ix])
+    plt.tight_layout()
+    fig_name = os.path.join(fig_dir,name.replace('.txt','.png'))
+    if i_place>7:
+        fig_name = fig_name.replace('figs/','figs/good_')
+    plt.savefig(fig_name)
+    plt.close()

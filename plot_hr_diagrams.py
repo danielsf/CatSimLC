@@ -29,13 +29,18 @@ def plot_color(xx, yy, dx, dy):
 
     plt.colorbar()
 
-dtype = np.dtype([('teff', float), ('feh', float), ('logg', float), ('m', float)])
+catsim_dtype = np.dtype([('sedname', str, 300), ('teff', float), ('feh', float), ('logg', float), ('m', float),
+                   ('mr', float), ('norm', float),
+                   ('u', float), ('g', float), ('r', float), ('i', float), ('z', float)])
+
+kepler_dtype = np.dtype([('teff', float), ('feh', float), ('logg', float), ('m', float)])
+
 
 kep_file = 'kep_star_data.txt'
 catsim_file = 'catsim_star_data_same_pointing.txt'
 
-kep_data = np.genfromtxt(kep_file, dtype=dtype)
-catsim_data = np.genfromtxt(catsim_file, dtype=dtype)
+kep_data = np.genfromtxt(kep_file, dtype=kepler_dtype)
+catsim_data = np.genfromtxt(catsim_file, dtype=catsim_dtype)
 
 
 t_min = min(kep_data['teff'].min(), catsim_data['teff'].max())
@@ -125,9 +130,49 @@ plt.hist(catsim_data['feh'][valid_dex], bins=1000, color='r', zorder=2, edgecolo
 
 plt.xlabel('FeH', fontsize=10)
 plt.tight_layout()
-plt.savefig('kepler_hr_diagram_same_pointing.png')
+plt.savefig('kepler_hr_diagram_same_pointing.eps')
 plt.close()
 
-print catsim_data['feh'].min(),catsim_data['feh'].max()
+print 'catsim feh range ',catsim_data['feh'][valid_dex].min(),catsim_data['feh'].max()
 
+# now with 0.05 mag offset
+
+plt.figsize = (30,30)
+counts, xbins, ybins = np.histogram2d(catsim_data['teff'], catsim_data['m'], bins=100)
+catsim = plt.contour(counts.transpose(),extent=[xbins.min(),xbins.max(),ybins.min(),ybins.max()],
+            colors='r', alpha=0.5)
+
+print 'catsim counts shape ',counts.shape
+
+counts,xbins,ybins = np.histogram2d(kep_data['teff'], kep_data['m']-0.05, bins=100)
+kep = plt.contour(counts.transpose(),extent=[xbins.min(),xbins.max(),ybins.min(),ybins.max()],
+            colors='blue', alpha=0.5)
+
+print 'kepler counts shape ',counts.shape
+
+plt.xlabel('Teff')
+plt.ylabel('Absolute Kepler magnitude')
+plt.title('subtract 0.05 from magnitude of Kepler stars')
+
+m_min=-5
+m_max=10
+
+t_min=3000.0
+t_max=7000.0
+t_ticks = np.arange(np.round(t_min/1000.0)*1000.0, np.round(t_max/1000.0)*1000.0, 1000.0)
+t_labels = ['%d' % tt for tt in t_ticks]
+
+
+plt.xlim(t_min, t_max)
+plt.xticks(t_ticks, t_labels, fontsize=7)
+plt.ylim(m_min, m_max)
+
+plt.text(t_max-0.1*(t_max-t_min),m_min+0.25*(m_max-m_min),
+         'Blue is Kepler; Red is CatSim')
+
+plt.gca().invert_xaxis()
+plt.gca().invert_yaxis()
+
+plt.savefig('kepler_hr_diagram_same_pointing_offset.eps')
+plt.close()
 
