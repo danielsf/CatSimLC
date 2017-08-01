@@ -170,8 +170,8 @@ with open('kic_data.txt', 'w') as out_file:
                     distance_arcsec = distance*3600.0
                     if distance_arcsec > distance_max:
                         distance_max = distance_arcsec
-                        print ' %d distance_max %.2e in arcsec' % (data_id, distance_max)
-                        print '%e %e %e %e' % (ra, dec,
+                        print '    %d distance_max %.2e in arcsec' % (data_id, distance_max)
+                        print '    %e %e %e %e' % (ra, dec,
                                kep_stellar_data['degree_ra'][stellar_dex],
                                kep_stellar_data['degree_dec'][stellar_dex])
 
