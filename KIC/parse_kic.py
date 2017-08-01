@@ -85,11 +85,6 @@ kep_stellar_data = np.genfromtxt('../data/kepler_stellar17.csv',
                                  dtype=kep_dtype,
                                  delimiter='|', skip_header=1)
 
-valid_teff = np.where(np.logical_and(np.logical_not(np.isnan(kep_stellar_data['teff'])),
-                      np.logical_and(np.logical_not(np.isnan(kep_stellar_data['logg'])),
-                                     np.logical_not(np.isnan(kep_stellar_data['kepmag'])))))
-
-kep_stellar_data = kep_stellar_data[valid_teff]
 print 'dec range ',kep_stellar_data['degree_dec'].min(),kep_stellar_data['degree_dec'].max()
 
 list_of_files = os.listdir('.')
@@ -111,7 +106,7 @@ distance_max = -1.0
 
 t_start = time.time()
 with open('kic_data.txt', 'w') as out_file:
-    out_file.write('# kepid sdss_g sdss_r dist Teff_kic Teff_stellar\n')
+    out_file.write('# kepid sdss_g sdss_r distance(in parsecs) Teff(from KIC)\n')
     for file_name in list_of_files:
         if '.dat' in file_name:
             if file_name[0] == 'n':
@@ -145,10 +140,13 @@ with open('kic_data.txt', 'w') as out_file:
 
             sources_to_be_found = kep_stellar_data['kepid'][possible_sources]
             for source_id in sources_to_be_found:
+                if source_id not in id_dict:
+                    continue
                 line_dex = id_dict[source_id]
                 line = in_cat_lines[line_dex]
                 data_v = line.strip().split('|')
                 data_id = int(data_v[0])
+                assert source_id == data_id
                 if data_id in been_found:
                     raise RuntimeError('found %d again in %s' % data_id,file_name)
                 if data_id in to_find:
@@ -187,6 +185,9 @@ with open('kic_data.txt', 'w') as out_file:
                         teff = float(param_row[:6])
                     else:
                         teff = -999.0
-                    out_file.write('%d %le %le %le %le %le\n' %
-                    (data_id, sdss_g, sdss_r, kep_stellar_data['dist'][stellar_dex],
-                     teff, kep_stellar_data['teff'][stellar_dex]))
+                    if np.isnan(kep_stellar_data['dist'][stellar_dex]):
+                        dd = -999.0
+                    else:
+                        dd = kep_stellar_data['dist'][stellar_dex]
+                    out_file.write('%d %le %le %le %le\n' %
+                    (data_id, sdss_g, sdss_r, dd, teff))
