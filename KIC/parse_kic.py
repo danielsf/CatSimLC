@@ -2,6 +2,7 @@ from __future__ import with_statement
 import numpy as np
 import os
 import gzip
+import time
 
 kep_dtype = np.dtype([('kepid', int),
                       ('tm_designation', str, 200),
@@ -105,6 +106,7 @@ from lsst.sims.utils import angularSeparation
 
 distance_max = -1.0
 
+t_start = time.time()
 with open('kic_data.txt', 'w') as out_file:
     out_file.write('# kepid sdss_g sdss_r dist Teff_kic Teff_stellar\n')
     for file_name in list_of_files:
@@ -119,6 +121,11 @@ with open('kic_data.txt', 'w') as out_file:
             if len(possible_sources[0]) == 0:
                 continue
             print file_name,len(possible_sources[0]),len(been_found)
+            elapsed = time.time()-t_start
+            elapsed = elapsed/3600.0
+            n_found = len(been_found)
+            print '%d in %.2e hours; should take %.2e hours' % \
+            (n_found,elapsed,len(to_find)*elapsed/max(n_found,1))
             if file_name.endswith('.gz'):
                 open_cmd = gzip.open
             else:
