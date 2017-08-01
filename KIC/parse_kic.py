@@ -95,6 +95,9 @@ print 'dec range ',kep_stellar_data['degree_dec'].min(),kep_stellar_data['degree
 list_of_files = os.listdir('.')
 
 to_find = np.copy(kep_stellar_data['kepid'])
+stellar_dex_dict = {}
+for i_line, val in enumerate(kep_stellar_data['kepid']):
+    stellar_dex_dict[val] = i_line
 been_found = []
 
 id_dex = 0
@@ -150,7 +153,7 @@ with open('kic_data.txt', 'w') as out_file:
                     raise RuntimeError('found %d again in %s' % data_id,file_name)
                 if data_id in to_find:
                     been_found.append(data_id)
-                    stellar_dex = np.where(kep_stellar_data['kepid']==data_id)
+                    stellar_dex = stellar_dex_dict[data_id]
                     try:
                         pos_row = data_v[pos_dex]
                         sdss_row = data_v[sdss_dex]
