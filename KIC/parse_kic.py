@@ -186,7 +186,7 @@ with open('kic_data.txt', 'w') as out_file:
                     if param_row is not None:
                         teff = float(param_row[:6])
                     else:
-                        teff = -1.0
+                        teff = -999.0
                     out_file.write('%d %le %le %le %le %le\n' %
                     (data_id, sdss_g, sdss_r, kep_stellar_data['dist'][stellar_dex],
                      teff, kep_stellar_data['teff'][stellar_dex]))
