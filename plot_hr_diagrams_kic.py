@@ -286,7 +286,6 @@ p1_min_dict = {'s':-0.2, 'w':-0.2, 'x':0.8, 'y':0.1}
 p1_max_dict = {'s':0.8, 'w':0.6, 'x':1.6, 'y':1.2}
 
 plt.figsize = (30,30)
-trim = 50
 for i_fig, color_name in enumerate(['s', 'w', 'x', 'y']):
     plt.subplot(2,2,i_fig+1)
     p2_coeffs = p2_coeff_dict[color_name]
