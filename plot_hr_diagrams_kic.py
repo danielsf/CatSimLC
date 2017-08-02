@@ -95,7 +95,7 @@ color_max=1.5
 #t_ticks = np.arange(np.round(color_min/1000.0)*1000.0, np.round(color_max/1000.0)*1000.0, 2000.0)
 #t_labels = ['%d' % tt for tt in t_ticks]
 
-dm = 0.05
+dm = 0.02
 dfeh = 0.1
 dlogg = 0.1
 
