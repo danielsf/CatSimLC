@@ -218,24 +218,32 @@ print 'mean Kepler r %3e' % np.mean(kep_r_abs)
 
 # now plot the distributions in principal colors
 
-s_coeffs = {'u':-0.249, 'g':0.794, 'r':-0.555, 'offset':0.234}
-w_coeffs = {'g':-0.227, 'r':0.792, 'i':-0.567, 'offset':0.05}
-x_coeffs = {'g':0.707, 'r':-0.707, 'offset':-0.988}
-y_coeffs = {'r':-0.270, 'i':0.8, 'z':-0.534, 'offset':0.054}
+s2_coeffs = {'u':-0.249, 'g':0.794, 'r':-0.555, 'offset':0.234}
+w2_coeffs = {'g':-0.227, 'r':0.792, 'i':-0.567, 'offset':0.05}
+x2_coeffs = {'g':0.707, 'r':-0.707, 'offset':-0.988}
+y2_coeffs = {'r':-0.270, 'i':0.8, 'z':-0.534, 'offset':0.054}
 
-coeff_dict = {'s':s_coeffs, 'w':w_coeffs, 'x':x_coeffs, 'y':y_coeffs}
+p2_coeff_dict = {'s':s2_coeffs, 'w':w2_coeffs, 'x':x2_coeffs, 'y':y2_coeffs}
+
+s1_coeffs = {'u':0.91, 'g':-0.495, 'r':-0.415, 'offset':-1.28}
+w1_coeffs = {'g':0.928, 'r':-0.556, 'i':-0.372, 'offset':-0.425}
+x1_coeffs = {'r':1.0, 'i':-1.0, 'offset':0.0}
+y1_coeffs = {'r':0.895, 'i':-0.448, 'z':-0.447, 'offset':-0.6}
+
+p1_coeff_dict = {'s':s1_coeffs, 'w':w1_coeffs, 'x':x1_coeffs, 'y':y1_coeffs}
 
 plt.figsize = (30,30)
 trim = 50
 for i_fig, color_name in enumerate(['s', 'w', 'x', 'y']):
     plt.subplot(2,2,i_fig+1)
-    coeffs = coeff_dict[color_name]
+    coeffs = p2_coeff_dict[color_name]
     print 'raw_kep_data ',len(raw_kep_data)
     kep_data = raw_kep_data
     for tag in coeffs.keys():
         if tag != 'offset':
             valid_dex = np.where(kep_data[tag]>0.0)
             kep_data = kep_data[valid_dex]
+
     print 'becomes ',len(kep_data)
     kep_color = np.ones(len(kep_data))*coeffs['offset']
     catsim_color = np.ones(len(catsim_data))*coeffs['offset']
@@ -265,4 +273,89 @@ for i_fig, color_name in enumerate(['s', 'w', 'x', 'y']):
 
 plt.tight_layout()
 plt.savefig('kepler_principal_colors_kic.png')
+plt.close()
+
+# now apply p1 restrictions
+
+rmax_dict = {'s': 19.0, 'w':20.0, 'x':19.0, 'y':19.5}
+p1_min_dict = {'s':-0.2, 'w':-0.2, 'x':0.8, 'y':0.1}
+p1_max_dict = {'s':0.8, 'w':0.6, 'x':1.6, 'y':1.2}
+
+plt.figsize = (30,30)
+trim = 50
+for i_fig, color_name in enumerate(['s', 'w', 'x', 'y']):
+    plt.subplot(2,2,i_fig+1)
+    p2_coeffs = p2_coeff_dict[color_name]
+    p1_coeffs = p1_coeff_dict[color_name]
+    print 'raw_kep_data ',len(raw_kep_data)
+    kep_data = raw_kep_data
+    for tag in p2_coeffs.keys():
+        if tag != 'offset':
+            valid_dex = np.where(kep_data[tag]>0.0)
+            kep_data = kep_data[valid_dex]
+
+    for tag in p1_coeffs.keys():
+        if tag != 'offset':
+            valid_dex = np.where(kep_data[tag]>0.0)
+            kep_data = kep_data[valid_dex]
+
+    print 'becomes ',len(kep_data)
+    kep_color = np.ones(len(kep_data))*p2_coeffs['offset']
+    catsim_color = np.ones(len(catsim_data))*p2_coeffs['offset']
+    for tag in p2_coeffs.keys():
+        if tag == 'offset':
+            continue
+        kep_color += p2_coeffs[tag]*kep_data[tag]
+        catsim_color += p2_coeffs[tag]*catsim_data[tag]
+
+    kep_p1 = np.ones(len(kep_data))*p1_coeffs['offset']
+    catsim_p1 = np.ones(len(catsim_data))*p1_coeffs['offset']
+    for tag in p1_coeffs.keys():
+        if tag == 'offset':
+            continue
+        kep_p1 += p1_coeffs[tag]*kep_data[tag]
+        catsim_p1 += p1_coeffs[tag]*catsim_data[tag]
+
+    rmax = rmax_dict[color_name]
+    p1max = p1_max_dict[color_name]
+    p1min = p1_min_dict[color_name]
+
+    catsim_valid = np.where(np.logical_and(catsim_data['r']<rmax,
+                            np.logical_and(catsim_p1<p1max, catsim_p1>p1min)))
+
+    kep_valid = np.where(np.logical_and(kep_data['r']<rmax,
+                         np.logical_and(kep_p1<p1max, kep_p1>p1min)))
+
+    print '%s catsim_valid %d %e %e' % (color_name, len(catsim_valid[0]),catsim_p1.min(),
+                                        catsim_p1.max())
+    print '%s kep_valid %d %e %e' % (color_name, len(kep_valid[0]), kep_p1.min(),
+                                     kep_p1.max())
+
+    catsim_color = catsim_color[catsim_valid]
+    kep_color = kep_color[kep_valid]
+
+
+    if i_fig ==0:
+        plt.title('blue is Kepler; red is CatSim')
+    if len(kep_color)>0:
+        plt.hist(kep_color, bins=1000, color='b', zorder=1, edgecolor='b', normed=True)
+    if len(catsim_color)>0:
+        plt.hist(catsim_color, bins=1000, color='r', zorder=2, edgecolor='r',
+                 alpha=0.1, normed=True)
+    plt.xlabel(color_name)
+    #plt.xlim((min(kep_color.min(),catsim_color.min()),max(kep_color.max(),catsim_color.max())))
+
+    kep_color_sorted = np.sort(kep_color)
+    catsim_color_sorted = np.sort(catsim_color)
+
+    if len(kep_color>0) and len(catsim_color)>0:
+        xmin = min(kep_color_sorted[len(kep_color)/trim], catsim_color_sorted[len(catsim_color)/trim])
+        xmax = max(kep_color_sorted[(trim-1)*len(kep_color)/trim], catsim_color_sorted[(trim-1)*len(catsim_color)/trim])
+
+        plt.xlim((xmin,xmax))
+    plt.xticks(fontsize=10)
+    plt.yticks(fontsize=10)
+
+plt.tight_layout()
+plt.savefig('kepler_principal_colors_restricted_kic.png')
 plt.close()
