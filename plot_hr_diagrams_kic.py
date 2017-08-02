@@ -218,15 +218,16 @@ print 'mean Kepler r %3e' % np.mean(kep_r_abs)
 
 # now plot the distributions in principal colors
 
+s_coeffs = {'u':-0.249, 'g':0.794, 'r':-0.555, 'offset':0.234}
 w_coeffs = {'g':-0.227, 'r':0.792, 'i':-0.567, 'offset':0.05}
 x_coeffs = {'g':0.707, 'r':-0.707, 'offset':-0.988}
 y_coeffs = {'r':-0.270, 'i':0.8, 'z':-0.534, 'offset':0.054}
 
-coeff_dict = {'w':w_coeffs, 'x':x_coeffs, 'y':y_coeffs}
+coeff_dict = {'s':s_coeffs, 'w':w_coeffs, 'x':x_coeffs, 'y':y_coeffs}
 
 plt.figsize = (30,30)
 trim = 50
-for i_fig, color_name in enumerate(['w', 'x', 'y']):
+for i_fig, color_name in enumerate(['s', 'w', 'x', 'y']):
     plt.subplot(2,2,i_fig+1)
     coeffs = coeff_dict[color_name]
     print 'raw_kep_data ',len(raw_kep_data)
