@@ -106,7 +106,7 @@ distance_max = -1.0
 
 t_start = time.time()
 with open('kic_data.txt', 'w') as out_file:
-    out_file.write('# kepid sdss_u sdss_g sdss_r sdss_i sdss_z distance(in parsecs) Teff(from KIC)\n')
+    out_file.write('# kepid ra dec sdss_u sdss_g sdss_r sdss_i sdss_z distance(in parsecs) Teff(from KIC)\n')
     for file_name in list_of_files:
         if '.dat' in file_name:
             if file_name[0] == 'n':
@@ -206,5 +206,5 @@ with open('kic_data.txt', 'w') as out_file:
                         dd = -999.0
                     else:
                         dd = kep_stellar_data['dist'][stellar_dex]
-                    out_file.write('%d %le %le %le %le %le %le %le\n' %
-                    (data_id, sdss_u, sdss_g, sdss_r, sdss_i, sdss_z, dd, teff))
+                    out_file.write('%d %.6f %.6f %le %le %le %le %le %le %le\n' %
+                    (data_id, ra, dec, sdss_u, sdss_g, sdss_r, sdss_i, sdss_z, dd, teff))

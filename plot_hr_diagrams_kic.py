@@ -68,7 +68,8 @@ catsim_dtype = np.dtype([('sedname', str, 300), ('teff', float), ('feh', float),
                    ('r_abs', float), ('norm', float),
                    ('u', float), ('g', float), ('r', float), ('i', float), ('z', float)])
 
-kepler_dtype = np.dtype([('id', int), ('u', float), ('g', float), ('r', float),
+kepler_dtype = np.dtype([('id', int), ('ra', float), ('dec', float),
+                         ('u', float), ('g', float), ('r', float),
                          ('i', float), ('z', float), ('dist', float), ('teff', float)])
 
 kep_file = 'KIC/kic_data.txt'
