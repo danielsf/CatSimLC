@@ -279,6 +279,83 @@ plt.tight_layout()
 plt.savefig('kepler_principal_colors_kic.png')
 plt.close()
 
+# 2d plots
+
+plt.figsize = (30,30)
+trim_2d = trim
+for i_fig, color_name in enumerate(['s', 'w', 'x', 'y']):
+    plt.subplot(2,2,i_fig+1)
+    p2_coeffs = p2_coeff_dict[color_name]
+    p1_coeffs = p1_coeff_dict[color_name]
+    print 'raw_kep_data ',len(raw_kep_data)
+    kep_data = raw_kep_data
+    for tag in p2_coeffs.keys():
+        if tag != 'offset':
+            valid_dex = np.where(kep_data[tag]>0.0)
+            kep_data = kep_data[valid_dex]
+
+    for tag in p1_coeffs.keys():
+        if tag != 'offset':
+            valid_dex = np.where(kep_data[tag]>0.0)
+            kep_data = kep_data[valid_dex]
+
+    print 'becomes ',len(kep_data)
+    kep_p2 = np.ones(len(kep_data))*p2_coeffs['offset']
+    catsim_p2 = np.ones(len(catsim_data))*p2_coeffs['offset']
+    for tag in p2_coeffs.keys():
+        if tag == 'offset':
+            continue
+        kep_p2 += p2_coeffs[tag]*kep_data[tag]
+        catsim_p2 += p2_coeffs[tag]*catsim_data[tag]
+
+    kep_p1 = np.ones(len(kep_data))*p1_coeffs['offset']
+    catsim_p1 = np.ones(len(catsim_data))*p1_coeffs['offset']
+    for tag in p1_coeffs.keys():
+        if tag == 'offset':
+            continue
+        kep_p1 += p1_coeffs[tag]*kep_data[tag]
+        catsim_p1 += p1_coeffs[tag]*catsim_data[tag]
+
+    counts, xbins, ybins = np.histogram2d(catsim_p1, catsim_p2, bins=100)
+    catsim = plt.contour(counts.transpose(),extent=[xbins.min(),xbins.max(),ybins.min(),ybins.max()],
+                         colors='r', alpha=0.5)
+
+
+    counts,xbins,ybins = np.histogram2d(kep_p1, kep_p2, bins=200)
+    kep = plt.contour(counts.transpose(),extent=[xbins.min(),xbins.max(),ybins.min(),ybins.max()],
+                      colors='blue', alpha=0.5)
+
+    if i_fig ==0:
+        plt.title('blue is Kepler; red is CatSim')
+
+    plt.ylabel(color_name)
+    plt.xlabel('P1(%s)' % color_name)
+    #plt.xlim((min(kep_color.min(),catsim_color.min()),max(kep_color.max(),catsim_color.max())))
+
+    kep_p1_sorted = np.sort(kep_p1)
+    catsim_p1_sorted = np.sort(catsim_p1)
+
+    xmin = min(kep_p1_sorted[len(kep_p1)/trim_2d], catsim_p1_sorted[len(catsim_p1)/trim_2d])
+    xmax = max(kep_p1_sorted[(trim_2d-1)*len(kep_p1)/trim_2d], catsim_p1_sorted[(trim_2d-1)*len(catsim_p1)/trim_2d])
+
+    plt.xlim((xmin,xmax))
+
+
+    kep_p2_sorted = np.sort(kep_p2)
+    catsim_p2_sorted = np.sort(catsim_p2)
+
+    ymin = min(kep_p2_sorted[len(kep_p2)/trim_2d], catsim_p2_sorted[len(catsim_p2)/trim_2d])
+    ymax = max(kep_p2_sorted[(trim_2d-1)*len(kep_p2)/trim_2d], catsim_p2_sorted[(trim_2d-1)*len(catsim_p2)/trim_2d])
+
+    plt.ylim((ymin,ymax))
+    plt.xticks(fontsize=10)
+    plt.yticks(fontsize=10)
+
+plt.tight_layout()
+plt.savefig('kepler_principal_colors_2d_kic.png')
+plt.close()
+
+
 # now apply p1 restrictions
 
 rmax_dict = {'s': 19.0, 'w':20.0, 'x':19.0, 'y':19.5}
