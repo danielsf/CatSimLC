@@ -43,6 +43,7 @@ def plot_color_mesh(xx, yy, dx, dy, vmin=None, vmax=None):
     x_mesh=np.arange(xx.min(),xx.max()+0.1,dx)
     y_mesh=np.arange(yy.min(),yy.max()+0.1,dy)
     x_mesh,y_mesh = np.meshgrid(x_mesh,y_mesh,indexing='xy')
+    print 'x mesh shape ',x_mesh.shape
     z_mesh = np.zeros(shape=x_mesh.shape, dtype=int)
     ct_1000b = 0
 
@@ -67,14 +68,18 @@ catsim_dtype = np.dtype([('sedname', str, 300), ('teff', float), ('feh', float),
                    ('r_abs', float), ('norm', float),
                    ('u', float), ('g', float), ('r', float), ('i', float), ('z', float)])
 
-kepler_dtype = np.dtype([('id', int), ('g', float), ('r', float), ('dist', float), ('teff', float)])
+kepler_dtype = np.dtype([('id', int), ('u', float), ('g', float), ('r', float),
+                         ('i', float), ('z', float), ('dist', float), ('teff', float)])
 
 kep_file = 'KIC/kic_data.txt'
 catsim_file = 'catsim_star_data_same_pointing_cutoff.txt'
 
-kep_data = np.genfromtxt(kep_file, dtype=kepler_dtype)
+raw_kep_data = np.genfromtxt(kep_file, dtype=kepler_dtype)
 
-valid_dex = np.where(np.logical_and(kep_data['dist']>0.0, kep_data['teff']>0.0))
+valid_dex = np.where(np.logical_and(raw_kep_data['dist']>0.0, raw_kep_data['teff']>0.0))
+kep_data = raw_kep_data[valid_dex]
+print kep_data['r'].min(),kep_data['g'].min()
+valid_dex = np.where(np.logical_and(kep_data['r']>0.0, kep_data['g']>0.0))
 kep_data = kep_data[valid_dex]
 kep_r_abs = kep_data['r']-5.0*np.log10(kep_data['dist']/10.0)
 kep_color = kep_data['g']-kep_data['r']
@@ -87,7 +92,7 @@ color_max = max(kep_color.max(), catsim_color.max())
 m_min = min(kep_r_abs.min(), catsim_data['r_abs'].min())
 m_max = max(kep_r_abs.max(), catsim_data['r_abs'].max())
 
-m_min = 2.0
+m_min = 0.0
 m_max = 8.0
 color_min=-0.5
 color_max=1.5
@@ -113,6 +118,8 @@ plt.ylim(m_min, m_max)
 #plt.gca().invert_xaxis()
 plt.gca().invert_yaxis()
 
+print 'made CatSim HR diagram'
+
 plt.subplot(2,2,2)
 plt.title('Kepler')
 plt.xlabel('g-r')
@@ -125,6 +132,7 @@ plt.ylim(m_min, m_max)
 #plt.gca().invert_xaxis()
 plt.gca().invert_yaxis()
 
+print 'made Kepler HR diagram'
 
 plt.subplot(2,2,3)
 m_min=2.0

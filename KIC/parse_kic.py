@@ -106,7 +106,7 @@ distance_max = -1.0
 
 t_start = time.time()
 with open('kic_data.txt', 'w') as out_file:
-    out_file.write('# kepid sdss_g sdss_r distance(in parsecs) Teff(from KIC)\n')
+    out_file.write('# kepid sdss_u sdss_g sdss_r sdss_i sdss_z distance(in parsecs) Teff(from KIC)\n')
     for file_name in list_of_files:
         if '.dat' in file_name:
             if file_name[0] == 'n':
@@ -177,17 +177,34 @@ with open('kic_data.txt', 'w') as out_file:
                                kep_stellar_data['degree_dec'][stellar_dex])
 
                     try:
+                        sdss_u = float(sdss_row[:7])
+                    except:
+                        sdss_u = -999.0
+                    try:
                         sdss_g = float(sdss_row[7:14])
+                    except:
+                        sdss_g = -999.0
+                    try:
                         sdss_r = float(sdss_row[14:21])
                     except:
-                        continue
+                        sdss_r = -999.0
+                    try:
+                        sdss_i = float(sdss_row[21:28])
+                    except:
+                        sdss_i = -999.0
+                    try:
+                        sdss_z = float(sdss_row[28:35])
+                    except:
+                        sdss_z = -999.0
+
                     if param_row is not None:
                         teff = float(param_row[:6])
                     else:
                         teff = -999.0
+
                     if np.isnan(kep_stellar_data['dist'][stellar_dex]):
                         dd = -999.0
                     else:
                         dd = kep_stellar_data['dist'][stellar_dex]
-                    out_file.write('%d %le %le %le %le\n' %
-                    (data_id, sdss_g, sdss_r, dd, teff))
+                    out_file.write('%d %le %le %le %le %le %le %le\n' %
+                    (data_id, sdss_u, sdss_g, sdss_r, sdss_i, sdss_z, dd, teff))
