@@ -29,11 +29,51 @@ def plot_color(xx, yy, dx, dy):
 
     plt.colorbar()
 
+
+def plot_color_mesh(xx, yy, dx, dy, vmin=None, vmax=None):
+    i_x = np.round((xx-xx.min())/dx).astype(int)
+    i_y = np.round((yy-yy.min())/dy).astype(int)
+    if i_x.min()<0 or i_y.min()<0:
+        raise RuntimeError('negative dex')
+
+    x_mesh=np.arange(xx.min(),xx.max()+0.1,dx)
+    y_mesh=np.arange(yy.min(),yy.max()+0.1,dy)
+    print 'x ',len(x_mesh),i_x.min(),i_x.max()
+    print 'y ',len(y_mesh),yy.min(),yy.max(),i_y.min(),i_y.max()
+    x_mesh,y_mesh = np.meshgrid(x_mesh,y_mesh,indexing='xy')
+    z_mesh = np.zeros(shape=x_mesh.shape, dtype=int)
+    print('z_mesh %s' % str(z_mesh.shape))
+    print x_mesh.shape
+    ct_1000b = 0
+    for i,j,xv,yv in zip(i_x, i_y,xx,yy):
+        z_mesh[j][i] += 1
+        if xx.min()+i*dx>=3.0:
+            if xv<3.0:
+                raise RuntimeError("xx wrong")
+            ct_1000b+=1
+    z_mesh = np.ma.masked_where(z_mesh==0,z_mesh)
+    plt.pcolormesh(x_mesh,y_mesh,z_mesh, vmin=vmin, vmax=vmax)
+                   #norm=matplotlib.colors.LogNorm(vmin=1.0,
+                   #                               vmax=1.2e6))
+    plt.colorbar(label='sources per pixel')
+    print 'xx ',xx.min(),xx.max()
+    print 'yy ',yy.min(),yy.max()
+    print 'total ',z_mesh.sum()
+    ct_1000 = 0
+    big_min = np.round((2.8-xx.min())/dx).astype(int)
+    big_max = x_mesh.shape[0]
+
+    for ix in range(big_min,big_max):
+        ct_1000 += z_mesh[ix].sum()
+        #if z_mesh[ix].max()>100.0:
+        #    print ix,z_mesh[ix].sum(),z_mesh[ix]
+    print 'big x ',xx.min(),big_min,big_max,ct_1000,ct_1000b
+
 catsim_dtype = np.dtype([('sedname', str, 300), ('teff', float), ('feh', float), ('logg', float), ('m', float),
                    ('r_abs', float), ('norm', float),
                    ('u', float), ('g', float), ('r', float), ('i', float), ('z', float)])
 
-kepler_dtype = np.dtype([('id', int), ('g', float), ('r', float), ('dist', float), ('teff', float)])             
+kepler_dtype = np.dtype([('id', int), ('g', float), ('r', float), ('dist', float), ('teff', float)])
 
 kep_file = 'KIC/kic_data.txt'
 catsim_file = 'catsim_star_data_same_pointing_cutoff.txt'
@@ -68,7 +108,8 @@ dlogg = 0.1
 plt.figsize = (30, 30)
 plt.subplot(2,2,1)
 
-plot_color(catsim_color, catsim_data['r_abs'], dm, dm)
+#plot_color(catsim_color, catsim_data['r_abs'], dm, dm)
+plot_color_mesh(catsim_color, catsim_data['r_abs'], dm, dm)
 plt.title('CatSim')
 plt.xlabel('g-r')
 plt.ylabel('r')
@@ -82,7 +123,8 @@ plt.subplot(2,2,2)
 plt.title('Kepler')
 plt.xlabel('g-r')
 plt.ylabel('r')
-plot_color(kep_color, kep_r_abs, dm, dm)
+#plot_color(kep_color, kep_r_abs, dm, dm)
+plot_color_mesh(kep_color, kep_r_abs, dm, dm)
 plt.xlim(color_min, color_max)
 #plt.xticks(t_ticks, t_labels, fontsize=7)
 plt.ylim(m_min, m_max)
