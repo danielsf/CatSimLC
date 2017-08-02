@@ -86,6 +86,10 @@ kep_r_abs = kep_data['r']-5.0*np.log10(kep_data['dist']/10.0)
 kep_color = kep_data['g']-kep_data['r']
 
 catsim_data = np.genfromtxt(catsim_file, dtype=catsim_dtype)
+
+cut_dex = np.where(catsim_data['r_abs']>4.0)
+catsim_data= catsim_data[cut_dex]
+
 catsim_color = catsim_data['g']-catsim_data['r']
 
 color_min = min(kep_color.min(), catsim_color.max())
