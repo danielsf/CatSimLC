@@ -70,7 +70,8 @@ catsim_dtype = np.dtype([('sedname', str, 300), ('teff', float), ('feh', float),
 
 kepler_dtype = np.dtype([('id', int), ('ra', float), ('dec', float),
                          ('u', float), ('g', float), ('r', float),
-                         ('i', float), ('z', float), ('dist', float), ('teff', float)])
+                         ('i', float), ('z', float), ('dist', float),
+                         ('teff', float), ('teff_stellar', float)])
 
 kep_file = 'KIC/kic_data.txt'
 catsim_file = 'catsim_star_data_same_pointing_cutoff.txt'
