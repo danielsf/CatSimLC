@@ -73,9 +73,9 @@ kepler_dtype = np.dtype([('id', int), ('ra', float), ('dec', float),
                          ('i', float), ('z', float), ('dist', float),
                          ('teff', float), ('teff_stellar', float)])
 
-kep_file = 'KIC/kic_data.txt'
+kep_file = 'KIC/kic_data_transformed.txt'
 catsim_file = 'catsim_star_data_same_pointing_cutoff.txt'
-suffix = 'kic'
+suffix = 'transformed'
 
 raw_kep_data = np.genfromtxt(kep_file, dtype=kepler_dtype)
 
