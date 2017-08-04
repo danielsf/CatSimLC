@@ -75,6 +75,7 @@ kepler_dtype = np.dtype([('id', int), ('ra', float), ('dec', float),
 
 kep_file = 'KIC/kic_data.txt'
 catsim_file = 'catsim_star_data_same_pointing_cutoff.txt'
+suffix = 'kic'
 
 raw_kep_data = np.genfromtxt(kep_file, dtype=kepler_dtype)
 
@@ -190,7 +191,7 @@ plt.xlabel('FeH', fontsize=10)
 """
 
 plt.tight_layout()
-plt.savefig('kepler_hr_diagram_kic.png')
+plt.savefig('kepler_hr_diagram_%s.png' % suffix)
 plt.close()
 
 
@@ -211,7 +212,7 @@ plt.hist(catsim_color, bins=1000, color='r', zorder=2, edgecolor='r',
 plt.xlabel('g-r')
 
 plt.tight_layout()
-plt.savefig('kepler_1d_dist_kic.png')
+plt.savefig('kepler_1d_dist_%s.png' % suffix)
 plt.close()
 
 print 'mean CatSim color %.3e' % np.mean(catsim_color)
@@ -277,7 +278,7 @@ for i_fig, color_name in enumerate(['s', 'w', 'x', 'y']):
     plt.yticks(fontsize=10)
 
 plt.tight_layout()
-plt.savefig('kepler_principal_colors_kic.png')
+plt.savefig('kepler_principal_colors_%s.png' % suffix)
 plt.close()
 
 # 2d plots
@@ -353,7 +354,7 @@ for i_fig, color_name in enumerate(['s', 'w', 'x', 'y']):
     plt.yticks(fontsize=10)
 
 plt.tight_layout()
-plt.savefig('kepler_principal_colors_2d_kic.png')
+plt.savefig('kepler_principal_colors_2d_%s.png' % suffix)
 plt.close()
 
 
@@ -438,5 +439,5 @@ for i_fig, color_name in enumerate(['s', 'w', 'x', 'y']):
     plt.yticks(fontsize=10)
 
 plt.tight_layout()
-plt.savefig('kepler_principal_colors_restricted_kic.png')
+plt.savefig('kepler_principal_colors_restricted_%s.png' % suffix)
 plt.close()
