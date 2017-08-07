@@ -64,50 +64,90 @@ def plot_color_mesh(xx, yy, dx, dy, vmin=None, vmax=None):
 
     print 'big x ',xx.min(),big_min,big_max,ct_1000,ct_1000b
 
-catsim_dtype = np.dtype([('sedname', str, 300), ('teff', float), ('feh', float), ('logg', float), ('m', float),
-                   ('r_abs', float), ('norm', float),
-                   ('u', float), ('g', float), ('r', float), ('i', float), ('z', float)])
+catsim_dtype = np.dtype([('sedname', str, 300), ('kep_abs', float),
+                         ('u', float), ('g', float), ('r', float), ('i', float), ('z', float),
+                         ('dist', float), ('teff', float), ('r_abs', float)])
 
 kepler_dtype = np.dtype([('id', int), ('ra', float), ('dec', float),
                          ('u', float), ('g', float), ('r', float),
                          ('i', float), ('z', float), ('dist', float),
-                         ('teff', float), ('teff_stellar', float)])
+                         ('teff', float), ('teff_stellar', float),
+                         ('Av', float), ('ebv', float)])
 
 kep_file = 'KIC/kic_data_transformed.txt'
-catsim_file = 'catsim_star_data_same_pointing_cutoff.txt'
-suffix = 'transformed'
+catsim_file = 'catsim_star_data_same_pointing.txt'
+suffix = 'gi_dered'
+
+mag_1 = 'g'
+mag_2 = 'i'
+mag = 'r'
+
+hr_name = 'kepler_hr_diagram_%s.png' % suffix
 
 raw_kep_data = np.genfromtxt(kep_file, dtype=kepler_dtype)
+
+ag_factor = 1.196
+ar_factor = 0.874
+ai_factor = 0.672
+az_factor = 0.488
+
+trans_valid = np.where(raw_kep_data['Av']>-990.0)
+raw_kep_data = raw_kep_data[trans_valid]
+
+raw_kep_data['g'] -= ag_factor*raw_kep_data['Av']
+raw_kep_data['r'] -= ar_factor*raw_kep_data['Av']
+raw_kep_data['i'] -= ai_factor*raw_kep_data['Av']
+raw_kep_data['z'] -= az_factor*raw_kep_data['Av']
+
 
 valid_dex = np.where(np.logical_and(raw_kep_data['dist']>0.0, raw_kep_data['teff']>0.0))
 kep_data = raw_kep_data[valid_dex]
 print kep_data['r'].min(),kep_data['g'].min()
-valid_dex = np.where(np.logical_and(kep_data['r']>0.0, kep_data['g']>0.0))
+valid_dex = np.where(np.logical_and(kep_data[mag_1]>0.0, kep_data[mag_2]>0.0))
 kep_data = kep_data[valid_dex]
-kep_r_abs = kep_data['r']-5.0*np.log10(kep_data['dist']/10.0)
-kep_color = kep_data['g']-kep_data['r']
+kep_m_abs = kep_data[mag]-5.0*np.log10(kep_data['dist']/10.0)
+kep_color = kep_data[mag_1]-kep_data[mag_2]
 
 catsim_data = np.genfromtxt(catsim_file, dtype=catsim_dtype)
 
 #cut_dex = np.where(catsim_data['r_abs']>4.0)
 #catsim_data= catsim_data[cut_dex]
 
-catsim_color = catsim_data['g']-catsim_data['r']
+catsim_m_abs = catsim_data[mag] - 5.0*np.log10(catsim_data['dist']/10.0)
+print catsim_m_abs.min(),catsim_m_abs.max()
+#exit()
 
-color_min = min(kep_color.min(), catsim_color.max())
-color_max = max(kep_color.max(), catsim_color.max())
-m_min = min(kep_r_abs.min(), catsim_data['r_abs'].min())
-m_max = max(kep_r_abs.max(), catsim_data['r_abs'].max())
+catsim_color = catsim_data[mag_1]-catsim_data[mag_2]
 
-m_min = 0.0
-m_max = 8.0
-color_min=-0.5
-color_max=1.5
+trim = 30
+kep_color_sorted = np.sort(kep_color)
+catsim_color_sorted = np.sort(catsim_color)
+kep_m_abs_sorted = np.sort(kep_m_abs)
+catsim_m_abs_sorted = np.sort(catsim_m_abs)
+
+color_min = min(kep_color_sorted[len(kep_color)/trim],
+                catsim_color_sorted[len(catsim_color)/trim])
+color_max = max(kep_color_sorted[(trim-1)*len(kep_color)/trim],
+                catsim_color_sorted[(trim-1)*len(catsim_color)/trim])
+
+m_min = min(kep_m_abs_sorted[len(kep_m_abs)/trim],
+            catsim_m_abs_sorted[len(catsim_m_abs)/trim])
+
+m_max = max(kep_m_abs_sorted[(trim-1)*len(kep_m_abs)/trim],
+            catsim_m_abs_sorted[(trim-1)*len(catsim_m_abs)/trim])
+
+if mag == 'r' and mag_1 == 'g' and mag_2 == 'r':
+    m_min = 0.0
+    m_max = 8.0
+    color_min=-0.5
+    color_max=1.5
+
+dm = 0.01*min((m_max-m_min),(color_max-color_min))
 
 #t_ticks = np.arange(np.round(color_min/1000.0)*1000.0, np.round(color_max/1000.0)*1000.0, 2000.0)
 #t_labels = ['%d' % tt for tt in t_ticks]
 
-dm = 0.02
+
 dfeh = 0.1
 dlogg = 0.1
 
@@ -115,10 +155,10 @@ plt.figsize = (30, 30)
 plt.subplot(2,2,1)
 
 #plot_color(catsim_color, catsim_data['r_abs'], dm, dm)
-plot_color_mesh(catsim_color, catsim_data['r_abs'], dm, dm)
+plot_color_mesh(catsim_color, catsim_m_abs, dm, dm)
 plt.title('CatSim')
-plt.xlabel('g-r')
-plt.ylabel('r')
+plt.xlabel('%s-%s' % (mag_1, mag_2))
+plt.ylabel(mag)
 plt.xlim(color_min, color_max)
 #plt.xticks(t_ticks, t_labels, fontsize=7)
 plt.ylim(m_min, m_max)
@@ -129,10 +169,10 @@ print 'made CatSim HR diagram'
 
 plt.subplot(2,2,2)
 plt.title('Kepler')
-plt.xlabel('g-r')
-plt.ylabel('r')
+plt.xlabel('%s-%s' % (mag_1, mag_2))
+plt.ylabel(mag)
 #plot_color(kep_color, kep_r_abs, dm, dm)
-plot_color_mesh(kep_color, kep_r_abs, dm, dm)
+plot_color_mesh(kep_color, kep_m_abs, dm, dm)
 plt.xlim(color_min, color_max)
 #plt.xticks(t_ticks, t_labels, fontsize=7)
 plt.ylim(m_min, m_max)
@@ -142,24 +182,24 @@ plt.gca().invert_yaxis()
 print 'made Kepler HR diagram'
 
 plt.subplot(2,2,3)
-m_min=2.0
-m_max=8.0
-color_min=-0.5
-color_max=1.5
-counts, xbins, ybins = np.histogram2d(catsim_color, catsim_data['r_abs'], bins=100)
+#m_min=2.0
+#m_max=8.0
+#color_min=-0.5
+#color_max=1.5
+counts, xbins, ybins = np.histogram2d(catsim_color, catsim_m_abs, bins=100)
 catsim = plt.contour(counts.transpose(),extent=[xbins.min(),xbins.max(),ybins.min(),ybins.max()],
             colors='r', alpha=0.5)
 
 print 'catsim counts shape ',counts.shape
 
-counts,xbins,ybins = np.histogram2d(kep_color, kep_r_abs, bins=200)
+counts,xbins,ybins = np.histogram2d(kep_color, kep_m_abs, bins=200)
 kep = plt.contour(counts.transpose(),extent=[xbins.min(),xbins.max(),ybins.min(),ybins.max()],
             colors='blue', alpha=0.5)
 
 print 'kepler counts shape ',counts.shape
 
-plt.xlabel('g-r')
-plt.ylabel('r')
+plt.xlabel('%s-%s' % (mag_1, mag_2))
+plt.ylabel(mag)
 
 #m_min=-5
 #m_max=10
@@ -191,8 +231,10 @@ plt.xlabel('FeH', fontsize=10)
 """
 
 plt.tight_layout()
-plt.savefig('kepler_hr_diagram_%s.png' % suffix)
+plt.savefig(hr_name)
 plt.close()
+
+exit()
 
 
 plt.figsize = (30,30)
