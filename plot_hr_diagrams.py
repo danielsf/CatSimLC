@@ -129,3 +129,53 @@ plt.tight_layout()
 plt.savefig('hr_diagaram_dered.png')
 plt.close()
 
+mag_list = ['g', 'r', 'i', 'z']
+teff_list = ['teff_kic', 'teff_stellar']
+
+catsim_teff = catsim_data['teff']
+
+for teff in teff_list:
+    plt.figsize = (30, 30)
+    i_fig = 0
+    for mag in mag_list:
+        i_fig += 1
+        plt.subplot(2,2,i_fig)
+
+        catsim_mag = catsim_data[mag] - 5.0*np.log10(catsim_data['dist']/10.0)
+
+        valid = np.where(np.logical_and(new_mags[mag]>0.0, kep_data[teff]>0.0))
+
+        kep_mag = new_mags[mag][valid] - 5.0*np.log10(kep_data['dist'][valid]/10.0)
+        kep_teff = kep_data[teff][valid]
+
+        trim = 30
+        n_kep = len(kep_mag)
+        mag_sorted = np.sort(kep_mag)
+        mag_min = mag_sorted[n_kep/trim]
+        mag_max = mag_sorted[(trim-1)*n_kep/trim]
+        teff_sorted = np.sort(kep_teff)
+        teff_min = teff_sorted[n_kep/trim]
+        teff_max = teff_sorted[(trim-1)*n_kep/trim]
+
+        if i_fig == 1:
+            plt.title('Blue is Kepler; Red is CatSim')
+
+        counts, xbins, ybins = np.histogram2d(catsim_teff, catsim_mag, bins=100)
+        catsim = plt.contour(counts.transpose(),extent=[xbins.min(),xbins.max(),ybins.min(),ybins.max()],
+                             colors='r', alpha=0.5, zorder=3)
+
+        counts,xbins,ybins = np.histogram2d(kep_teff, kep_mag, bins=200)
+        kep = plt.contour(counts.transpose(),extent=[xbins.min(),xbins.max(),ybins.min(),ybins.max()],
+                          colors='blue', alpha=0.5, zorder=1)
+
+        plt.xlim((teff_min, teff_max))
+        plt.ylim((mag_min, mag_max))
+
+        plt.ylabel(mag)
+        plt.xlabel(teff)
+        plt.gca().invert_yaxis()
+        plt.gca().invert_xaxis()
+
+    plt.tight_layout()
+    plt.savefig('hr_diagaram_%s.png' % teff)
+    plt.close()
