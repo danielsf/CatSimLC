@@ -70,6 +70,10 @@ kep_data['i'] = np.where(kep_data['i']>0.0, kep_data['i'] - ai_factor*kep_data['
 kep_data['z'] = np.where(kep_data['z']>0.0, kep_data['z'] - az_factor*kep_data['Av'], -999.0)
 
 
+catsim_abs_r = catsim_data['r'] - 5.0*np.log10(catsim_data['dist']/10.0)
+kep_abs_r = new_mags['r'] - 5.0*np.log10(new_mags['dist']/10.0)
+un_dered_abs_r = un_dereddened['r'] - 5.0*np.log10(un_dereddened['dist']/10.0)
+
 mag_list = ['g', 'r', 'i', 'z']
 plt.figsize=(30,30)
 i_fig = 0
