@@ -135,6 +135,50 @@ plt.tight_layout()
 plt.savefig('hr_diagaram_color.png')
 plt.close()
 
+plt.figsize = (30,30)
+i_fig = 0
+trim = 30
+for imag1 in range(len(mag_list)):
+    for imag2 in range(len(mag_list)):
+        if imag2<=imag1:
+            continue
+        i_fig += 1
+        plt.subplot(3,2,i_fig)
+        mag1 = mag_list[imag1]
+        mag2 = mag_list[imag2]
+
+        catsim_color = catsim_data[mag1]-catsim_data[mag2]
+
+        valid = np.where(np.logical_and(new_mags[mag1]>0.0,
+                                        new_mags[mag2]>0.0))
+
+        kep_color = new_mags[mag1][valid]-new_mags[mag2][valid]
+
+        kep_color_sorted = np.sort(kep_color)
+        n_kep = len(kep_color)
+        xmin = kep_color_sorted[n_kep/trim]
+        xmax = kep_color_sorted[(trim-1)*n_kep/trim]
+        plt.xlim(xmin,xmax)
+
+        valid = np.where(np.logical_and(un_dereddened[mag1]>0.0,
+                                        un_dereddened[mag2]>0.0))
+        un_dered_color = un_dereddened[mag1][valid]-un_dereddened[mag2][valid]
+
+        if i_fig == 1:
+            plt.title('Blue is Kepler; Red is CatSim;\nGreen is Kepler without dereddening',
+                      fontsize=10)
+
+        plt.hist(catsim_color, bins=1000, color='r', edgecolor='r', normed=True, zorder=1)
+        plt.hist(kep_color, bins=1000, color='b', edgecolor='b', normed=True, zorder=2,
+                 alpha=0.25)
+        plt.hist(un_dered_color, bins=1000, color='g', edgecolor='g', normed=True, zorder=3,
+                 alpha=0.25)
+        plt.xlabel('%s-%s' % (mag1, mag2), fontsize=10)
+
+plt.tight_layout()
+plt.savefig('color_histograms.png')
+plt.close()
+
 teff_list = ['teff_kic', 'teff_stellar']
 
 catsim_teff = catsim_data['teff']
