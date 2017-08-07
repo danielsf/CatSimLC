@@ -8,7 +8,8 @@ import numpy as np
 kepler_dtype = np.dtype([('id', int), ('ra', float), ('dec', float),
                          ('u', float), ('g', float), ('r', float),
                          ('i', float), ('z', float), ('dist', float),
-                         ('teff', float), ('teff_stellar', float)])
+                         ('teff', float), ('teff_stellar', float),
+                         ('Av', float), ('ebv', float)])
 
 transformed_file = 'KIC/kic_data_transformed.txt'
 kic_file = 'KIC/kic_data.txt'
@@ -16,6 +17,25 @@ kic_file = 'KIC/kic_data.txt'
 transformed_data = np.genfromtxt(transformed_file, dtype=kepler_dtype)
 kic_data = np.genfromtxt(kic_file, dtype=kepler_dtype)
 
+
+ag_factor = 1.196
+ar_factor = 0.874
+ai_factor = 0.672
+az_factor = 0.488
+
+trans_valid = np.where(transformed_data['Av']>-990.0)
+transformed_data = transformed_data[trans_valid]
+
+
+print 'max_g ',np.abs(ag_factor*transformed_data['Av']).max()
+print 'max_r ',np.abs(ar_factor*transformed_data['Av']).max()
+print 'extreme Av', transformed_data['Av'].min(),transformed_data['Av'].max()
+
+
+transformed_data['g'] -= ag_factor*transformed_data['Av']
+transformed_data['r'] -= ar_factor*transformed_data['Av']
+transformed_data['i'] -= ai_factor*transformed_data['Av']
+transformed_data['z'] -= az_factor*transformed_data['Av']
 
 catsim_dtype = np.dtype([('sedname', str, 300), ('teff', float), ('feh', float), ('logg', float), ('m', float),
                    ('r_abs', float), ('norm', float),
@@ -138,6 +158,6 @@ for i_fig, color_name in enumerate(['s', 'w', 'x', 'y']):
     plt.yticks(fontsize=10)
 
 plt.tight_layout()
-plt.savefig('kepler_principal_colors_2d.png')
+plt.savefig('kepler_principal_colors_dereddened_2d.png')
 plt.close()
 
