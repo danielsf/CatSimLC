@@ -193,3 +193,121 @@ for teff in teff_list:
     plt.tight_layout()
     plt.savefig('hr_diagaram_%s.png' % teff)
     plt.close()
+
+
+s2_coeffs = {'u':-0.249, 'g':0.794, 'r':-0.555, 'offset':0.234}
+w2_coeffs = {'g':-0.227, 'r':0.792, 'i':-0.567, 'offset':0.05}
+x2_coeffs = {'g':0.707, 'r':-0.707, 'offset':-0.988}
+y2_coeffs = {'r':-0.270, 'i':0.8, 'z':-0.534, 'offset':0.054}
+
+p2_coeff_dict = {'s':s2_coeffs, 'w':w2_coeffs, 'x':x2_coeffs, 'y':y2_coeffs}
+
+s1_coeffs = {'u':0.91, 'g':-0.495, 'r':-0.415, 'offset':-1.28}
+w1_coeffs = {'g':0.928, 'r':-0.556, 'i':-0.372, 'offset':-0.425}
+x1_coeffs = {'r':1.0, 'i':-1.0, 'offset':0.0}
+y1_coeffs = {'r':0.895, 'i':-0.448, 'z':-0.447, 'offset':-0.6}
+
+p1_coeff_dict = {'s':s1_coeffs, 'w':w1_coeffs, 'x':x1_coeffs, 'y':y1_coeffs}
+
+plt.figsize = (30,30)
+trim = 30
+for i_fig, color_name in enumerate(['w', 'x', 'y']):
+    plt.subplot(2,2,i_fig+1)
+    p2_coeffs = p2_coeff_dict[color_name]
+    p1_coeffs = p1_coeff_dict[color_name]
+    print 'kep_data ',len(kep_data)
+    kep_valid = new_mags
+    for tag in p2_coeffs.keys():
+        if tag != 'offset':
+            valid_dex = np.where(kep_valid[tag]>0.0)
+            kep_valid = kep_valid[valid_dex]
+
+    for tag in p1_coeffs.keys():
+        if tag != 'offset':
+            valid_dex = np.where(kep_valid[tag]>0.0)
+            kep_valid = kep_valid[valid_dex]
+
+    un_dered_valid = un_dereddened
+    for tag in p2_coeffs.keys():
+        if tag != 'offset':
+            valid_dex = np.where(un_dered_valid[tag]>0.0)
+            un_dered_valid = un_dered_valid[valid_dex]
+
+    for tag in p1_coeffs.keys():
+        if tag != 'offset':
+            valid_dex = np.where(un_dered_valid[tag]>0.0)
+            un_dered_valid = un_dered_valid[valid_dex]
+
+    print 'becomes ',len(kep_valid)
+
+    kep_p2 = np.ones(len(kep_valid))*p2_coeffs['offset']
+    catsim_p2 = np.ones(len(catsim_data))*p2_coeffs['offset']
+    un_dered_p2 = np.ones(len(un_dered_valid))*p2_coeffs['offset']
+    for tag in p2_coeffs.keys():
+        if tag == 'offset':
+            continue
+        kep_p2 += p2_coeffs[tag]*kep_valid[tag]
+        catsim_p2 += p2_coeffs[tag]*catsim_data[tag]
+        un_dered_p2 += p2_coeffs[tag]*un_dered_valid[tag]
+
+    kep_p1 = np.ones(len(kep_valid))*p1_coeffs['offset']
+    catsim_p1 = np.ones(len(catsim_data))*p1_coeffs['offset']
+    un_dered_p1 = np.ones(len(un_dered_valid))*p1_coeffs['offset']
+    for tag in p1_coeffs.keys():
+        if tag == 'offset':
+            continue
+        kep_p1 += p1_coeffs[tag]*kep_valid[tag]
+        catsim_p1 += p1_coeffs[tag]*catsim_data[tag]
+        un_dered_p1 += p1_coeffs[tag]*un_dered_valid[tag]
+
+    counts, xbins, ybins = np.histogram2d(catsim_p1, catsim_p2, bins=100)
+    catsim = plt.contour(counts.transpose(),extent=[xbins.min(),xbins.max(),ybins.min(),ybins.max()],
+                         colors='r',zorder=3)
+
+
+    counts,xbins,ybins = np.histogram2d(kep_p1, kep_p2, bins=200)
+    kep = plt.contour(counts.transpose(),extent=[xbins.min(),xbins.max(),ybins.min(),ybins.max()],
+                      colors='blue',zorder=1)
+
+    counts,xbins,ybins = np.histogram2d(un_dered_p1, un_dered_p2, bins=200)
+    kep = plt.contour(counts.transpose(),extent=[xbins.min(),xbins.max(),ybins.min(),ybins.max()],
+                      colors='green',zorder=2)
+
+
+    if i_fig ==0:
+        plt.title('blue is Kepler; red is CatSim;\ngreen is Kepler without dereddening', fontsize=12)
+
+    plt.ylabel(color_name)
+    plt.xlabel('P1(%s)' % color_name)
+    #plt.xlim((min(kep_color.min(),catsim_color.min()),max(kep_color.max(),catsim_color.max())))
+
+    kep_p1_sorted = np.sort(kep_p1)
+    catsim_p1_sorted = np.sort(catsim_p1)
+
+    xmin = min(kep_p1_sorted[len(kep_p1)/trim], catsim_p1_sorted[len(catsim_p1)/trim])
+    xmax = max(kep_p1_sorted[(trim-1)*len(kep_p1)/trim], catsim_p1_sorted[(trim-1)*len(catsim_p1)/trim])
+
+    kep_p2_sorted = np.sort(kep_p2)
+    catsim_p2_sorted = np.sort(catsim_p2)
+
+    ymin = min(kep_p2_sorted[len(kep_p2)/trim], catsim_p2_sorted[len(catsim_p2)/trim])
+    ymax = max(kep_p2_sorted[(trim-1)*len(kep_p2)/trim], catsim_p2_sorted[(trim-1)*len(catsim_p2)/trim])
+
+    if color_name == 'w':
+        ymax = 0.06
+        xmax = 0.8
+    elif color_name == 'y':
+        xmax = -0.1
+    elif color_name == 'x':
+        xmax = 0.4
+        ymax = -0.3
+
+    plt.ylim((ymin,ymax))
+    plt.xlim((xmin,xmax))
+    plt.xticks(fontsize=10)
+    plt.yticks(fontsize=10)
+
+plt.tight_layout()
+plt.savefig('principal_colors.png')
+plt.close()
+
