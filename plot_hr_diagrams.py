@@ -117,9 +117,9 @@ for i_mag_1 in range(len(mag_list)):
         kep = plt.contour(counts.transpose(),extent=[xbins.min(),xbins.max(),ybins.min(),ybins.max()],
                           colors='blue', alpha=0.5, zorder=1)
 
-        counts,xbins,ybins = np.histogram2d(orig_color, orig_r, bins=200)
-        kep = plt.contour(counts.transpose(),extent=[xbins.min(),xbins.max(),ybins.min(),ybins.max()],
-                          colors='green', alpha=0.5, zorder=2)
+        #counts,xbins,ybins = np.histogram2d(orig_color, orig_r, bins=200)
+        #kep = plt.contour(counts.transpose(),extent=[xbins.min(),xbins.max(),ybins.min(),ybins.max()],
+        #                  colors='green', alpha=0.5, zorder=2)
 
         plt.ylabel('r')
         plt.xlabel('%s-%s' % (mag1,mag2))
