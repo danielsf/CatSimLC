@@ -126,7 +126,7 @@ for i_mag_1 in range(len(mag_list)):
         plt.gca().invert_yaxis()
 
 plt.tight_layout()
-plt.savefig('hr_diagaram_dered.png')
+plt.savefig('hr_diagaram_color.png')
 plt.close()
 
 mag_list = ['g', 'r', 'i', 'z']
