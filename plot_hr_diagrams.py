@@ -151,10 +151,13 @@ for imag1 in range(len(mag_list)):
         mag1 = mag_list[imag1]
         mag2 = mag_list[imag2]
 
-        catsim_color = catsim_data[mag1]-catsim_data[mag2]
+        valid = np.where(catsim_abs_r>4.0)
+
+        catsim_color = catsim_data[mag1][valid]-catsim_data[mag2][valid]
 
         valid = np.where(np.logical_and(new_mags[mag1]>0.0,
-                                        new_mags[mag2]>0.0))
+                         np.logical_and(kep_abs_r>4.0,
+                                        new_mags[mag2]>0.0)))
 
         kep_color = new_mags[mag1][valid]-new_mags[mag2][valid]
 
@@ -165,7 +168,8 @@ for imag1 in range(len(mag_list)):
         plt.xlim(xmin,xmax)
 
         valid = np.where(np.logical_and(un_dereddened[mag1]>0.0,
-                                        un_dereddened[mag2]>0.0))
+                         np.logical_and(un_dered_abs_r>4.0,
+                                        un_dereddened[mag2]>0.0)))
         un_dered_color = un_dereddened[mag1][valid]-un_dereddened[mag2][valid]
 
         if i_fig == 1:
