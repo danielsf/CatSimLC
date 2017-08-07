@@ -268,6 +268,8 @@ for i_fig, color_name in enumerate(['w', 'x', 'y']):
     p1_coeffs = p1_coeff_dict[color_name]
     print 'kep_data ',len(kep_data)
     kep_valid = new_mags
+    valid_dex = np.where(kep_abs_r>4.0)
+    kep_valid = kep_valid[valid_dex]
     for tag in p2_coeffs.keys():
         if tag != 'offset':
             valid_dex = np.where(kep_valid[tag]>0.0)
@@ -279,6 +281,8 @@ for i_fig, color_name in enumerate(['w', 'x', 'y']):
             kep_valid = kep_valid[valid_dex]
 
     un_dered_valid = un_dereddened
+    valid_dex = np.where(un_dered_abs_r>4.0)
+    un_dered_valid = un_dered_valid[valid_dex]
     for tag in p2_coeffs.keys():
         if tag != 'offset':
             valid_dex = np.where(un_dered_valid[tag]>0.0)
@@ -291,24 +295,28 @@ for i_fig, color_name in enumerate(['w', 'x', 'y']):
 
     print 'becomes ',len(kep_valid)
 
+    local_catsim_data = catsim_data
+    valid_dex = np.where(catsim_abs_r>4.0)
+    local_catsim_data = local_catsim_data[valid_dex]
+
     kep_p2 = np.ones(len(kep_valid))*p2_coeffs['offset']
-    catsim_p2 = np.ones(len(catsim_data))*p2_coeffs['offset']
+    catsim_p2 = np.ones(len(local_catsim_data))*p2_coeffs['offset']
     un_dered_p2 = np.ones(len(un_dered_valid))*p2_coeffs['offset']
     for tag in p2_coeffs.keys():
         if tag == 'offset':
             continue
         kep_p2 += p2_coeffs[tag]*kep_valid[tag]
-        catsim_p2 += p2_coeffs[tag]*catsim_data[tag]
+        catsim_p2 += p2_coeffs[tag]*local_catsim_data[tag]
         un_dered_p2 += p2_coeffs[tag]*un_dered_valid[tag]
 
     kep_p1 = np.ones(len(kep_valid))*p1_coeffs['offset']
-    catsim_p1 = np.ones(len(catsim_data))*p1_coeffs['offset']
+    catsim_p1 = np.ones(len(local_catsim_data))*p1_coeffs['offset']
     un_dered_p1 = np.ones(len(un_dered_valid))*p1_coeffs['offset']
     for tag in p1_coeffs.keys():
         if tag == 'offset':
             continue
         kep_p1 += p1_coeffs[tag]*kep_valid[tag]
-        catsim_p1 += p1_coeffs[tag]*catsim_data[tag]
+        catsim_p1 += p1_coeffs[tag]*local_catsim_data[tag]
         un_dered_p1 += p1_coeffs[tag]*un_dered_valid[tag]
 
     counts, xbins, ybins = np.histogram2d(catsim_p1, catsim_p2, bins=100)
