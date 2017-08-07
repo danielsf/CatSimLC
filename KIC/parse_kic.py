@@ -99,6 +99,7 @@ id_dex = 0
 pos_dex = 1
 sdss_dex = 3
 param_dex = 14
+dust_dex = 15
 
 from lsst.sims.utils import angularSeparation
 
@@ -106,7 +107,8 @@ distance_max = -1.0
 
 t_start = time.time()
 with open('kic_data.txt', 'w') as out_file:
-    out_file.write('# kepid ra dec sdss_u sdss_g sdss_r sdss_i sdss_z distance(in parsecs) Teff(from KIC) Teff(from stellar)\n')
+    out_file.write('# kepid ra dec sdss_u sdss_g sdss_r sdss_i sdss_z distance(in parsecs) ')
+    out_file.write('Teff(from KIC) Teff(from stellar) Av E(B-V)\n')
     for file_name in list_of_files:
         if '.dat' in file_name:
             if file_name[0] == 'n':
@@ -160,6 +162,12 @@ with open('kic_data.txt', 'w') as out_file:
                             param_row = data_v[param_dex]
                         else:
                             param_row = None
+
+                        if len(data_v)>dust_dex:
+                            dust_row = data_v[dust_dex]
+                        else:
+                            dust_row = None
+
                     except:
                         print 'offending row'
                         print line
@@ -202,6 +210,13 @@ with open('kic_data.txt', 'w') as out_file:
                     if np.isnan(teff_stellar):
                         teff_stellar = -999.0
 
+                    if dust_row is not None:
+                        ebv = float(dust_row[:6])
+                        av = float(dust_row[6:])
+                    else:
+                        ebv = -999.0
+                        av = -999.0
+
                     if param_row is not None:
                         teff = float(param_row[:6])
                     else:
@@ -211,5 +226,6 @@ with open('kic_data.txt', 'w') as out_file:
                         dd = -999.0
                     else:
                         dd = kep_stellar_data['dist'][stellar_dex]
-                    out_file.write('%d %.6f %.6f %le %le %le %le %le %le %le %le\n' %
-                    (data_id, ra, dec, sdss_u, sdss_g, sdss_r, sdss_i, sdss_z, dd, teff, teff_stellar))
+                    out_file.write('%d %.6f %.6f %le %le %le %le %le %le %le %le %le %le\n' %
+                    (data_id, ra, dec, sdss_u, sdss_g, sdss_r, sdss_i, sdss_z,
+                     dd, teff, teff_stellar, av, ebv))
