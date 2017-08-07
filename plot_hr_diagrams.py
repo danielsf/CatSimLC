@@ -135,7 +135,6 @@ plt.tight_layout()
 plt.savefig('hr_diagaram_color.png')
 plt.close()
 
-mag_list = ['g', 'r', 'i', 'z']
 teff_list = ['teff_kic', 'teff_stellar']
 
 catsim_teff = catsim_data['teff']
