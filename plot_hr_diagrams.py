@@ -4,175 +4,128 @@ import matplotlib.pyplot as plt
 
 import numpy as np
 
-def make_2d_histogram(xx, yy, dx, dy):
-    """
-    returns indices and counts of unique points on the map
-    """
-    i_color1 = np.round(xx/dx).astype(int)
-    i_color2 = np.round(yy/dy).astype(int)
-    dex_reverse = np.array([i_color1, i_color2])
-    dex_arr = dex_reverse.transpose()
-    # see http://stackoverflow.com/questions/16970982/find-unique-rows-in-numpy-array
-    dex_raw = np.ascontiguousarray(dex_arr).view(np.dtype((np.void, dex_arr.dtype.itemsize*dex_arr.shape[1])))
-    _, unique_rows, unique_counts = np.unique(dex_raw, return_index=True, return_counts=True)
-
-    return unique_rows, unique_counts
-
-
-def plot_color(xx, yy, dx, dy):
-    dexes, cts = make_2d_histogram(xx, yy, dx, dy)
-    sorted_dex = np.argsort(cts)
-    dexes = dexes[sorted_dex]
-    cts = cts[sorted_dex]
-    plt.scatter(xx[dexes], yy[dexes], c=cts, s=5,
-                cmap=plt.cm.gist_ncar, edgecolor='')
-
-    plt.colorbar()
-
-catsim_dtype = np.dtype([('sedname', str, 300), ('teff', float), ('feh', float), ('logg', float), ('m', float),
-                   ('mr', float), ('norm', float),
-                   ('u', float), ('g', float), ('r', float), ('i', float), ('z', float)])
-
-kepler_dtype = np.dtype([('teff', float), ('feh', float), ('logg', float), ('m', float)])
-
-
-kep_file = 'kep_star_data.txt'
+catsim_dtype = np.dtype([('sedname', str, 300), ('kep_abs', float),
+                         ('u', float), ('g', float), ('r', float), ('i', float), ('z', float),
+                         ('dist', float), ('teff', float), ('r_abs', float)])
 catsim_file = 'catsim_star_data_same_pointing.txt'
-
-kep_data = np.genfromtxt(kep_file, dtype=kepler_dtype)
 catsim_data = np.genfromtxt(catsim_file, dtype=catsim_dtype)
 
+kepler_dtype = np.dtype([('id', int), ('ra', float), ('dec', float), ('u', float),
+                         ('g', float), ('r', float), ('i', float), ('z', float),
+                         ('dist', float), ('teff_kic', float), ('teff_stellar', float),
+                         ('Av', float), ('ebv', float)])
+kep_file = 'KIC/kic_data.txt'
 
-t_min = min(kep_data['teff'].min(), catsim_data['teff'].max())
-t_max = max(kep_data['teff'].max(), catsim_data['teff'].max())
-m_min = min(kep_data['m'].min(), catsim_data['m'].min())
-m_max = max(kep_data['m'].max(), catsim_data['m'].max())
+kep_data = np.genfromtxt(kep_file, dtype=kepler_dtype)
 
-t_min = 3000.0
-t_max = 10000.0
-m_min = -10.0
-m_max = 15.0
+valid = np.where(kep_data['Av']>-990.0)
+kep_data = kep_data[valid]
 
-t_ticks = np.arange(np.round(t_min/1000.0)*1000.0, np.round(t_max/1000.0)*1000.0, 2000.0)
-t_labels = ['%d' % tt for tt in t_ticks]
+valid = np.where(kep_data['dist']>0.0)
+kep_data = kep_data[valid]
 
-dt = 100
-dm = 0.1
-dfeh = 0.1
-dlogg = 0.1
+# eqns 1 and 2 of
+# Pisonneault et al 2012
+# ApJS 199:30
 
-plt.figsize = (30, 30)
-plt.subplot(2,2,1)
+new_mags = {}
 
-plot_color(catsim_data['teff'], catsim_data['m'], dt, dm)
-plt.title('CatSim')
-plt.xlabel('Teff')
-plt.ylabel('Absolute Kepler magnitude')
-plt.xlim(t_min, t_max)
-plt.xticks(t_ticks, t_labels, fontsize=7)
-plt.ylim(m_min, m_max)
-plt.gca().invert_xaxis()
-plt.gca().invert_yaxis()
+new_mags['g'] = np.where(np.logical_and(kep_data['g']>0.0, kep_data['r']>0.0),
+                 kep_data['g'] + 0.0921*(kep_data['g']-kep_data['r']) - 0.0985,
+                 -999.0)
 
-plt.subplot(2,2,2)
-plt.title('Kepler')
-plt.xlabel('Teff')
-plt.ylabel('Absolute Kepler magnitude')
-plot_color(kep_data['teff'], kep_data['m'], dt, dm)
-plt.xlim(t_min, t_max)
-plt.xticks(t_ticks, t_labels, fontsize=7)
-plt.ylim(m_min, m_max)
-plt.gca().invert_xaxis()
-plt.gca().invert_yaxis()
+new_mags['r'] = np.where(np.logical_and(kep_data['r']>0.0, kep_data['i']>0.0),
+                 kep_data['r'] + 0.0548*(kep_data['r']-kep_data['i']) - 0.0383,
+                 -999.0)
 
+new_mags['i'] = np.where(np.logical_and(kep_data['i']>0.0, kep_data['z']>0.0),
+                 kep_data['i'] +0.0696*(kep_data['r']-kep_data['i']) - 0.0583,
+                 -999.0)
 
-plt.subplot(2,2,3)
-counts, xbins, ybins = np.histogram2d(catsim_data['teff'], catsim_data['m'], bins=100)
-catsim = plt.contour(counts.transpose(),extent=[xbins.min(),xbins.max(),ybins.min(),ybins.max()],
-            colors='r', alpha=0.5)
+new_mags['z'] = np.where(np.logical_and(kep_data['i']>0.0, kep_data['z']>0.0),
+                 kep_data['z']+0.1587*(kep_data['i']-kep_data['z']) - 0.0597,
+                 -999.0)
 
-print 'catsim counts shape ',counts.shape
+# from An et al 2009
+# ApJ 700, 523
+ag_factor = 1.196
+ar_factor = 0.874
+ai_factor = 0.672
+az_factor = 0.488
 
-counts,xbins,ybins = np.histogram2d(kep_data['teff'], kep_data['m'], bins=100)
-kep = plt.contour(counts.transpose(),extent=[xbins.min(),xbins.max(),ybins.min(),ybins.max()],
-            colors='blue', alpha=0.5)
+new_mags['g'] = np.where(new_mags['g']>0.0, new_mags['g'] - ag_factor*kep_data['Av'], -999.0)
+new_mags['r'] = np.where(new_mags['r']>0.0, new_mags['r'] - ar_factor*kep_data['Av'], -999.0)
+new_mags['i'] = np.where(new_mags['i']>0.0, new_mags['i'] - ai_factor*kep_data['Av'], -999.0)
+new_mags['z'] = np.where(new_mags['z']>0.0, new_mags['z'] - az_factor*kep_data['Av'], -999.0)
 
-print 'kepler counts shape ',counts.shape
-
-plt.xlabel('Teff')
-plt.ylabel('Absolute Kepler magnitude')
-
-m_min=-5
-m_max=10
-
-t_min=3000.0
-t_max=7000.0
-t_ticks = np.arange(np.round(t_min/1000.0)*1000.0, np.round(t_max/1000.0)*1000.0, 1000.0)
-t_labels = ['%d' % tt for tt in t_ticks]
+kep_data['g'] = np.where(kep_data['g']>0.0, kep_data['g'] - ag_factor*kep_data['Av'], -999.0)
+kep_data['r'] = np.where(kep_data['r']>0.0, kep_data['r'] - ar_factor*kep_data['Av'], -999.0)
+kep_data['i'] = np.where(kep_data['i']>0.0, kep_data['i'] - ai_factor*kep_data['Av'], -999.0)
+kep_data['z'] = np.where(kep_data['z']>0.0, kep_data['z'] - az_factor*kep_data['Av'], -999.0)
 
 
-plt.xlim(t_min, t_max)
-plt.xticks(t_ticks, t_labels, fontsize=7)
-plt.ylim(m_min, m_max)
+mag_list = ['g', 'r', 'i', 'z']
+plt.figsize=(30,30)
+i_fig = 0
+for i_mag_1 in range(len(mag_list)):
+    for i_mag_2 in range(len(mag_list)):
+        if i_mag_2<=i_mag_1:
+            continue
+        i_fig += 1
+        mag1 = mag_list[i_mag_1]
+        mag2 = mag_list[i_mag_2]
 
-plt.text(t_max-0.1*(t_max-t_min),m_min+0.25*(m_max-m_min),
-         'Blue is Kepler; Red is CatSim')
+        valid = np.where(np.logical_and(new_mags['r']>0.0,
+                         np.logical_and(new_mags[mag1]>0.0,
+                                        new_mags[mag2]>0.0)))
 
-plt.gca().invert_xaxis()
-plt.gca().invert_yaxis()
+        kep_r = new_mags['r'][valid] - 5.0*np.log10(kep_data['dist'][valid]/10.0)
+        kep_color = new_mags[mag1][valid] - new_mags[mag2][valid]
 
+        n_kep = len(kep_r)
+        trim = 30
+        kep_r_sorted = np.sort(kep_r)
+        r_min = kep_r_sorted[n_kep/trim]
+        r_max = kep_r_sorted[(trim-1)*n_kep/trim]
 
-plt.subplot(2,2,4)
-valid_dex = np.where(catsim_data['feh']>-900.0)
-plt.hist(kep_data['feh'], bins=1000, color='b', zorder=1, edgecolor='b', normed=True)
-plt.hist(catsim_data['feh'][valid_dex], bins=1000, color='r', zorder=2, edgecolor='r',
-         alpha=0.5, normed=True)
+        kep_color_sorted = np.sort(kep_color)
+        color_min = kep_color_sorted[n_kep/trim]
+        color_max = kep_color_sorted[(trim-1)*n_kep/trim]
 
-plt.xlabel('FeH', fontsize=10)
+        catsim_r = catsim_data['r'] - 5.0*np.log10(catsim_data['dist']/10.0)
+        catsim_color = catsim_data[mag1] - catsim_data[mag2]
+
+        valid = np.where(np.logical_and(kep_data['r']>0.0,
+                         np.logical_and(kep_data[mag1]>0.0,
+                                        kep_data[mag2]>0.0)))
+
+        orig_r = kep_data['r'][valid] - 5.0*np.log10(kep_data['dist'][valid]/10.0)
+        orig_color = kep_data[mag1][valid]-kep_data[mag2][valid]
+
+        plt.subplot(3,2,i_fig)
+        plt.xlim((color_min, color_max))
+        plt.ylim((r_min, r_max))
+
+        if i_fig == 1:
+            plt.title('Blue is Kepler; Red is CatSim')
+
+        counts, xbins, ybins = np.histogram2d(catsim_color, catsim_r, bins=100)
+        catsim = plt.contour(counts.transpose(),extent=[xbins.min(),xbins.max(),ybins.min(),ybins.max()],
+                             colors='r', alpha=0.5, zorder=3)
+
+        counts,xbins,ybins = np.histogram2d(kep_color, kep_r, bins=200)
+        kep = plt.contour(counts.transpose(),extent=[xbins.min(),xbins.max(),ybins.min(),ybins.max()],
+                          colors='blue', alpha=0.5, zorder=1)
+
+        counts,xbins,ybins = np.histogram2d(orig_color, orig_r, bins=200)
+        kep = plt.contour(counts.transpose(),extent=[xbins.min(),xbins.max(),ybins.min(),ybins.max()],
+                          colors='green', alpha=0.5, zorder=2)
+
+        plt.ylabel('r')
+        plt.xlabel('%s-%s' % (mag1,mag2))
+        plt.gca().invert_yaxis()
+
 plt.tight_layout()
-plt.savefig('kepler_hr_diagram_same_pointing.eps')
-plt.close()
-
-print 'catsim feh range ',catsim_data['feh'][valid_dex].min(),catsim_data['feh'].max()
-
-# now with 0.05 mag offset
-
-plt.figsize = (30,30)
-counts, xbins, ybins = np.histogram2d(catsim_data['teff'], catsim_data['m'], bins=100)
-catsim = plt.contour(counts.transpose(),extent=[xbins.min(),xbins.max(),ybins.min(),ybins.max()],
-            colors='r', alpha=0.5)
-
-print 'catsim counts shape ',counts.shape
-
-counts,xbins,ybins = np.histogram2d(kep_data['teff'], kep_data['m']-0.05, bins=100)
-kep = plt.contour(counts.transpose(),extent=[xbins.min(),xbins.max(),ybins.min(),ybins.max()],
-            colors='blue', alpha=0.5)
-
-print 'kepler counts shape ',counts.shape
-
-plt.xlabel('Teff')
-plt.ylabel('Absolute Kepler magnitude')
-plt.title('subtract 0.05 from magnitude of Kepler stars')
-
-m_min=-5
-m_max=10
-
-t_min=3000.0
-t_max=7000.0
-t_ticks = np.arange(np.round(t_min/1000.0)*1000.0, np.round(t_max/1000.0)*1000.0, 1000.0)
-t_labels = ['%d' % tt for tt in t_ticks]
-
-
-plt.xlim(t_min, t_max)
-plt.xticks(t_ticks, t_labels, fontsize=7)
-plt.ylim(m_min, m_max)
-
-plt.text(t_max-0.1*(t_max-t_min),m_min+0.25*(m_max-m_min),
-         'Blue is Kepler; Red is CatSim')
-
-plt.gca().invert_xaxis()
-plt.gca().invert_yaxis()
-
-plt.savefig('kepler_hr_diagram_same_pointing_offset.eps')
+plt.savefig('hr_diagaram_dered.png')
 plt.close()
 
