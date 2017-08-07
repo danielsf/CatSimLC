@@ -28,7 +28,7 @@ kep_data = kep_data[valid]
 # Pisonneault et al 2012
 # ApJS 199:30
 
-new_mags = {}
+new_mags = np.copy(kep_data)
 
 new_mags['g'] = np.where(np.logical_and(kep_data['g']>0.0, kep_data['r']>0.0),
                  kep_data['g'] + 0.0921*(kep_data['g']-kep_data['r']) - 0.0985,
@@ -52,6 +52,12 @@ ag_factor = 1.196
 ar_factor = 0.874
 ai_factor = 0.672
 az_factor = 0.488
+
+un_dereddened = np.copy(kep_data)
+un_dereddened['g'] = new_mags['g']
+un_dereddened['r'] = new_mags['r']
+un_dereddened['i'] = new_mags['i']
+un_dereddened['z'] = new_mags['z']
 
 new_mags['g'] = np.where(new_mags['g']>0.0, new_mags['g'] - ag_factor*kep_data['Av'], -999.0)
 new_mags['r'] = np.where(new_mags['r']>0.0, new_mags['r'] - ar_factor*kep_data['Av'], -999.0)
@@ -95,19 +101,19 @@ for i_mag_1 in range(len(mag_list)):
         catsim_r = catsim_data['r'] - 5.0*np.log10(catsim_data['dist']/10.0)
         catsim_color = catsim_data[mag1] - catsim_data[mag2]
 
-        valid = np.where(np.logical_and(kep_data['r']>0.0,
-                         np.logical_and(kep_data[mag1]>0.0,
-                                        kep_data[mag2]>0.0)))
+        valid = np.where(np.logical_and(un_dereddened['r']>0.0,
+                         np.logical_and(un_dereddened[mag1]>0.0,
+                                        un_dereddened[mag2]>0.0)))
 
-        orig_r = kep_data['r'][valid] - 5.0*np.log10(kep_data['dist'][valid]/10.0)
-        orig_color = kep_data[mag1][valid]-kep_data[mag2][valid]
+        orig_r = un_dereddened['r'][valid] - 5.0*np.log10(un_dereddened['dist'][valid]/10.0)
+        orig_color = un_dereddened[mag1][valid]-un_dereddened[mag2][valid]
 
         plt.subplot(3,2,i_fig)
         plt.xlim((color_min, color_max))
         plt.ylim((r_min, r_max))
 
         if i_fig == 1:
-            plt.title('Blue is Kepler; Red is CatSim')
+            plt.title('Blue is Kepler; Red is CatSim\nGreen is Kepler without dereddening')
 
         counts, xbins, ybins = np.histogram2d(catsim_color, catsim_r, bins=100)
         catsim = plt.contour(counts.transpose(),extent=[xbins.min(),xbins.max(),ybins.min(),ybins.max()],
@@ -117,9 +123,9 @@ for i_mag_1 in range(len(mag_list)):
         kep = plt.contour(counts.transpose(),extent=[xbins.min(),xbins.max(),ybins.min(),ybins.max()],
                           colors='blue', alpha=0.5, zorder=1)
 
-        #counts,xbins,ybins = np.histogram2d(orig_color, orig_r, bins=200)
-        #kep = plt.contour(counts.transpose(),extent=[xbins.min(),xbins.max(),ybins.min(),ybins.max()],
-        #                  colors='green', alpha=0.5, zorder=2)
+        counts,xbins,ybins = np.histogram2d(orig_color, orig_r, bins=200)
+        kep = plt.contour(counts.transpose(),extent=[xbins.min(),xbins.max(),ybins.min(),ybins.max()],
+                          colors='green', alpha=0.5, zorder=2)
 
         plt.ylabel('r')
         plt.xlabel('%s-%s' % (mag1,mag2))
@@ -148,6 +154,10 @@ for teff in teff_list:
         kep_mag = new_mags[mag][valid] - 5.0*np.log10(kep_data['dist'][valid]/10.0)
         kep_teff = kep_data[teff][valid]
 
+        valid = np.where(np.logical_and(un_dereddened[mag]>0.0, un_dereddened[teff]>0.0))
+        und_mag = un_dereddened[mag][valid] - 5.0*np.log10(un_dereddened['dist'][valid]/10.0)
+        und_teff = un_dereddened[teff][valid]
+
         trim = 30
         n_kep = len(kep_mag)
         mag_sorted = np.sort(kep_mag)
@@ -158,7 +168,7 @@ for teff in teff_list:
         teff_max = teff_sorted[(trim-1)*n_kep/trim]
 
         if i_fig == 1:
-            plt.title('Blue is Kepler; Red is CatSim')
+            plt.title('Blue is Kepler; Red is CatSim\nGreen is Kepler without dereddening')
 
         counts, xbins, ybins = np.histogram2d(catsim_teff, catsim_mag, bins=100)
         catsim = plt.contour(counts.transpose(),extent=[xbins.min(),xbins.max(),ybins.min(),ybins.max()],
@@ -167,6 +177,10 @@ for teff in teff_list:
         counts,xbins,ybins = np.histogram2d(kep_teff, kep_mag, bins=200)
         kep = plt.contour(counts.transpose(),extent=[xbins.min(),xbins.max(),ybins.min(),ybins.max()],
                           colors='blue', alpha=0.5, zorder=1)
+
+        counts,xbins,ybins = np.histogram2d(und_teff, und_mag, bins=200)
+        kep = plt.contour(counts.transpose(),extent=[xbins.min(),xbins.max(),ybins.min(),ybins.max()],
+                          colors='green', alpha=0.5, zorder=2)
 
         plt.xlim((teff_min, teff_max))
         plt.ylim((mag_min, mag_max))
