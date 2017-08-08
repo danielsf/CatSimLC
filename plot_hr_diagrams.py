@@ -5,9 +5,11 @@ import matplotlib.pyplot as plt
 import numpy as np
 
 catsim_dtype = np.dtype([('sedname', str, 300), ('kep_abs', float),
-                         ('u', float), ('g', float), ('r', float), ('i', float), ('z', float),
+                         ('u_atm', float), ('g_atm', float), ('r_atm', float), ('i_atm', float), ('z_atm', float),
+                         ('u', float), ('g', float), ('r', float), ('i', float),
+                         ('z', float),
                          ('dist', float), ('teff', float), ('r_abs', float)])
-catsim_file = 'catsim_star_data_same_pointing.txt'
+catsim_file = 'catsim_star_data_same_pointing_noatm.txt'
 catsim_data = np.genfromtxt(catsim_file, dtype=catsim_dtype)
 
 kepler_dtype = np.dtype([('id', int), ('ra', float), ('dec', float), ('u', float),
@@ -136,7 +138,7 @@ for i_mag_1 in range(len(mag_list)):
         plt.gca().invert_yaxis()
 
 plt.tight_layout()
-plt.savefig('hr_diagaram_color.png')
+plt.savefig('hr_diagaram_color_noatm.png')
 plt.close()
 
 plt.figsize = (30,30)
@@ -184,7 +186,7 @@ for imag1 in range(len(mag_list)):
         plt.xlabel('%s-%s' % (mag1, mag2), fontsize=10)
 
 plt.tight_layout()
-plt.savefig('color_histograms.png')
+plt.savefig('color_histograms_noatm.png')
 plt.close()
 
 teff_list = ['teff_kic', 'teff_stellar']
@@ -242,7 +244,7 @@ for teff in teff_list:
         plt.gca().invert_xaxis()
 
     plt.tight_layout()
-    plt.savefig('hr_diagaram_%s.png' % teff)
+    plt.savefig('hr_diagaram_%s_noatm.png' % teff)
     plt.close()
 
 
@@ -367,6 +369,6 @@ for i_fig, color_name in enumerate(['w', 'x', 'y']):
     plt.yticks(fontsize=10)
 
 plt.tight_layout()
-plt.savefig('principal_colors.png')
+plt.savefig('principal_colors_noatm.png')
 plt.close()
 
