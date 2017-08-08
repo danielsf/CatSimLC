@@ -282,7 +282,7 @@ for name in ('u', 'g', 'r', 'i', 'z'):
     colnames.append('sdss%s' % name)
 
 
-out_name = 'catsim_star_data_same_pointing_noatm.txt'
+out_name = 'catsim_star_data_same_pointing_noatm_sdss.txt'
 
 with open(out_name, 'w') as out_file:
     out_file.write('# name abs_kep_mag ugriz ugriz_noatm dist Teff sdss_r_abs\n')
@@ -333,6 +333,8 @@ for chunk in star_iter:
         sed_list.loadSedsFromList(chunk['sedfilename'], magnorm)
 
     mag_noatm = lsst_hw_bp_dict.magListForSedList(sed_list)
+    mag_atm = lsst_bp_dict.magListForSedList(sed_list)
+    dmag_atm = mag_noatm-mag_atm
 
     catsim_kep_mag = []
     for name, mm in zip(chunk['sedfilename'], magnorm):
@@ -363,8 +365,10 @@ for chunk in star_iter:
             out_file.write('%s %e %e %e %e %e %e %e %e %e %e %e %e %e %e\n' %
             (name, kep,
             umag, gmag, rmag, imag, zmag,
-            mag_noatm[i_obj][0],mag_noatm[i_obj][1],
-            mag_noatm[i_obj][2],mag_noatm[i_obj][3],
-            mag_noatm[i_obj][4],
+            umag + dmag_atm[i_obj][0],
+            gmag + dmag_atm[i_obj][1],
+            rmag + dmag_atm[i_obj][2],
+            imag + dmag_atm[i_obj][3],
+            zmag + dmag_atm[i_obj][4],
             dist,tt,rr))
 
