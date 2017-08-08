@@ -282,10 +282,10 @@ for name in ('u', 'g', 'r', 'i', 'z'):
     colnames.append('sdss%s' % name)
 
 
-out_name = 'catsim_star_data_same_pointing.txt'
+out_name = 'catsim_star_data_same_pointing_noatm.txt'
 
 with open(out_name, 'w') as out_file:
-    out_file.write('# name abs_kep_mag ugris dist Teff\n')
+    out_file.write('# name abs_kep_mag ugriz ugriz_noatm dist Teff sdss_r_abs\n')
 
 from lsst.sims.catUtils.baseCatalogModels import StarObj
 db = StarObj(database='LSSTCATSIM', host='fatboy.phys.washington.edu',
@@ -301,6 +301,16 @@ obs = ObservationMetaData(pointingRA=0.5*(ra_min+ra_max),
 star_iter = db.query_columns(colnames=colnames, obs_metadata=obs, chunk_size=10000,
                              constraint='sdssr<20.298')
 
+from lsst.sims.photUtils import BandpassDict
+
+(lsst_bp_dict,
+ lsst_hw_bp_dict) = BandpassDict.loadBandpassesFromFiles(bandpassNames=['u','g','r',
+                                                                        'i','z'])
+
+from lsst.sims.photUtils import SedList
+
+sed_list = None
+
 for chunk in star_iter:
 
     valid = np.where(np.char.find(chunk['varParamStr'], 'None')==0)
@@ -313,6 +323,17 @@ for chunk in star_iter:
 
     ct += len(chunk)
     magnorm = -2.5*np.log(chunk['flux_scale'])/np.log(10.0)-18.402732642
+
+    if sed_list is None:
+        sed_list = SedList(chunk['sedfilename'], magnorm,
+                           wavelenMatch=lsst_hw_bp_dict.wavelenMatch)
+
+    else:
+        sed_list.flush()
+        sed_list.loadSedsFromList(chunk['sedfilename'], magnorm)
+
+    mag_noatm = lsst_hw_bp_dict.magListForSedList(sed_list)
+
     catsim_kep_mag = []
     for name, mm in zip(chunk['sedfilename'], magnorm):
         kep_mag = np.interp(mm, mag_grid_dict[name]['magnorm'], mag_grid_dict[name]['kep'])
@@ -334,13 +355,16 @@ for chunk in star_iter:
 
 
     with open(out_name, 'a') as out_file:
-        for name, kep, umag, gmag, rmag, imag, zmag, dist, rr in \
-        zip(chunk['sedfilename'], catsim_abs_mag,
-            chunk['sdssu'], chunk['sdssg'], chunk['sdssr'],
-            chunk['sdssi'], chunk['sdssz'], catsim_dist, r_abs_mag):
+        for i_obj, (name, kep, umag, gmag, rmag, imag, zmag, dist, rr) in \
+        enumerate(zip(chunk['sedfilename'], catsim_abs_mag,
+                      chunk['sdssu'], chunk['sdssg'], chunk['sdssr'],
+                      chunk['sdssi'], chunk['sdssz'], catsim_dist, r_abs_mag)):
             tt, feh, logg = get_physical_characteristics(name)
-            out_file.write('%s %e %e %e %e %e %e %e %e %e\n' %
+            out_file.write('%s %e %e %e %e %e %e %e %e %e %e %e %e %e %e\n' %
             (name, kep,
             umag, gmag, rmag, imag, zmag,
+            mag_noatm[i_obj][0],mag_noatm[i_obj][1],
+            mag_noatm[i_obj][2],mag_noatm[i_obj][3],
+            mag_noatm[i_obj][4],
             dist,tt,rr))
 
