@@ -176,7 +176,7 @@ for lc_name in to_plot:
         valid = np.where(np.logical_and(stitch_data['t']>=t_min,
                                         stitch_data['t']<=t_max))
 
-        while len(valid[0])==0 and t_max<stitch_data['t'].max():
+        while len(valid[0])<50 and t_max<stitch_data['t'].max():
             t_min += dt
             t_max = t_min+dt
             valid = np.where(np.logical_and(stitch_data['t']>=t_min,
