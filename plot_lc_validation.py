@@ -414,7 +414,7 @@ period_to_plot = []
 color_to_plot = []
 amp_mag_to_plot = []
 for ix, model in enumerate(full_models):
-    if model['name'] in mag_dict:
+    if model['name'] in mag_dict and mag_amp_th[ix]>0.1:
         period_to_plot.append(period_max[ix])
         color_to_plot.append(mag_dict[model['name']][1]-mag_dict[model['name']][2])
         amp_mag_to_plot.append(mag_amp_th[ix])
