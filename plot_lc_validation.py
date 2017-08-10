@@ -176,7 +176,7 @@ with open(lc_file, 'r') as input_file:
         model['name'] = params[0]
         full_models.append(model)
 
-t        amp = np.sqrt(aa*aa+bb*bb)
+        amp = np.sqrt(aa*aa+bb*bb)
         """
         amp_dexes = np.argsort(amp)
         if len(amp)>5:
