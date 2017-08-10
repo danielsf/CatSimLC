@@ -414,7 +414,7 @@ period_to_plot = []
 color_to_plot = []
 amp_mag_to_plot = []
 for ix, model in enumerate(full_models):
-    if model['name'] in mag_dict and mag_amp_th[ix]>0.1:
+    if model['name'] in mag_dict and mag_amp_th[ix]>0.01:
         period_to_plot.append(period_max[ix])
         color_to_plot.append(mag_dict[model['name']][1]-mag_dict[model['name']][2])
         amp_mag_to_plot.append(mag_amp_th[ix])
@@ -426,7 +426,7 @@ amp_mag_to_plot = np.array(amp_mag_to_plot)
 print 'plotting ',len(period_to_plot),len(mag_dict)
 
 plt.subplot(2,1,1)
-plot_color_mesh(color_to_plot, np.log10(period_to_plot), 0.05, 0.05)
+plot_color_mesh(color_to_plot, np.log10(period_to_plot), 0.025, 0.025)
 plt.ylabel('log10(period in days')
 plt.xlabel('g-r')
 plt.xlim(-0.5,2)
@@ -434,11 +434,11 @@ plt.xlim(-0.5,2)
 print 'making plot of color vs period shaded by amp'
 plt.subplot(2,1,2)
 plot_color_mesh_set_color(color_to_plot, np.log10(period_to_plot), amp_mag_to_plot,
-                          0.05, 0.05, color_label='median amplitude (mag)')
+                          0.025, 0.025, color_label='median amplitude (mag)')
 plt.ylabel('log10(period in days')
 plt.xlabel('g-r')
 plt.xlim(-0.5,2)
-plt.ylim(-1.5, 0.25)
+#plt.ylim(-1.5, 0.25)
 plt.axhline(-0.6,color='r',linestyle='--')
 
 
