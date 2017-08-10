@@ -439,6 +439,7 @@ plt.ylabel('log10(period in days')
 plt.xlabel('g-r')
 plt.xlim(-0.5,2)
 plt.ylim(-1.5, 0.25)
+plt.axhline(-0.6,color='r',linestyle='--')
 
 
 plt.tight_layout()
