@@ -355,6 +355,11 @@ plt.axhline(-3, linestyle='--', color='r')
 plt.ylim(-6,-1)
 plt.xlim(-2,3)
 
+big = np.where(mag_amp_th>0.1)
+print 'n big ',len(big[0])
+big_1 = np.where(mag_amp>0.1)
+print 'big_1 ',len(big[0])
+
 plt.subplot(2,1,2)
 plt.title("amplitude is rms of sum of all components", fontsize=10)
 plot_color_mesh(np.log10(period_max), np.log10(mag_amp_th), 0.05, 0.05,
