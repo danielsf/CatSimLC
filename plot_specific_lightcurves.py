@@ -7,13 +7,12 @@ import matplotlib.pyplot as plt
 import os
 import numpy as np
 
-to_plot = ['kplr008490808_lc.txt',
+to_plot = ['kplr003836413_lc.txt',
 'kplr006387887_lc.txt',
-'kplr009578833_lc.txt',
-'kplr008314879_lc.txt',
-'kplr003836413_lc.txt',
 'kplr006442207_lc.txt',
-'kplr009658012_lc.txt']
+'kplr009658012_lc.txt',
+'kplr007123391_lc.txt',
+'kplr010317930_lc.txt']
 
 def fold_light_curve(lc_name, period):
     dtype = np.dtype([('t', float), ('f', float), ('s', float)])
@@ -48,9 +47,9 @@ def fold_light_curve(lc_name, period):
     return t_avg, f_avg, s_avg, data['t'].min(),n_periods
 
 rng = np.random.RandomState(65234)
-work_dir = os.path.join('workspace', 'validation_170705')
+work_dir = os.path.join('workspace', 'test_170811')
 fig_dir = os.path.join(work_dir, 'figs')
-stitch_dir = os.path.join(work_dir, 'stitched')
+stitch_dir = os.path.join(work_dir, 'stitch')
 
 param_file_name = os.path.join(work_dir, 'lc_params_master.txt')
 
@@ -137,8 +136,6 @@ for name, nc in zip(name_arr, nc_arr):
 
 #low_power_cases = np.where(np.log10(power_arr)<=-5.0)
 #models_to_plot = rng.choice(low_power_cases[0], size=12, replace=False)
-
-fig_dir = os.path.join('workspace', 'validation_170705', 'figs', 'mismatch')
 
 dtype = np.dtype([('t', float), ('f', float), ('s', float)])
 
