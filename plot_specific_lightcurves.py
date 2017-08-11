@@ -7,16 +7,13 @@ import matplotlib.pyplot as plt
 import os
 import numpy as np
 
-to_plot = ['kplr009112472_lc.txt',
-'kplr006580636_lc.txt',
-'kplr009850186_lc.txt',
-'kplr002997715_lc.txt',
-'kplr011356784_lc.txt',
-'kplr002570490_lc.txt',
-'kplr004055183_lc.txt',
-'kplr011825402_lc.txt',
-'kplr007750306_lc.txt',
-'kplr001431705_lc.txt']
+to_plot = ['kplr008490808_lc.txt',
+'kplr006387887_lc.txt',
+'kplr009578833_lc.txt',
+'kplr008314879_lc.txt',
+'kplr003836413_lc.txt',
+'kplr006442207_lc.txt',
+'kplr009658012_lc.txt']
 
 def fold_light_curve(lc_name, period):
     dtype = np.dtype([('t', float), ('f', float), ('s', float)])
@@ -141,7 +138,7 @@ for name, nc in zip(name_arr, nc_arr):
 #low_power_cases = np.where(np.log10(power_arr)<=-5.0)
 #models_to_plot = rng.choice(low_power_cases[0], size=12, replace=False)
 
-fig_dir = os.path.join('workspace', 'figs_170810', 'alias')
+fig_dir = os.path.join('workspace', 'validation_170705', 'figs', 'mismatch')
 
 dtype = np.dtype([('t', float), ('f', float), ('s', float)])
 
