@@ -39,11 +39,11 @@ def _fit_and_offset(PRobj,
         sigma_sq = np.power(sigma_to_offset,2)
         offset_num = (flux_to_offset*model/sigma_sq).sum()
         offset_denom = (flux_to_offset*flux_to_offset/sigma_sq).sum()
-        offset = offset_num/offset_denom
+        mult_offset = offset_num/offset_denom
 
-        chisq = np.power((offset*model-flux_to_offset)/(offset*sigma_to_offset),2).sum()
+        chisq = np.power((mult_offset*model-flux_to_offset)/(mult_offset*sigma_to_offset),2).sum()
 
-        return offset, chisq
+        return mult_offset, chisq
 
 
 def re_calibrate_lc(PRobj, time_arr, flux_arr, sigma_arr, segments, cache_fft=False,
