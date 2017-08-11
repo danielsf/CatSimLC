@@ -13,6 +13,11 @@ def _fit_and_offset(PRobj,
                     time_to_offset, flux_to_offset, sigma_to_offset,
                     cache_fft=False, dt_factor=0.1):
 
+        """
+        Return the additive offset and chisquared of that offset for
+        adding a new segment to a light curve.
+        """
+
         dt = dt_factor*np.diff(np.unique(time_to_fit)).min()
 
         (median_flux, aa, bb, cc,
