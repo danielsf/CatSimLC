@@ -382,6 +382,47 @@ plt.tight_layout()
 plt.savefig('period_amp_mag.png')
 plt.close()
 
+skew_dict = {}
+with open('skewness_map_corrected.txt', 'r') as input_file:
+    for line in input_file:
+        if line[0] == '#':
+            continue
+        params = line.strip().split()
+        skew_dict[params[0]] = float(params[1])
+
+skew_arr = []
+period_plot = []
+amp_plot = []
+for ix, model in enumerate(full_models):
+    name = model['name'].replace('.txt', '_stitched.txt')
+    if name in skew_dict:
+        skew_arr.append(skew_dict[name])
+        period_plot.append(period_max[ix])
+        amp_plot.append(mag_amp_th[ix])
+
+skew_arr = np.array(skew_arr)
+period_plot = np.array(period_plot)
+amp_plot = np.array(amp_plot)
+
+plt.figsize=(30,30)
+plot_color_mesh_set_color(np.log10(period_plot), np.log10(amp_plot),
+                          skew_arr, 0.05, 0.05, color_label='skewness')
+
+plt.xlabel('log10(period in days)')
+plt.ylabel('log10(amplitude in mags)')
+plt.axvline(np.log10(90.0), linestyle='--', color='r')
+plt.axvline(np.log10(45.0), linestyle='--', color='r')
+#plt.axvline(np.log10(22.5), linestyle='--', color='r')
+#plt.axvline(np.log10(1.0/48.0), linestyle='--',color='r')
+plt.axvline(-0.6, linestyle='--', color='r')
+plt.axhline(-2, linestyle='--', color='r')
+plt.axhline(-3, linestyle='--', color='r')
+
+plt.ylim(-6,-1)
+plt.xlim(-2,3)
+plt.savefig('period_amp_skewness.png')
+plt.close()
+
 """
 curious = np.where(np.logical_and(np.abs(np.log10(period_max)-np.log10(45.0))<0.1,
                                          np.log10(mag_amp)<-4.0))
