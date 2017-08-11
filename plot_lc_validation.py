@@ -446,6 +446,15 @@ plt.tight_layout()
 plt.savefig('color_vs_period.png')
 plt.close()
 
+at_45 = np.where(np.logical_and(np.abs(period_max-45.0)<10.0,
+                                np.abs(np.log10(mag_amp_th)+4.0)<0.2))
+
+model_at_45 = full_models[at_45]
+for ix in range(10):
+    print model_at_45[ix]['name']
+
+exit()
+
 big_amp = np.where(mag_amp>0.1)
 chisq_big_amp = chisq_dof[big_amp]
 model_big_amp = full_models[big_amp]

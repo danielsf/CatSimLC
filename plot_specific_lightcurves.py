@@ -7,12 +7,16 @@ import matplotlib.pyplot as plt
 import os
 import numpy as np
 
-to_plot = ['kplr008240861_lc.txt', 'kplr007740566_lc.txt',
-           'kplr002719436_lc.txt', 'kplr003549994_lc.txt',
-            'kplr010447902_lc.txt', 'kplr009202969_lc.txt',
-            'kplr011710139_lc.txt', 'kplr011401845_lc.txt',
-            'kplr009388303_lc.txt', 'kplr009470175_lc.txt',
-             'kplr007119876_lc.txt', 'kplr009345163_lc.txt']
+to_plot = ['kplr009112472_lc.txt',
+'kplr006580636_lc.txt',
+'kplr009850186_lc.txt',
+'kplr002997715_lc.txt',
+'kplr011356784_lc.txt',
+'kplr002570490_lc.txt',
+'kplr004055183_lc.txt',
+'kplr011825402_lc.txt',
+'kplr007750306_lc.txt',
+'kplr001431705_lc.txt']
 
 def fold_light_curve(lc_name, period):
     dtype = np.dtype([('t', float), ('f', float), ('s', float)])
@@ -137,7 +141,7 @@ for name, nc in zip(name_arr, nc_arr):
 #low_power_cases = np.where(np.log10(power_arr)<=-5.0)
 #models_to_plot = rng.choice(low_power_cases[0], size=12, replace=False)
 
-fig_dir = os.path.join('workspace', 'figs_170810')
+fig_dir = os.path.join('workspace', 'figs_170810', 'alias')
 
 dtype = np.dtype([('t', float), ('f', float), ('s', float)])
 
@@ -150,7 +154,7 @@ for lc_name in to_plot:
     plt.figsize = (30,30)
 
     t_step = 0.1*np.diff(stitch_data['t']).min()
-    print lc_name,t_step
+    print lc_name,t_step,len(model['aa'])
 
     t0 = stitch_data['t'].min()
     t_model = np.arange(t0, stitch_data['t'].max(), t_step)
@@ -163,7 +167,7 @@ for lc_name in to_plot:
 
     fig_name = lc_name.replace("lc.txt", "fig.png")
     dt = (stitch_data['t'].max()-t0)/3.0
-    dt = 5.0
+    dt = 50.0
     print lc_name,stitch_data['t'].min(),stitch_data['t'].max()
     t_min = t0
     for i_fig in range(3):
@@ -191,7 +195,8 @@ for lc_name in to_plot:
             continue
         f_window = stitch_data['f'][valid]
         f_window = np.sort(f_window)
-        plt.ylim(f_model.min(),f_model.max())
+        plt.ylim(f_window[2],f_window[-2])
+        #plt.ylim(f_model.min(),f_model.max())
     plt.tight_layout()
     plt.savefig(os.path.join(fig_dir, fig_name))
     plt.close()
