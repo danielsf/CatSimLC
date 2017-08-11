@@ -38,16 +38,33 @@ def _fit_and_offset(PRobj,
 
         sigma_sq = np.power(sigma_to_offset,2)
         ww = (1.0/sigma_sq).sum()
+        theta = model-(model/sigma_sq).sum()/ww
+        gamma = (flux_to_offset/sigma_sq).sum()/ww
 
-        mult_num = (flux_to_offset*((model/sigma_sq).sum()/ww - model)/sigma_sq).sum()
-        mult_denom = ((-1.0*flux_to_offset+(flux_to_offset/sigma_sq).sum()/ww)*flux_to_offset/sigma_sq).sum()
-        mult_offset = mult_num/mult_denom
+        c_val = (theta*theta/sigma_sq).sum()
+        b_val = ((2.0*gamma*theta-theta*flux_to_offset)/sigma_sq).sum()
+        a_val = ((gamma*gamma-flux_to_offset*gamma)/sigma_sq).sum()
 
-        add_offset = ((model-mult_offset*flux_to_offset)/sigma_sq).sum()/ww
+        determinant = b_val*b_val - 4.0*a_val*c_val
+        if determinant<0.0:
+            raise RuntimeError("determinant is %e" % determinant)
+
+        pos_mult = (-1.0*b_val - np.sqrt(determinant))/(2.0*a_val)
+        neg_mult = (-1.0*b_val + np.sqrt(determinant))/(2.0*a_val)
+
+        pos_add = ((model-pos_mult*flux_to_offset)/sigma_sq).sum()/ww
+        neg_add = ((model-neg_mult*flux_to_offset)/sigma_sq).sum()/ww
+
+        if np.abs(pos_mult)<np.abs(neg_mult):
+            mult_offset = pos_mult
+            add_offset = pos_add
+        else:
+            mult_offset = neg_mult
+            add_offset = neg_add
 
         chisq = np.power((mult_offset*model+add_offset-flux_to_offset)/(mult_offset*sigma_to_offset),2).sum()
 
-        print mult_offset,add_offset,chisq
+        print mult_offset, add_offset, chisq, pos_mult, neg_mult
         return mult_offset, add_offset, chisq
 
 
