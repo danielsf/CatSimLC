@@ -351,8 +351,9 @@ plt.axvline(np.log10(45.0), linestyle='--', color='r')
 plt.axvline(-0.6, linestyle='--', color='r')
 plt.axhline(-2, linestyle='--', color='r')
 plt.axhline(-3, linestyle='--', color='r')
+plt.axhline(-1, linestyle='--', color='r')
 
-plt.ylim(-6,-1)
+plt.ylim(-6,1)
 plt.xlim(-2,3)
 
 big = np.where(mag_amp_th>0.1)
@@ -373,8 +374,8 @@ plt.axvline(np.log10(45.0), linestyle='--', color='r')
 plt.axvline(-0.6, linestyle='--', color='r')
 plt.axhline(-2, linestyle='--', color='r')
 plt.axhline(-3, linestyle='--', color='r')
-
-plt.ylim(-6,-1)
+plt.axhline(-1, linestyle='--', color='r')
+plt.ylim(-6,1)
 plt.xlim(-2,3)
 
 plt.tight_layout()
