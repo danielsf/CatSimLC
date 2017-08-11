@@ -4,8 +4,8 @@ import os
 hrs = 15
 
 for ix in range(30):
-    if ix==0 or ix==20:
-        continue
+    #if ix==0 or ix==20:
+    #    continue
         # because I already ran these two datasets when testing Cori
 
     script_name = 'cori_batch_script_%d.sl' % ix
@@ -31,8 +31,8 @@ for ix in range(30):
         out_file.write("python clean_multiprocess.py \\\n")
         out_file.write("--list $SCRATCH/kepler_lightcurves/lc_lists/lc_list_%d.txt \\\n" % ix)
         out_file.write("--in_dir $SCRATCH/kepler_lightcurves/lc_master_3/ \\\n")
-        out_file.write("--do_stitch True --stitch_dir $SCRATCH/kepler_lightcurves/stitch_170622/ \\\n")
-        out_file.write("--out_file lc_param_dir/lc_params_batch_%d \\\n" % ix)
+        out_file.write("--do_stitch True --stitch_dir $SCRATCH/kepler_lightcurves/stitch_170811/ \\\n")
+        out_file.write("--out_file lc_param_dir_170811/lc_params_batch_%d \\\n" % ix)
         out_file.write("--log_file log_dir/cori_log_batch_%d \\\n" % ix)
         out_file.write("--dt 0.1 --write_every 100 --cache_fft True --n_p 32 --sleep 10\n")
         out_file.write("\n")
