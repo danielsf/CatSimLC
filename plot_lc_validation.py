@@ -339,9 +339,10 @@ mag_amp_th = np.array(mag_amp_th)
 
 plt.figsize = (30,30)
 plt.subplot(2,1,1)
+valid = np.where(mag_amp>0.001)
 plt.title('amplitude is sqrt(a^2+b^2) of first component', fontsize=10)
-plot_color_mesh(np.log10(period_max), np.log10(mag_amp), 0.05, 0.05,
-                vmin=0.0,vmax=1000.0)
+plot_color_mesh(np.log10(period_max[valid]), np.log10(mag_amp[valid]), 0.05, 0.05,
+                vmin=None,vmax=None)
 plt.xlabel('log10(period in days)')
 plt.ylabel('log10(amplitude in mags)')
 plt.axvline(np.log10(90.0), linestyle='--', color='r')
@@ -353,7 +354,7 @@ plt.axhline(-2, linestyle='--', color='r')
 plt.axhline(-3, linestyle='--', color='r')
 plt.axhline(-1, linestyle='--', color='r')
 
-plt.ylim(-6,1)
+plt.ylim(-3,1)
 plt.xlim(-2,3)
 
 big = np.where(mag_amp_th>0.1)
@@ -362,9 +363,10 @@ big_1 = np.where(mag_amp>0.1)
 print 'big_1 ',len(big[0])
 
 plt.subplot(2,1,2)
+valid = np.where(mag_amp_th>0.001)
 plt.title("amplitude is rms of sum of all components", fontsize=10)
-plot_color_mesh(np.log10(period_max), np.log10(mag_amp_th), 0.05, 0.05,
-                vmin=0.0,vmax=1000.0)
+plot_color_mesh(np.log10(period_max[valid]), np.log10(mag_amp_th[valid]), 0.05, 0.05,
+                vmin=None,vmax=None)
 plt.xlabel('log10(period in days)')
 plt.ylabel('log10(amplitude in mags)')
 plt.axvline(np.log10(90.0), linestyle='--', color='r')
@@ -375,7 +377,7 @@ plt.axvline(-0.6, linestyle='--', color='r')
 plt.axhline(-2, linestyle='--', color='r')
 plt.axhline(-3, linestyle='--', color='r')
 plt.axhline(-1, linestyle='--', color='r')
-plt.ylim(-6,1)
+plt.ylim(-3,1)
 plt.xlim(-2,3)
 
 plt.tight_layout()
