@@ -36,10 +36,12 @@ def _fit_and_offset(PRobj,
             model += aa[ix]*np.cos(t_arg)
             model += bb[ix]*np.sin(t_arg)
 
-        offset_num = ((flux_to_offset-model)/np.power(sigma_to_offset,2)).sum()
-        offset_denom = (1.0/np.power(sigma_to_offset,2)).sum()
+        sigma_sq = np.power(sigma_to_offset,2)
+        offset_num = (flux_to_offset*model/sigma_sq).sum()
+        offset_denom = (flux_to_offset*flux_to_offset/sigma_sq).sum()
         offset = offset_num/offset_denom
-        chisq = np.power((model-flux_to_offset-offset)/sigma_to_offset,2).sum()
+
+        chisq = np.power((offset*model-flux_to_offset)/(offset*sigma_to_offset),2).sum()
 
         return offset, chisq
 
@@ -216,12 +218,13 @@ def re_calibrate_lc(PRobj, time_arr, flux_arr, sigma_arr, segments, cache_fft=Fa
                                         dt_factor=dt_factor)
 
         med_fit = np.median(flux_to_fit)
-        med_offset = np.median(flux_to_offset-offset)
+        med_offset = np.median(flux_to_offset*offset)
         stdev_fit = np.sqrt(np.power(flux_to_fit-med_fit,2).sum()/(len(flux_to_fit)+1))
-        stdev_offset = np.sqrt(np.power(flux_to_offset-offset-med_offset,2).sum()/(len(flux_to_offset)+1))
+        stdev_offset = np.sqrt(np.power(flux_to_offset*offset-med_offset,2).sum()/(len(flux_to_offset)+1))
 
         if (np.abs(med_fit-med_offset) > min(stdev_fit, stdev_offset) and
             n_to_fit<len(time_to_fit_master)):
+
             time_to_fit = time_to_fit_master
             flux_to_fit = flux_to_fit_master
             sigma_to_fit = sigma_to_fit_master
@@ -240,8 +243,8 @@ def re_calibrate_lc(PRobj, time_arr, flux_arr, sigma_arr, segments, cache_fft=Fa
             n_first = len(time_to_offset)
             n_out = n_first + len(time_to_fit_master)
             time_buffer[:n_first] = time_to_offset
-            flux_buffer[:n_first] = flux_to_offset-offset
-            sigma_buffer[:n_first] = sigma_to_offset
+            flux_buffer[:n_first] = flux_to_offset*offset
+            sigma_buffer[:n_first] = sigma_to_offset*offset
 
             time_buffer[n_first:n_out] = time_to_fit_master
             flux_buffer[n_first:n_out] = flux_to_fit_master
@@ -256,8 +259,8 @@ def re_calibrate_lc(PRobj, time_arr, flux_arr, sigma_arr, segments, cache_fft=Fa
             sigma_buffer[:n_first] = sigma_to_fit_master
 
             time_buffer[n_first:n_out] = time_to_offset
-            flux_buffer[n_first:n_out] = flux_to_offset-offset
-            sigma_buffer[n_first:n_out] = sigma_to_offset
+            flux_buffer[n_first:n_out] = flux_to_offset*offset
+            sigma_buffer[n_first:n_out] = sigma_to_offset*offset
 
         time_out[:n_out] = time_buffer[:n_out]
         flux_out[:n_out] = flux_buffer[:n_out]
