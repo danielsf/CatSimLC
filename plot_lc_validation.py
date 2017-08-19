@@ -126,7 +126,7 @@ with open('data/kepler_stellar17.csv', 'r') as in_file:
         except:
             pass
 
-lc_file = os.path.join('workspace', 'validation_170705', 'lc_params_master.txt')
+lc_file = os.path.join('workspace', 'validation_170818', 'master_params_170811.txt')
 
 chisq_dof = []
 full_models = []
