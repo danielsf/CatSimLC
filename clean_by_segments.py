@@ -268,7 +268,7 @@ def re_calibrate_lc(PRobj, time_arr, flux_arr, sigma_arr, segments, cache_fft=Fa
 
             time_buffer[n_first:n_out] = time_to_offset
             flux_buffer[n_first:n_out] = flux_to_offset*mult_offset+add_offset
-            sigma_buffer[n_first:n_out] = sigma_to_offset*mult_offset+add_offset
+            sigma_buffer[n_first:n_out] = sigma_to_offset*mult_offset
 
         time_out[:n_out] = time_buffer[:n_out]
         flux_out[:n_out] = flux_buffer[:n_out]
