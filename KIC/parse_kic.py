@@ -2,6 +2,7 @@ from __future__ import with_statement
 import numpy as np
 import os
 import gzip
+import time
 
 kep_dtype = np.dtype([('kepid', int),
                       ('tm_designation', str, 200),
@@ -84,29 +85,30 @@ kep_stellar_data = np.genfromtxt('../data/kepler_stellar17.csv',
                                  dtype=kep_dtype,
                                  delimiter='|', skip_header=1)
 
-valid_teff = np.where(np.logical_and(np.logical_not(np.isnan(kep_stellar_data['teff'])),
-                      np.logical_and(np.logical_not(np.isnan(kep_stellar_data['logg'])),
-                                     np.logical_not(np.isnan(kep_stellar_data['kepmag'])))))
-
-kep_stellar_data = kep_stellar_data[valid_teff]
 print 'dec range ',kep_stellar_data['degree_dec'].min(),kep_stellar_data['degree_dec'].max()
 
 list_of_files = os.listdir('.')
 
 to_find = np.copy(kep_stellar_data['kepid'])
+stellar_dex_dict = {}
+for i_line, val in enumerate(kep_stellar_data['kepid']):
+    stellar_dex_dict[val] = i_line
 been_found = []
 
 id_dex = 0
 pos_dex = 1
 sdss_dex = 3
 param_dex = 14
+dust_dex = 15
 
 from lsst.sims.utils import angularSeparation
 
 distance_max = -1.0
 
+t_start = time.time()
 with open('kic_data.txt', 'w') as out_file:
-    out_file.write('# kepid sdss_g sdss_r dist Teff_kic Teff_stellar\n')
+    out_file.write('# kepid ra dec sdss_u sdss_g sdss_r sdss_i sdss_z distance(in parsecs) ')
+    out_file.write('Teff(from KIC) Teff(from stellar) Av E(B-V)\n')
     for file_name in list_of_files:
         if '.dat' in file_name:
             if file_name[0] == 'n':
@@ -119,54 +121,111 @@ with open('kic_data.txt', 'w') as out_file:
             if len(possible_sources[0]) == 0:
                 continue
             print file_name,len(possible_sources[0]),len(been_found)
+            elapsed = time.time()-t_start
+            elapsed = elapsed/3600.0
+            n_found = len(been_found)
+            print '%d in %.2e hours; should take %.2e hours' % \
+            (n_found,elapsed,len(to_find)*elapsed/max(n_found,1))
             if file_name.endswith('.gz'):
                 open_cmd = gzip.open
             else:
                 open_cmd = open
             with open_cmd(file_name, 'r') as in_file:
-                for line in in_file:
-                    if line[0] == '#':
-                        continue
-                    data_v = line.strip().split('|')
-                    data_id = int(data_v[0])
-                    if data_id in been_found:
-                        raise RuntimeError('found %d again in %s' % data_id,file_name)
-                    if data_id in to_find:
-                        been_found.append(data_id)
-                        stellar_dex = np.where(kep_stellar_data['kepid']==data_id)
-                        try:
-                            pos_row = data_v[pos_dex]
-                            sdss_row = data_v[sdss_dex]
-                            if len(data_v)>param_dex:
-                                param_row = data_v[param_dex]
-                            else:
-                                param_row = None
-                        except:
-                            print 'offending row'
-                            print line
-                            raise
-                        ra = float(pos_row[:10])
-                        dec = float(pos_row[10:])
-                        distance = angularSeparation(ra, dec,
-                                                     kep_stellar_data['degree_ra'][stellar_dex],
-                                                     kep_stellar_data['degree_dec'][stellar_dex])
-                        distance_arcsec = distance*3600.0
-                        if distance_arcsec > distance_max:
-                            distance_max = distance_arcsec
-                            print ' %d distance_max %.2e in arcsec' % (data_id, distance_max)
-                            print '%e %e %e %e' % (ra, dec,
-                                   kep_stellar_data['degree_ra'][stellar_dex],
-                                   kep_stellar_data['degree_dec'][stellar_dex])
+                in_cat_lines = in_file.readlines()
 
-                        try:
-                            sdss_g = float(sdss_row[7:14])
-                            sdss_r = float(sdss_row[14:21])
-                        except:
-                            continue
-                        if param_row is not None:
-                            teff = float(param_row[:6])
+            id_dict = {}
+            for i_line, line in enumerate(in_cat_lines):
+                if line[0] == '#':
+                    continue
+                data_v = line.split('|')
+                id_dict[int(data_v[0])] = i_line
+
+            sources_to_be_found = kep_stellar_data['kepid'][possible_sources]
+            for source_id in sources_to_be_found:
+                if source_id not in id_dict:
+                    continue
+                line_dex = id_dict[source_id]
+                line = in_cat_lines[line_dex]
+                data_v = line.strip().split('|')
+                data_id = int(data_v[0])
+                assert source_id == data_id
+                if data_id in been_found:
+                    raise RuntimeError('found %d again in %s' % data_id,file_name)
+                if data_id in to_find:
+                    been_found.append(data_id)
+                    stellar_dex = stellar_dex_dict[data_id]
+                    assert kep_stellar_data['kepid'][stellar_dex] == data_id
+                    try:
+                        pos_row = data_v[pos_dex]
+                        sdss_row = data_v[sdss_dex]
+                        if len(data_v)>param_dex:
+                            param_row = data_v[param_dex]
                         else:
-                            teff = -1.0
-                        out_file.write('%d %le %le %le %le %le\n' %
-                        (data_id, sdss_g, sdss_r, kep_stellar_data['dist'][stellar_dex],
-                         teff, kep_stellar_data['teff'][stellar_dex]))
+                            param_row = None
+
+                        if len(data_v)>dust_dex:
+                            dust_row = data_v[dust_dex]
+                        else:
+                            dust_row = None
+
+                    except:
+                        print 'offending row'
+                        print line
+                        raise
+                    ra = float(pos_row[:10])
+                    dec = float(pos_row[10:])
+                    distance = angularSeparation(ra, dec,
+                                                 kep_stellar_data['degree_ra'][stellar_dex],
+                                                 kep_stellar_data['degree_dec'][stellar_dex])
+                    distance_arcsec = distance*3600.0
+                    if distance_arcsec > distance_max:
+                        distance_max = distance_arcsec
+                        print '    %d distance_max %.2e in arcsec' % (data_id, distance_max)
+                        print '    %e %e %e %e' % (ra, dec,
+                               kep_stellar_data['degree_ra'][stellar_dex],
+                               kep_stellar_data['degree_dec'][stellar_dex])
+
+                    try:
+                        sdss_u = float(sdss_row[:7])
+                    except:
+                        sdss_u = -999.0
+                    try:
+                        sdss_g = float(sdss_row[7:14])
+                    except:
+                        sdss_g = -999.0
+                    try:
+                        sdss_r = float(sdss_row[14:21])
+                    except:
+                        sdss_r = -999.0
+                    try:
+                        sdss_i = float(sdss_row[21:28])
+                    except:
+                        sdss_i = -999.0
+                    try:
+                        sdss_z = float(sdss_row[28:35])
+                    except:
+                        sdss_z = -999.0
+
+                    teff_stellar = kep_stellar_data['teff'][stellar_dex]
+                    if np.isnan(teff_stellar):
+                        teff_stellar = -999.0
+
+                    if dust_row is not None:
+                        ebv = float(dust_row[:6])
+                        av = float(dust_row[6:])
+                    else:
+                        ebv = -999.0
+                        av = -999.0
+
+                    if param_row is not None:
+                        teff = float(param_row[:6])
+                    else:
+                        teff = -999.0
+
+                    if np.isnan(kep_stellar_data['dist'][stellar_dex]):
+                        dd = -999.0
+                    else:
+                        dd = kep_stellar_data['dist'][stellar_dex]
+                    out_file.write('%d %.6f %.6f %le %le %le %le %le %le %le %le %le %le\n' %
+                    (data_id, ra, dec, sdss_u, sdss_g, sdss_r, sdss_i, sdss_z,
+                     dd, teff, teff_stellar, av, ebv))

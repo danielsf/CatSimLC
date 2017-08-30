@@ -306,7 +306,7 @@ from scipy.spatial import KDTree
 print 'dmag ',dmag,abs_mag.max(),abs_mag.min(),kep_data['kepmag'].max(),kep_data['kepmag'].min()
 print 'n_kep ',len(kep_data)
 
-kep_params = np.array([kep_data['teff']/dtemp, kep_data['logg']/dg, abs_mag/dmag]).transpose()
+kep_params = np.array([kep_data['teff']/dtemp, abs_mag/dmag]).transpose()
 
 import sys
 
@@ -415,7 +415,7 @@ for chunk in star_iter:
     t_lookup += time.time()-t_start_lookup
 
     t_start_param = time.time()
-    pts = np.array([teff/dtemp, logg/dg, catsim_abs_mag/dmag]).transpose()
+    pts = np.array([teff/dtemp, catsim_abs_mag/dmag]).transpose()
     if args.k==1:
         param_dist, param_dex_raw = kep_param_kdtree.query(pts)
     else:
