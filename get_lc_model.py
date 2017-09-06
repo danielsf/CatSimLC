@@ -80,6 +80,7 @@ with open(lc_name, 'r') as input_file:
         full_model_dict[name]['median'] = median
         full_model_dict[name]['tau'] = local_tau
         full_model_dict[name]['omega'] = local_omega
+        full_model_dict[name]['chisq/dof'] = chisq/dof
 
 print 'valid models %d' % len(name_arr)
 
@@ -107,6 +108,8 @@ for lc_id in id_list:
         arg = full_model['omega'][i_c]*(stitch_data['t']-stitch_data['t'].min()-full_model['tau'][i_c])
         f_data += full_model['a'][i_c]*np.cos(arg)
         f_data += full_model['b'][i_c]*np.sin(arg)
+
+    print name,full_model['chisq/dof']
 
     with open(os.path.join(full_dir, 'kplr%s_lc_model.txt' % lc_id), 'w') as out_model:
         for i_t in range(len(t_model)):
