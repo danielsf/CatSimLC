@@ -23,18 +23,22 @@ valid = np.where(np.logical_and(rms_data['min_flux']>0.0,
                                 rms_data['span']>span_cutoff)))
 
 rms_data = rms_data[valid]
-rms_dict = dict([(int(nn.split('_')[0][4:]),rr) for nn, rr in zip(rms_data['name'], rms_data['rms'])])
+rms_dict = dict([(int(nn.split('_')[0][4:]),ix) for ix, nn in enumerate(rms_data['name'])])
 
-del rms_data
-
-valid = []
+valid_kep = []
+valid_rms = []
 for ix in range(len(kep_data)):
     if kep_data['id'][ix] in rms_dict:
-        valid.append(ix)
+        valid_kep.append(ix)
+        valid_rms.append(rms_dict[kep_data['id'][ix]])
 
-valid = np.array(valid)
-kep_data = kep_data[valid]
-print len(kep_data)
+valid_kep = np.array(valid_kep)
+kep_data = kep_data[valid_kep]
+
+valid_rms = np.array(valid_rms)
+rms_data = rms_data[valid_rms]
+
+print len(kep_data), len(rms_data)
 exit()
 
 # eqns 1 and 2 of
