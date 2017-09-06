@@ -1,5 +1,7 @@
 import numpy as np
+import os
 from scipy.spatial import KDTree
+import gc
 
 chisq_cutoff = 700.0
 span_cutoff = 300.0
@@ -39,7 +41,6 @@ valid_rms = np.array(valid_rms)
 rms_data = rms_data[valid_rms]
 
 print len(kep_data), len(rms_data)
-exit()
 
 # eqns 1 and 2 of
 # Pisonneault et al 2012
@@ -84,13 +85,72 @@ plt.figsize = (30,30)
 
 i_fig = 0
 
-for mag1 in ('g', 'r', 'i'):
-    for mag2 in ('r', 'i', 'z'):
+header_list = []
+label_list = []
+
+import sys
+sys.setrecursionlimit(100000)
+
+for mag1, mag2 in zip(('g', 'r', 'i'), ('r', 'i', 'z')):
+    with open(os.path.join('data', 'stars_to_match_%s_%s_association.txt' % (mag1,mag2)), 'w') as out_file:
+        out_file.write('# catsim_id r_abs %s %s lc_name\n' % (mag1, mag2))
         kep_color = new_mags[mag1]-new_mags[mag2]
+
         kep_params = np.array([kep_abs_r, kep_color]).transpose()
-        kd_tree = KDTree(kep_params, leafsize=20)
+        kd_tree = KDTree(kep_params, leafsize=1)
         star_color = star_data[mag1]-star_data[mag2]
         star_params = np.array([star_abs_r, star_color]).transpose()
+        print 'doing search'
         match_dist, match_dex = kd_tree.query(star_params, k=1)
+
+        for i_star in range(len(star_params)):
+            out_file.write('%d %e %e %e %s\n' % (star_data['id'][i_star],star_abs_r[i_star],
+                                                 star_data[mag1][i_star], star_data[mag2][i_star],
+                                                 rms_data['name'][match_dex[i_star]]))
+
         i_fig += 1
-        print mag1,mag2,len(np.unique(match_dex))
+        unq, unq_cts = np.unique(match_dex, return_counts=True)
+        n_unq = len(unq)
+        sorted_cts = np.sort(unq_cts)
+        sum_cts = 0
+        first_quartile = None
+        third_quartile = None
+        second_quartile = None
+        for val in sorted_cts:
+            sum_cts += val
+            if sum_cts > 3*len(star_data)/4 and third_quartile is None:
+                third_quartile = val
+            if sum_cts > len(star_data)/2 and second_quartile is None:
+                second_quartile = val
+            if sum_cts > len(star_data)/4 and first_quartile is None:
+                first_quartile = val
+        print mag1,mag2,' -- ',n_unq,first_quartile,second_quartile,third_quartile
+        actual_rms = rms_data['rms'][match_dex]
+
+        sorted_rms = np.sort(actual_rms)
+        cumulative_distribution = np.array([float(len(sorted_rms)-ix)/len(sorted_rms)
+                                            for ix in range(len(sorted_rms))])
+
+        hh, = plt.plot(sorted_rms*1000.0, cumulative_distribution)
+
+        header_list.append(hh)
+        label_list.append('%s-%s; %d %d %d %d' %
+                         (mag1, mag2, n_unq, first_quartile, second_quartile, third_quartile))
+
+
+
+plt.xscale('log')
+plt.yscale('log')
+plt.axvline(1.0,color='r',linestyle='--')
+plt.axvline(10.0,color='r',linestyle='--')
+plt.axvline(100.0,color='r',linestyle='--')
+plt.axhline(0.1,color='r',linestyle='--')
+plt.axhline(0.01,color='r',linestyle='--')
+plt.ylim(0.001,1.0)
+plt.xlim(0.1,100)
+plt.xlabel('rms variability (mmag)')
+plt.ylabel('cumulative distribution')
+plt.legend(header_list, label_list, loc=0)
+plt.title('%d stars' % len(star_data))
+plt.savefig('variability_distribution.png')
+plt.close()
