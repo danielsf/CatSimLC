@@ -3,6 +3,123 @@ import os
 from scipy.spatial import KDTree
 import gc
 
+def get_kurucz_phys(sed_name):
+    """
+    Read in the name of a kurucz SED file.  Return it's
+    T_eff, metallicity, log(surface gravity)
+    """
+    if sed_name[1] == 'p':
+        metallicity_sgn = 1.0
+    elif sed_name[1] == 'm':
+        metallicity_sgn = -1.0
+    else:
+        raise RuntimeError('Cannot parse metallicity sign of %s' % sed_name)
+
+    new_name = sed_name.replace('.','_').split('_')
+
+    metallicity = 0.1*metallicity_sgn*float(new_name[0][2:])
+
+    teff = float(new_name[-1])
+
+    logg = 0.1*np.float(new_name[3][1:])
+
+    return teff, metallicity, logg
+
+
+def get_wd_phys(sed_name):
+    """
+    Read in the name of a white dwarf SED,
+    return its T_eff, metallicity (which we don't actually have),
+    and log(surface gravity)
+    """
+    new_name = sed_name.replace('.','_').split('_')
+    teff = float(new_name[-2])
+    if new_name[1]!='He':
+        logg = 0.1*float(new_name[2])
+    else:
+        logg = 0.1*float(new_name[3])
+
+    return teff, -999.0, logg
+
+
+def get_mlt_phys(sed_name):
+    """
+    Read in the name of an M/L/T dwarf SED and return
+    its T_eff, metallicity, and log(surface gravity)
+    """
+
+    new_name = sed_name.replace('+','-').replace('a','-').split('-')
+
+    logg_sgn_dex = len(new_name[0])
+
+    if sed_name[logg_sgn_dex] == '-':
+        logg_sgn = 1.0
+    elif sed_name[logg_sgn_dex] == '+':
+        logg_sgn = -1.0
+    else:
+        raise RuntimeError('Cannot get logg_sgn for %s' % sed_name)
+
+    metallicity_sgn_dex = len(new_name[0]) + len(new_name[1]) + 1
+
+    if sed_name[metallicity_sgn_dex] == '-':
+        metallicity_sgn = -1.0
+    elif sed_name[metallicity_sgn_dex] == '+':
+        metallicity_sgn = 1.0
+    else:
+        raise RuntimeError('Cannot get metallicity_sgn for %s' % sed_name)
+
+    teff = 100.0*float(new_name[0][3:])
+    metallicity = metallicity_sgn*float(new_name[2])
+    logg = logg_sgn*float(new_name[1])
+
+    return teff, metallicity, logg
+
+
+def get_physical_characteristics(sed_name):
+    """
+    Read in the name of an SED file.
+    Return (in this order) Teff, metallicity (FeH), log(g)
+    """
+    sed_name = sed_name.strip()
+
+    if not hasattr(get_physical_characteristics, 'teff_dict'):
+        get_physical_characteristics.teff_dict = {}
+        get_physical_characteristics.logg_dict = {}
+        get_physical_characteristics.metal_dict = {}
+
+    if sed_name in get_physical_characteristics.teff_dict:
+        return (get_physical_characteristics.teff_dict[sed_name],
+                get_physical_characteristics.metal_dict[sed_name],
+                get_physical_characteristics.logg_dict[sed_name])
+
+    if sed_name.startswith('bergeron'):
+        sub_dir = 'wDs'
+    elif sed_name.startswith('lte'):
+        sub_dir = 'mlt'
+    elif sed_name[0] == 'k':
+        sub_dir = 'kurucz'
+    else:
+        raise RuntimeError("Do not understand name %s" % sed_name)
+
+
+
+    if 'kurucz' in sub_dir:
+        tt,mm,gg =  get_kurucz_phys(sed_name)
+    elif sub_dir == 'wDs':
+        tt,mm,gg = get_wd_phys(sed_name)
+    elif sub_dir == 'mlt':
+        tt,mm,gg = get_mlt_phys(sed_name)
+    else:
+        raise RuntimeError('Do not know how to get '
+                           'physical characteristics for '
+                           'sub_dir %s' % sub_dir)
+
+    get_physical_characteristics.teff_dict[sed_name] = tt
+    get_physical_characteristics.metal_dict[sed_name] = mm
+    get_physical_characteristics.logg_dict[sed_name] = gg
+
+    return tt, mm, gg
+
 chisq_cutoff = 700.0
 span_cutoff = 300.0
 
@@ -70,11 +187,12 @@ import matplotlib
 matplotlib.use('Agg')
 import matplotlib.pyplot as plt
 
-star_dtype = np.dtype([('id', long), ('u', float), ('g', float),
+star_dtype = np.dtype([('id', long), ('name', str, 100),
+                       ('u', float), ('g', float),
                        ('r', float), ('i', float), ('z', float),
                        ('parallax', float)])
 
-star_data = np.genfromtxt(os.path.join('data','stars_to_match.txt'), dtype=star_dtype)
+star_data = np.genfromtxt(os.path.join('data','stars_to_match_with_sed.txt'), dtype=star_dtype)
 
 from lsst.sims.utils import radiansFromArcsec
 _au_to_parsec = 1.0/206265.0
@@ -91,9 +209,9 @@ label_list = []
 import sys
 sys.setrecursionlimit(100000)
 
-for mag1, mag2 in zip(('g', 'r', 'i'), ('r', 'i', 'z')):
+for mag1, mag2 in zip(['g'], ['r']):
     with open(os.path.join('data', 'stars_to_match_%s_%s_association.txt' % (mag1,mag2)), 'w') as out_file:
-        out_file.write('# catsim_id r_abs %s %s lc_name dex rms\n' % (mag1, mag2))
+        out_file.write('# catsim_id r_abs %s %s lc_name dex rms sed_name temp logg\n' % (mag1, mag2))
         kep_color = new_mags[mag1]-new_mags[mag2]
 
         kep_params = np.array([kep_abs_r, kep_color]).transpose()
@@ -104,11 +222,13 @@ for mag1, mag2 in zip(('g', 'r', 'i'), ('r', 'i', 'z')):
         match_dist, match_dex = kd_tree.query(star_params, k=1)
 
         for i_star in range(len(star_params)):
-            out_file.write('%d %e %e %e %s %d %e\n' % (star_data['id'][i_star],star_abs_r[i_star],
-                                                       star_data[mag1][i_star], star_data[mag2][i_star],
-                                                       rms_data['name'][match_dex[i_star]],
-                                                       match_dex[i_star],
-                                                       rms_data['rms'][match_dex[i_star]]))
+            temp, metallicity, logg = get_physical_characteristics(star_data['name'][i_star])
+            out_file.write('%d %e %e %e %s %d %e %s %e %e\n' % (star_data['id'][i_star],star_abs_r[i_star],
+                                                             star_data[mag1][i_star], star_data[mag2][i_star],
+                                                             rms_data['name'][match_dex[i_star]],
+                                                             match_dex[i_star],
+                                                             rms_data['rms'][match_dex[i_star]],
+                                                             star_data['name'][i_star], temp,logg))
 
         i_fig += 1
         unq, unq_cts = np.unique(match_dex, return_counts=True)
@@ -148,6 +268,8 @@ plt.axvline(10.0,color='r',linestyle='--')
 plt.axvline(100.0,color='r',linestyle='--')
 plt.axhline(0.1,color='r',linestyle='--')
 plt.axhline(0.01,color='r',linestyle='--')
+plt.axhline(0.001,color='r',linestyle='--')
+plt.axhline(0.0001,color='r',linestyle='--')
 plt.ylim(1.0e-6,1.0)
 plt.xlim(0.1,1000)
 plt.xlabel('rms variability (mmag)')
