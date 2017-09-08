@@ -93,7 +93,7 @@ sys.setrecursionlimit(100000)
 
 for mag1, mag2 in zip(('g', 'r', 'i'), ('r', 'i', 'z')):
     with open(os.path.join('data', 'stars_to_match_%s_%s_association.txt' % (mag1,mag2)), 'w') as out_file:
-        out_file.write('# catsim_id r_abs %s %s lc_name\n' % (mag1, mag2))
+        out_file.write('# catsim_id r_abs %s %s lc_name dex rms\n' % (mag1, mag2))
         kep_color = new_mags[mag1]-new_mags[mag2]
 
         kep_params = np.array([kep_abs_r, kep_color]).transpose()
@@ -104,9 +104,11 @@ for mag1, mag2 in zip(('g', 'r', 'i'), ('r', 'i', 'z')):
         match_dist, match_dex = kd_tree.query(star_params, k=1)
 
         for i_star in range(len(star_params)):
-            out_file.write('%d %e %e %e %s\n' % (star_data['id'][i_star],star_abs_r[i_star],
-                                                 star_data[mag1][i_star], star_data[mag2][i_star],
-                                                 rms_data['name'][match_dex[i_star]]))
+            out_file.write('%d %e %e %e %s %d %e\n' % (star_data['id'][i_star],star_abs_r[i_star],
+                                                       star_data[mag1][i_star], star_data[mag2][i_star],
+                                                       rms_data['name'][match_dex[i_star]],
+                                                       match_dex[i_star],
+                                                       rms_data['rms'][match_dex[i_star]]))
 
         i_fig += 1
         unq, unq_cts = np.unique(match_dex, return_counts=True)
@@ -146,8 +148,8 @@ plt.axvline(10.0,color='r',linestyle='--')
 plt.axvline(100.0,color='r',linestyle='--')
 plt.axhline(0.1,color='r',linestyle='--')
 plt.axhline(0.01,color='r',linestyle='--')
-plt.ylim(0.001,1.0)
-plt.xlim(0.1,100)
+plt.ylim(1.0e-6,1.0)
+plt.xlim(0.1,1000)
 plt.xlabel('rms variability (mmag)')
 plt.ylabel('cumulative distribution')
 plt.legend(header_list, label_list, loc=0)
