@@ -124,6 +124,10 @@ if __name__ == "__main__":
     sys.setrecursionlimit(100000)
     rng = np.random.RandomState(args.seed)
 
+    if args.log_file is not None:
+        with open(args.log_file, 'a') as out_file:
+            out_file.write('seed %d\n' % args.seed)
+
     from lsst.sims.catalogs.db import DBObject
 
     db = DBObject(database='LSSTCATSIM', host='fatboy.phys.washington.edu',
