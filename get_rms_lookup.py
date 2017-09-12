@@ -102,7 +102,7 @@ with open(args.out, 'w') as out_file:
         quiescent_flux = full_model['median']
         for cc in full_model['c']:
             quiescent_flux += cc
-    
+
         f_model *= 0.0
         f_model += quiescent_flux
         for aa, bb, omega, tau in \
@@ -117,15 +117,15 @@ with open(args.out, 'w') as out_file:
             continue
 
         quiescent_mag = -2.5*np.log10(quiescent_flux)
-        
+
         if f_model.min()<0.0:
             invalid = np.where(f_model<0.0)
             f_model[invalid] = 1.0e-20
         else:
             ct += 1
-        
+
         m_model = -2.5*np.log10(f_model)
-        
+
         rms_var = np.sqrt(np.power(m_model-quiescent_mag,2).sum()/(len(m_model)-1.0))
 
         out_file.write('%s %e %e %e %e\n' % (name, rms_var, chisq_arr[i_model],
