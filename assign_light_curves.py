@@ -250,5 +250,3 @@ if __name__ == "__main__":
         project_billion = project_billion/3600.0
         print('did %d in %e hours; could do a billion in %e hours' %
               (total, elapsed, project_billion))
-
-    print('max_len of paramStr %d' % max_len_paramStr)
