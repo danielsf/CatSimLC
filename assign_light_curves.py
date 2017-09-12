@@ -184,9 +184,7 @@ if __name__ == "__main__":
     del rms_dict
     gc.collect()
 
-    fitter_list = []
-    for i_process in range(args.n_proc):
-        fitter_list.append(LightCurveFitter(new_mags, rms_data))
+    fitter = LightCurveFitter(new_mags, rms_data)
 
     if sys.version_info.major == 2:
         id_type = long
@@ -232,7 +230,7 @@ if __name__ == "__main__":
                     catsim_data = chunk[i_start:i_end]
                     t_offset = t_offset_chunk[i_start:i_end]
 
-            p = mproc.Process(target=fitter_list[i_process].fit_lc,
+            p = mproc.Process(target=fitter.fit_lc,
                               kwargs={'catsim_data': catsim_data,
                                       'lock': lock,
                                       't_off': t_offset,
