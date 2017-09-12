@@ -95,6 +95,10 @@ if __name__ == "__main__":
                         default=1,
                         help='Number of processes to spawn')
 
+    parser.add_argument('--chunk_size', type=int,
+                        default=1000000,
+                        help='Number of CatSim rows to process at once')
+
     args = parser.parse_args()
     if args.seed is None:
         raise RuntimeError('must specify a seed')
@@ -200,7 +204,7 @@ if __name__ == "__main__":
     query = 'SELECT simobjid, htmid, sdssg, sdssr, parallax '
     query += 'FROM %s ' % args.catsim_table
 
-    chunk_iterator = db.get_arbitrary_chunk_iterator(query, chunk_size=1000000,
+    chunk_iterator = db.get_arbitrary_chunk_iterator(query, chunk_size=args.chunk_size,
                                                      dtype=catsim_dtype)
 
     with open(args.output, 'w') as out_file:
