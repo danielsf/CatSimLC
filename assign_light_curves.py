@@ -6,7 +6,6 @@ import sys
 import multiprocessing as mproc
 
 import argparse
-import time
 
 class LightCurveFitter(object):
 
@@ -32,7 +31,6 @@ class LightCurveFitter(object):
 
     def fit_lc(self, catsim_data=None, out_name=None, lock=None, t_off=None):
 
-        t_start = time.time()
         catsim_color = catsim_data['g'] - catsim_data['r']
         # CatSim parallaxes are in milliarcseconds
         catsim_distance = _au_to_parsec/radiansFromArcsec(catsim_data['parallax']*0.001)
@@ -43,10 +41,8 @@ class LightCurveFitter(object):
         match_dist, out_dexes = self.kep_kd_tree.query(catsim_params, k=1)
 
         ids_in_use = self.kep_data['id'][out_dexes]
-        t_work = (time.time()-t_start)/3600.0
 
         lock.acquire()
-        t_start_print=time.time()
         with open(out_name, 'a') as out_file:
             for i_star in range(len(ids_in_use)):
                 paramStr = '{"m":"kplr", "p":{"lc":%d, "t0":%.3f}}' % (ids_in_use[i_star],
@@ -57,9 +53,7 @@ class LightCurveFitter(object):
                                 catsim_data['htmid'][i_star],
                                 paramStr))
 
-        print("actual work took %e; printing %e" % (t_work, (time.time()-t_start_print)/3600.0))
         lock.release()
-
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
@@ -215,12 +209,12 @@ if __name__ == "__main__":
         out_file.write('# simobjid htmid varParamStr\n')
 
     print("starting search")
+    import time
     total = 0
     t_start = time.time()
 
     for chunk in chunk_iterator:
 
-        t_before = time.time()
         process_list = []
         lock = mproc.Lock()
         t_offset_chunk = rng.random_sample(len(chunk))*3652.5
@@ -246,12 +240,9 @@ if __name__ == "__main__":
             p.start()
             process_list.append(p)
 
-        print("firing off took %e" % ((time.time()-t_before)/3600.0))
-
         for p in process_list:
             p.join()
 
-        print("parallelized took %e" % ((time.time()-t_before)/3600.0))
         total += len(chunk)
         elapsed = time.time()-t_start
         project_billion = 1.0e9*elapsed/total
