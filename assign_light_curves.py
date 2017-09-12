@@ -2,8 +2,58 @@ import numpy as np
 import os
 from scipy.spatial import KDTree
 import gc
+import sys
+import multiprocessing as mproc
 
 import argparse
+
+class LightCurveFitter(object):
+
+    def __init__(self, kep_data, rms_data):
+        """
+        kep_data = a numpy recarray with the valid data from the Kepler catalog
+        rms_data = a numpy recarray with data from the light curve catalog
+        """
+
+        if len(kep_data) != len(rms_data):
+            raise RuntimeError("len of kep_data does not match len of rms_data")
+
+        # absolute r-band magnitude
+        kep_abs_r = new_mags['r'] - 5.0*np.log10(new_mags['dist']/10.0)
+
+        # build the KD tree we will use to associate CatSim
+        # stars to Kepler light curves
+        kep_color = kep_data['g'] - kep_data['r']
+        kep_params = np.array([kep_abs_r, kep_color]).transpose()
+        print('creating KDTree')
+        self.kep_kd_tree = KDTree(kep_params, leafsize=1)
+        self.kep_data = kep_data
+
+    def fit_lc(self, catsim_data=None, out_name=None, lock=None, t_off=None):
+
+        catsim_color = catsim_data['g'] - catsim_data['r']
+        # CatSim parallaxes are in milliarcseconds
+        catsim_distance = _au_to_parsec/radiansFromArcsec(catsim_data['parallax']*0.001)
+        catsim_abs_r = catsim_data['r'] - 5.0*np.log10(catsim_distance/10.0)
+
+        catsim_params = np.array([catsim_abs_r, catsim_color]).transpose()
+
+        match_dist, out_dexes = self.kep_kd_tree.query(catsim_params, k=1)
+
+        ids_in_use = self.kep_data['id'][out_dexes]
+
+        lock.acquire()
+        with open(out_name, 'a') as out_file:
+            for i_star in range(len(ids_in_use)):
+                paramStr = '{"m":"kplr", "p":{"lc":%d, "t0":%.3f}}' % (ids_in_use[i_star],
+                                                                       t_off[i_star])
+
+                out_file.write('%d;%d;%s\n' %
+                               (catsim_data['id'][i_star],
+                                catsim_data['htmid'][i_star],
+                                paramStr))
+
+        lock.release()
 
 parser = argparse.ArgumentParser()
 
@@ -40,6 +90,10 @@ parser.add_argument('--catsim_table', type=str,
                     default=None,
                     help='The CatSim table to fit')
 
+parser.add_argument('--n_proc', type=int,
+                    default=1,
+                    help='Number of processes to spawn')
+
 args = parser.parse_args()
 if args.seed is None:
     raise RuntimeError('must specify a seed')
@@ -55,6 +109,7 @@ if args.catsim_table is None:
     raise RuntimeError('must specify a CatSim table to fit '
                        'to the Kepler light curves')
 
+sys.setrecursionlimit(100000)
 rng = np.random.RandomState(args.seed)
 
 from lsst.sims.catalogs.db import DBObject
@@ -125,19 +180,12 @@ new_mags['z'] = np.where(np.logical_and(kep_data['i']>0.0, kep_data['z']>0.0),
                  -999.0)
 
 del kep_data
+del rms_dict
 gc.collect()
 
-# absolute r-band magnitude
-kep_abs_r = new_mags['r'] - 5.0*np.log10(new_mags['dist']/10.0)
-
-# build the KD tree we will use to associate CatSim
-# stars to Kepler light curves
-kep_color = new_mags['g'] - new_mags['r']
-kep_params = np.array([kep_abs_r, kep_color]).transpose()
-import sys
-sys.setrecursionlimit(100000)
-kep_kd_tree = KDTree(kep_params, leafsize=1)
-
+fitter_list = []
+for i_process in range(args.n_proc):
+    fitter_list.append(LightCurveFitter(new_mags, rms_data))
 
 if sys.version_info.major == 2:
     id_type = long
@@ -163,32 +211,36 @@ print("starting search")
 import time
 total = 0
 t_start = time.time()
-max_len_paramStr = 0
 
 for chunk in chunk_iterator:
-    # randomly select phase offset for assigned
-    # light curves from a 10-year time span
-    t_off = rng.random_sample(len(chunk))*3652.5
 
-    catsim_color = chunk['g'] - chunk['r']
-    # CatSim parallaxes are in milliarcseconds
-    catsim_distance = _au_to_parsec/radiansFromArcsec(chunk['parallax']*0.001)
-    catsim_abs_r = chunk['r'] - 5.0*np.log10(catsim_distance/10.0)
+    process_list = []
+    lock = mproc.Lock()
+    t_offset_chunk = rng.random_sample(len(chunk))*3652.5
+    for i_process in range(args.n_proc):
+        if args.n_proc==1:
+            catsim_data = chunk
+        else:
+            if i_process==args.n_proc-1:
+                i_start = (args.n_proc-1)*len(chunk)//args.n_proc
+                catsim_data = chunk[i_start:]
+                t_offset = t_offset_chunk[i_start:]
+            else:
+                i_start = i_process*len(chunk)//args.n_proc
+                i_end = (i_process+1)*len(chunk)//args.n_proc
+                catsim_data = chunk[i_start:i_end]
+                t_offset = t_offset_chunk[i_start:i_end]
 
-    catsim_params = np.array([catsim_abs_r, catsim_color]).transpose()
+        p = mproc.Process(target=fitter_list[i_process].fit_lc,
+                          kwargs={'catsim_data': catsim_data,
+                                  'lock': lock,
+                                  't_off': t_offset,
+                                  'out_name': args.output})
+        p.start()
+        process_list.append(p)
 
-    match_dist, match_dex = kep_kd_tree.query(catsim_params, k=1)
-    ids_in_use = new_mags['id'][match_dex]
-
-    with open(args.output, 'a') as out_file:
-        for i_star in range(len(chunk)):
-            paramStr = '{"m":"kplr", "p":{"lc":%d, "t0":%.3f}}' % (ids_in_use[match_dex[i_star]],
-                                                                   t_off[i_star])
-
-            if len(paramStr) > max_len_paramStr:
-                max_len_paramStr = len(paramStr)
-            out_file.write('%d %d %s\n' %
-                           (chunk['id'][i_star], chunk['htmid'][i_star], paramStr))
+    for p in process_list:
+        p.join()
 
     total += len(chunk)
     elapsed = time.time()-t_start
