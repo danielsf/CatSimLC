@@ -139,7 +139,12 @@ sys.setrecursionlimit(100000)
 kep_kd_tree = KDTree(kep_params, leafsize=1)
 
 
-catsim_dtype = np.dtype([('id', int), ('htmid', int), ('g', float),
+if sys.version_info.major == 2:
+    id_type = long
+else:
+    id_type = int
+
+catsim_dtype = np.dtype([('id', id_type), ('htmid', id_type), ('g', float),
                          ('r', float), ('parallax', float)])
 
 from lsst.sims.utils import radiansFromArcsec
