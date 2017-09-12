@@ -99,6 +99,10 @@ if __name__ == "__main__":
                         default=1000000,
                         help='Number of CatSim rows to process at once')
 
+    parser.add_argument('--log_file', type=str,
+                        default=None,
+                        help='Name of file where to write stdout')
+
     args = parser.parse_args()
     if args.seed is None:
         raise RuntimeError('must specify a seed')
@@ -113,6 +117,10 @@ if __name__ == "__main__":
     if args.catsim_table is None:
         raise RuntimeError('must specify a CatSim table to fit '
                            'to the Kepler light curves')
+
+    if args.log_file is not None:
+        if os.path.exists(args.log_file):
+            raise RuntimeError("log_file %s exists" % args.log_file)
 
     sys.setrecursionlimit(100000)
     rng = np.random.RandomState(args.seed)
@@ -245,10 +253,12 @@ if __name__ == "__main__":
         for p in process_list:
             p.join()
 
-        total += len(chunk)
-        elapsed = time.time()-t_start
-        project_billion = 1.0e9*elapsed/total
-        elapsed = elapsed/3600.0
-        project_billion = project_billion/3600.0
-        print('did %d in %e hours; could do a billion in %e hours' %
-              (total, elapsed, project_billion))
+        if args.log_file is not None:
+            total += len(chunk)
+            elapsed = time.time()-t_start
+            project_billion = 1.0e9*elapsed/total
+            elapsed = elapsed/3600.0
+            project_billion = project_billion/3600.0
+            with open(args.log_file, 'a') as log_output:
+                log_output.write('did %d in %e hours; could do a billion in %e hours' %
+                                 (total, elapsed, project_billion))
