@@ -25,7 +25,6 @@ class LightCurveFitter(object):
         # stars to Kepler light curves
         kep_color = kep_data['g'] - kep_data['r']
         kep_params = np.array([kep_abs_r, kep_color]).transpose()
-        print('creating KDTree')
         self.kep_kd_tree = KDTree(kep_params, leafsize=1)
         self.kep_data = kep_data
 
@@ -218,7 +217,6 @@ if __name__ == "__main__":
     with open(args.output, 'w') as out_file:
         out_file.write('# simobjid htmid varParamStr\n')
 
-    print("starting search")
     import time
     total = 0
     t_start = time.time()
