@@ -262,5 +262,5 @@ if __name__ == "__main__":
             elapsed = elapsed/3600.0
             project_billion = project_billion/3600.0
             with open(args.log_file, 'a') as log_output:
-                log_output.write('did %d in %e hours; could do a billion in %e hours' %
+                log_output.write('did %d in %e hours; could do a billion in %e hours\n' %
                                  (total, elapsed, project_billion))
