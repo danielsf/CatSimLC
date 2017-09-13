@@ -102,6 +102,12 @@ if __name__ == "__main__":
                         default=None,
                         help='Name of file where to write stdout')
 
+    parser.add_argument('--test_null', type=str,
+                        default=None,
+                        help='If True, will only query CatSim for objects with '
+                        'NULL varParamStr (should only be necessary in cases '
+                        'where a run has failed prematurely)')
+
     args = parser.parse_args()
     if args.seed is None:
         raise RuntimeError('must specify a seed')
@@ -120,6 +126,11 @@ if __name__ == "__main__":
     if args.log_file is not None:
         if os.path.exists(args.log_file):
             raise RuntimeError("log_file %s exists" % args.log_file)
+
+    _test_for_null = False
+    if args.test_null is not None:
+        if args.test_null.lower()[0] == 't':
+            _test_for_null = True
 
     sys.setrecursionlimit(100000)
     rng = np.random.RandomState(args.seed)
@@ -214,6 +225,9 @@ if __name__ == "__main__":
 
     query = 'SELECT simobjid, htmid, sdssg, sdssr, parallax '
     query += 'FROM %s ' % args.catsim_table
+
+    if _test_for_null:
+        query += 'WHERE varParamStr IS NULL'
 
     chunk_iterator = db.get_arbitrary_chunk_iterator(query, chunk_size=args.chunk_size,
                                                      dtype=catsim_dtype)
