@@ -1,34 +1,42 @@
 from __future__ import with_statement
+from __future__ import print_function
 import os
 import numpy as np
 
 import subprocess
 
+import matplotlib
+matplotlib.use('Agg')
+import matplotlib.pyplot
+
 import argparse
 
 parser = argparse.ArgumentParser()
-parser.add_argument('--id', type=str, nargs='+', default = None)
+
+parser.add_argument('--cutoff', type=float, default=700.0,
+                    help='chisq/doff cutoff')
+
+parser.add_argument('--workdir', type=str,
+                    default=os.path.join('workspace/validation_170824'),
+                    help='root dir for workspace')
+
+parser.add_argument('--params', type=str,
+                    default='master_lc_params_170824.txt',
+                    help='file containing parameters')
+
+
 args = parser.parse_args()
 
-if not isinstance(args.id, list):
-    id_list = [args.id]
-else:
-    id_list = args.id
+stitch_dir = os.path.join(args.workdir, 'stitched')
+model_dir = os.path.join(args.workdir, 'full_models')
 
-work_dir = os.path.join('workspace', 'validation_170824')
-stitch_dir = os.path.join(work_dir, 'stitched')
-full_dir = os.path.join(work_dir, 'full_models')
-
-lc_name = os.path.join(work_dir, 'master_lc_params_170824.txt')
-
-name_arr = []
-period_arr = []
-power_arr = []
-chisq_arr = []
+param_name = os.path.join(args.workdir, args.params)
 
 full_model_dict = {}
+name_arr = []
+chisq_arr = []
 
-with open(lc_name, 'r') as input_file:
+with open(param_name, 'r') as input_file:
     for line in input_file:
         if line[0] == '#':
             continue
@@ -42,8 +50,6 @@ with open(lc_name, 'r') as input_file:
             continue
         dof = int(params[1])
         chisq = float(params[3+n_c])
-        if name == 'kplr009472174_lc.txt':
-            print 'target chisq dof ',chisq/dof
 
         local_aa = []
         local_bb = []
@@ -69,8 +75,6 @@ with open(lc_name, 'r') as input_file:
         name_arr.append(name)
         flux_power = np.sqrt(local_power[max_dex])
         mag_power = 2.5*np.log10(1.0 + flux_power/median)
-        power_arr.append(mag_power)
-        period_arr.append(2.0*np.pi/local_omega[max_dex])
         chisq_arr.append(chisq/dof)
 
         full_model_dict[name] = {}
@@ -80,21 +84,32 @@ with open(lc_name, 'r') as input_file:
         full_model_dict[name]['median'] = median
         full_model_dict[name]['tau'] = local_tau
         full_model_dict[name]['omega'] = local_omega
-        full_model_dict[name]['chisq/dof'] = chisq/dof
 
-print 'valid models %d' % len(name_arr)
+name_arr = np.array(name_arr)
+chisq_arr = np.array(chisq_arr)
+
+valid = np.where(chisq_arr<args.cutoff)
+name_arr = name_arr[valid]
+chisq_arr = chisq_arr[valid]
+
+print('number of valid models %d' % len(chisq_arr))
+
+sorted_dex = np.argsort(chisq_arr)
 
 stitch_dtype = np.dtype([('t', float), ('f', float), ('s', float)])
 
-for lc_id in id_list:
-    stitch_name = os.path.join(stitch_dir, 'kplr%s_lc_stitched.txt' % lc_id)
+for dex in sorted_dex[-10:]:
+    name = name_arr[dex]
+    print('%s %e' % (name, chisq_arr[dex]))
+    lc_id = name.split('_')[0][4:]
+    stitch_name = os.path.join(stitch_dir, name.replace('.txt', '_stitched.txt'))
     if not os.path.exists(stitch_name):
-        subprocess.call(["bash", "get_lc.sh", "%s" % lc_id])
+        subprocess.call(["bash", "get_lc.sh", lc_id])
 
     stitch_data = np.genfromtxt(stitch_name, dtype=stitch_dtype)
-    name = 'kplr%s_lc.txt' % lc_id
+
     full_model = full_model_dict[name]
-    d_t = np.diff(stitch_data['t']).min()*0.1
+    d_t = np.diff(stitch_data['t']).min()*0.25
     t_model = np.arange(stitch_data['t'].min(),stitch_data['t'].max(),d_t)
     f_model =np.ones(len(t_model))*full_model['median']
     f_data = np.ones(len(stitch_data['t']))*full_model['median']
@@ -109,8 +124,7 @@ for lc_id in id_list:
         f_data += full_model['a'][i_c]*np.cos(arg)
         f_data += full_model['b'][i_c]*np.sin(arg)
 
-    print name,full_model['chisq/dof']
-
-    with open(os.path.join(full_dir, 'kplr%s_lc_model.txt' % lc_id), 'w') as out_model:
+    with open(os.path.join(model_dir, 'kplr%s_lc_model.txt' % lc_id), 'w') as out_model:
         for i_t in range(len(t_model)):
             out_model.write('%e %e\n' % (t_model[i_t], f_model[i_t]))
+
